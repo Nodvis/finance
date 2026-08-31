@@ -2,9 +2,9 @@ packages:
   - apps/*
   - packages/*
 
-# pnpm blocks dependency lifecycle scripts unless explicitly approved.
-# Keep this list narrow and review additions as supply-chain-sensitive changes.
-onlyBuiltDependencies:
-  - "@parcel/watcher"
-  - "@swc/core"
-  - esbuild
+# pnpm 11 blocks dependency lifecycle scripts unless explicitly reviewed.
+# Keep this map narrow; additions are supply-chain-sensitive changes.
+allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
+  esbuild: true
