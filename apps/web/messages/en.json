@@ -1,0 +1,22 @@
+{
+  "Metadata": {
+    "title": "Nodvis Finance",
+    "description": "A private, self-hosted household finance control center."
+  },
+  "HomePage": {
+    "eyebrow": "Nodvis Finance · application foundation",
+    "title": "Your financial situation without the accounting clutter.",
+    "description": "This screen is intended to answer, within seconds, how much money is available, what must be paid, how much debt remains and whether the current month is financially safe.",
+    "summaryLabel": "Financial summary",
+    "noData": "No data yet — the financial model is being implemented.",
+    "cards": {
+      "available": "Available now",
+      "upcoming": "Upcoming",
+      "debt": "Debt"
+    },
+    "next": {
+      "title": "Next stage",
+      "description": "Household, accounts, cash, balances, categories, manual transactions and transfers — without double-counting money movements or collapsing available cash into debt."
+    }
+  }
+}
