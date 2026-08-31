@@ -1,0 +1,25 @@
+{
+  "name": "@nodvis/finance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10 <11"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @nodvis/finance-web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:domain": "pnpm --filter @nodvis/finance-domain test",
+    "db:generate": "pnpm --filter @nodvis/finance-db db:generate",
+    "db:migrate": "pnpm --filter @nodvis/finance-db db:migrate",
+    "db:studio": "pnpm --filter @nodvis/finance-db db:studio"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
+  }
+}
