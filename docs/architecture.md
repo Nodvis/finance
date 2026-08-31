@@ -1,155 +1,230 @@
-# Architecture constraints
+# Architecture
 
-> Status: pre-stack architecture guidance. This document intentionally does **not** choose the application framework, database, ORM or authentication library.
+> Status: accepted foundation architecture. Significant changes require an ADR.
 
-## Current state
+## Current shape
 
-Nodvis Finance is in Phase 0. The implementation stack must be selected in a dedicated ADR after product/domain/security requirements are sufficiently stable.
+Nodvis Finance is a **self-hosted modular monolith** implemented as a small pnpm workspace.
 
-## Known architectural constraints
+```text
+Browser
+   |
+   | HTTPS
+   v
+Reverse proxy / VPN / private network boundary
+   |
+   v
+apps/web — Next.js 16 / React 19
+   |
+   +--> packages/domain — framework-independent financial rules
+   |
+   +--> packages/db — PostgreSQL / Drizzle persistence
+   |
+   v
+PostgreSQL 18
+```
 
-### 1. Self-hosted first
+The boundaries are logical and source-level. They do not imply separate runtime services.
 
-The first supported deployment model is self-hosted.
+## Repository boundaries
 
-Architecture should support practical private deployment through mechanisms such as:
+```text
+apps/
+  web/       UI, routing, server operations, auth integration
+
+packages/
+  domain/    financial value objects, invariants and deterministic calculations
+  db/        PostgreSQL schema, migrations and database access
+```
+
+### `packages/domain`
+
+This is the highest-value correctness boundary.
+
+It must remain independent from:
+
+- Next.js,
+- React,
+- Better Auth,
+- Drizzle/PostgreSQL implementation details,
+- presentation formatting.
+
+Canonical money arithmetic uses integer minor units represented by `bigint` plus an explicit currency code. Never use JavaScript floating-point `number` as the canonical representation of money.
+
+### `packages/db`
+
+Owns:
+
+- PostgreSQL schema,
+- Drizzle access,
+- committed/reviewed migrations,
+- persistence-specific constraints.
+
+Database convenience must not redefine financial semantics. The domain model wins when persistence and domain convenience conflict.
+
+### `apps/web`
+
+Owns:
+
+- Next.js App Router UI,
+- `pl` / `en` routing through next-intl,
+- server-side application operations,
+- Better Auth integration,
+- authorization at resource boundaries,
+- presentation formatting.
+
+Server Components are preferred by default. Client Components are used only when browser interaction requires them.
+
+Next.js Proxy may perform locale negotiation or coarse routing. It is **not** an authorization boundary.
+
+## Core architectural constraints
+
+### Self-hosted first
+
+The first supported deployment model is private/self-hosted. Normal use must not require a Nodvis cloud service.
+
+Recommended exposure:
 
 - LAN,
 - VPN/Tailscale,
 - reverse proxy + TLS.
 
-The project should not assume a mandatory central Nodvis cloud service.
+A raw public `http://server:3000` deployment is not a supported recommendation.
 
-### 2. Standalone application boundary
+### Standalone application boundary
 
-Nodvis Finance is a separate application from Nodvis Recall and other products.
-
-Required isolation:
+Finance remains isolated from Recall and other Nodvis products:
 
 - separate repository,
 - separate database,
 - separate secrets,
-- separate auth instance/deployment where applicable,
+- separate auth configuration/tables,
 - no shared persistence model,
-- no mandatory runtime dependency on another Nodvis product.
+- no mandatory runtime dependency on another Nodvis application.
 
-Future integrations should use explicit interfaces rather than database coupling.
+Future integration must use explicit interfaces rather than shared database access.
 
-### 3. Core works offline from paid/external AI
+### Core works without external AI
 
-The financial model, imports, deduplication, categorization rules, forecasts and debt simulations must be implementable without external LLM APIs.
+The financial model, imports, reconciliation, categorization rules, forecasting and debt simulations must work without external LLM APIs or paid AI services.
 
-Any future external AI integration must be optional and privacy-aware.
+External AI may later be an explicit opt-in helper, never a hidden core dependency.
 
-### 4. Internationalization is foundational
+### Internationalization is foundational
 
-The architecture must support Polish and English from the initial application scaffold.
+Polish and English exist from the application scaffold.
 
-User-visible formatting must be locale-aware for:
+User-visible handling of:
 
 - strings,
 - dates,
 - numbers,
-- currency.
+- currencies
 
-### 5. Domain semantics over persistence convenience
+must be locale-aware.
 
-The data model must preserve the distinctions documented in `domain.md`.
+### Domain semantics over generic ledger abstractions
 
-Do not flatten concepts such as:
+Preserve distinctions such as:
 
 - planned obligation vs actual transaction,
-- account balance vs outstanding debt,
+- available cash vs outstanding debt,
 - expense vs transfer,
-- purchase vs credit-card repayment,
-- loan principal vs interest.
+- credit-card purchase vs card repayment,
+- loan principal reduction vs interest expense,
+- account owner vs payer/beneficiary context.
 
-Persistence design should follow the domain rather than forcing the domain into a generic ledger abstraction that loses meaning.
+### Import provenance and reconciliation
 
-### 6. Import provenance
+Imported data must retain a trace from source evidence/raw records to normalized domain records. Repeated or overlapping imports are expected, so idempotency, deduplication and reviewable uncertain matches are design requirements.
 
-The import architecture should retain a trace from source material/raw records to normalized domain records.
+### Sensitive documents are deferred behind a security decision
 
-This is necessary for:
-
-- debugging parsers,
-- deduplication,
-- reconciliation,
-- user trust,
-- future parser migrations.
-
-### 7. Idempotency and reconciliation
-
-Import paths should be designed for repeated/overlapping source data rather than assuming every file contains only new records.
-
-Where identity cannot be proven, the system should support confidence/review instead of silent destructive merging.
-
-### 8. Sensitive document boundary
-
-Document upload/storage is security-sensitive and should have a deliberately designed subsystem.
-
-Do not add generic file upload to production before decisions exist for:
+Do not add generic production file upload before decisions exist for:
 
 - storage location,
 - encryption/key management,
 - access control,
-- validation,
-- backups,
-- malicious-file handling,
+- validation and malicious-file handling,
+- backup/restore,
 - retention/deletion.
 
-### 9. Backup and restore are architecture features
+### Backup and restore are architecture features
 
-A production-ready deployment needs a coherent backup model covering all persistent state required for restoration.
+Production readiness requires a coherent, testable backup/restore path. Copying data without verifying restoration is not enough.
 
-Backup design should make it possible to verify restoration rather than only copy files/database dumps.
+### Privacy-preserving defaults
 
-### 10. Privacy-preserving defaults
-
-Self-host defaults should not rely on outbound telemetry, analytics, crash reporting or external AI.
-
-## Candidate deployment shape
-
-The exact stack is undecided, but a future implementation will likely need logical components equivalent to:
+Self-host defaults:
 
 ```text
-Browser / client
-      |
-      v
-Application / API
-      |
-      +--> relational/domain persistence
-      |
-      +--> import processing
-      |
-      +--> document storage (when designed)
-      |
-      +--> background work (only if/when required)
+analytics: off
+telemetry: off
+external crash reporting: off
+external AI: off
 ```
 
-This diagram is conceptual, not a commitment to separate services. Prefer the simplest deployment that satisfies security and domain requirements.
+## Deployment topology
+
+Initial production shape:
+
+```text
+reverse proxy / TLS
+        |
+        v
+Finance web container
+        |
+        v
+PostgreSQL container/service
+```
+
+Docker Compose is the reference deployment mechanism.
+
+Do not add by default:
+
+- Redis,
+- RabbitMQ,
+- Kafka,
+- Kubernetes,
+- a separate API/backend service,
+- object storage.
+
+Introduce additional infrastructure only when a concrete requirement justifies it and record the decision when material.
+
+## Persistence rules
+
+- PostgreSQL 18 is the supported primary database.
+- Drizzle stable is the initial SQL/ORM layer.
+- SQL migrations are generated, reviewed, tested and committed.
+- `drizzle-kit push` is not a production migration strategy.
+- Dates and timestamps must preserve source semantics rather than invent precision.
+- Financial amounts must never rely on floating-point storage/arithmetic.
+
+## Authentication and authorization
+
+Better Auth is the selected authentication library.
+
+Authentication does not replace authorization. Every privileged server operation must verify access to the relevant household/resource at the operation/data boundary rather than relying on UI visibility, client state, layouts or Proxy.
 
 ## Decisions still requiring ADRs
 
-Before implementation or before the relevant feature ships, record decisions for:
+Before the relevant feature ships:
 
-- technology/application stack,
-- persistence/database,
-- authentication,
-- deployment topology,
-- sensitive document storage,
+- document storage,
 - encryption/key management,
-- backup/restore format,
-- background jobs/queues if introduced,
-- API boundaries if frontend/backend are separated.
+- backup/restore format and verification,
+- durable background jobs if required,
+- external/public API boundaries if introduced,
+- strong-auth enrollment/recovery policy.
 
 ## Architecture bias
 
-Until scale proves otherwise:
+Until evidence proves otherwise:
 
 - prefer a simple deployable system over microservices,
 - prefer explicit domain code over infrastructure cleverness,
 - prefer deterministic behavior over opaque automation,
-- prefer recoverable/auditable operations over destructive convenience.
+- prefer auditable/recoverable operations over destructive convenience,
+- preserve uncertainty rather than fabricate financial facts.
 
-These are biases, not final technology decisions.
+See `docs/adr/` for the accepted decisions behind this architecture.
