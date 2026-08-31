@@ -4,68 +4,89 @@ This roadmap describes product maturity, not release dates. Security and domain 
 
 ## Phase 0 — Product, domain and security design **(current)**
 
-Goal: remove the highest-risk ambiguities before implementation.
+Goal: remove the highest-risk ambiguities before broad product implementation.
 
-### Research
+### Foundation already established
 
-- Review Actual Budget, Firefly III, Sure/Securo, YNAB and debt-payoff applications.
-- Review Polish household-finance tools.
-- Compare statement-import and import-review UX patterns.
-- Compare budgeting, stabilization and debt-repayment strategies.
+- [x] Repository/documentation foundation.
+- [x] Explicit core financial invariants.
+- [x] Initial MVP boundary.
+- [x] Initial threat model.
+- [x] Self-hosted-first ADR.
+- [x] Separate Finance application/data/auth boundary ADR.
+- [x] PL + EN foundation ADR.
+- [x] Core-without-mandatory-AI ADR.
+- [x] Technology stack ADR.
+- [x] PostgreSQL/Drizzle and exact-money ADR.
+- [x] Better Auth direction ADR.
+- [x] Initial modular-monolith deployment ADR.
+- [x] Initial `apps/web + packages/domain + packages/db` scaffold.
+- [x] First exact `Money` domain primitive and tests.
+- [x] Initial `/pl` and `/en` application shell.
+- [x] CI definition for typecheck/tests/build/E2E.
 
-### Domain design
+### Research still required
 
-Finalize semantics and invariants for:
+- [ ] Review Actual Budget, Firefly III, Sure/Securo, YNAB and debt-payoff applications.
+- [ ] Review Polish household-finance tools.
+- [ ] Compare statement-import and import-review UX patterns.
+- [ ] Compare budgeting, stabilization and debt-repayment strategies.
 
-- household and person,
-- account and cash,
-- transaction,
-- transfer,
-- reimbursement,
-- adjustment,
-- obligation,
-- liability,
-- loan,
-- credit card,
-- installment plan,
-- BNPL,
-- forecast.
+Research should challenge the current design where evidence warrants it; it should not turn the product into a clone.
 
-### Security design
+### Domain design still required
 
-- Complete the threat model.
-- Decide authentication architecture in an ADR.
-- Decide sensitive-file storage and encryption strategy.
-- Define backup, restore and verification expectations.
-- Define safe upload/document handling.
+Finalize detailed semantics and invariants for:
 
-### UX design
+- [ ] household and person,
+- [ ] account and cash,
+- [ ] transaction,
+- [ ] transfer,
+- [ ] reimbursement,
+- [ ] adjustment,
+- [ ] obligation,
+- [ ] liability,
+- [ ] loan,
+- [ ] credit card,
+- [ ] installment plan,
+- [ ] BNPL,
+- [ ] forecast.
 
-Design the core flows first:
+The existing invariants are binding constraints, but the final persistence shape for these concepts is intentionally not pre-created.
 
-- Home / Summary,
-- Add data,
-- Accounts,
-- Debts,
-- Upcoming,
-- Import review.
+### Security design still required
 
-### Foundation decisions
+- [ ] Review/refine the initial threat model against the implemented stack.
+- [ ] Define backup, restore and verification expectations before production readiness.
+- [ ] Design account-recovery policy before recovery features ship.
+- [ ] Design TOTP/passkey enrollment/recovery before stronger-auth features ship.
+- [ ] Decide sensitive-file storage, encryption/key management and malicious-file handling **before Phase 5 document upload ships**.
 
-- PL + EN and locale-aware formatting are mandatory.
-- Choose the implementation stack in an ADR.
-- Define repository/application structure only after the stack decision.
+Sensitive document infrastructure is intentionally not a blocker for implementing Phase 1 money/account functionality because production document upload is not yet in scope.
 
-### Exit criteria
+### UX design still required
+
+Design/refine the core flows before each becomes feature work:
+
+- [ ] Home / Summary,
+- [ ] Add data,
+- [ ] Accounts,
+- [ ] Debts,
+- [ ] Upcoming,
+- [ ] Import review.
+
+The current home page is only a localized scaffold, not a final product design.
+
+### Phase 0 exit criteria
 
 Phase 0 is complete when:
 
-- core financial invariants are explicit and testable,
+- the Phase 1 financial concepts are sufficiently explicit and testable,
 - the MVP boundary is stable,
-- primary UX flows are specified,
-- initial threat model is reviewed,
-- auth/storage/stack decisions have ADRs,
-- no known architectural decision can silently corrupt financial meaning.
+- the primary Phase 1 UX flows are specified,
+- the initial threat model has been reviewed against the chosen stack,
+- there is no known unresolved architectural decision that can silently corrupt Phase 1 financial meaning or expose Phase 1 data,
+- intentionally deferred areas such as document storage have a clear gate preventing accidental implementation before their security ADRs.
 
 ---
 
@@ -85,6 +106,16 @@ Planned scope:
 - manual transactions,
 - transfers,
 - basic dashboard.
+
+Foundation already started:
+
+- workspace/application skeleton,
+- exact `Money` primitive,
+- PostgreSQL/Drizzle package,
+- initial `Household` persistence seed,
+- PL/EN routing and messages,
+- empty-state dashboard shell,
+- selected auth library (integration still pending).
 
 Not in scope yet: advanced analytics or complex planning.
 
@@ -178,7 +209,7 @@ Planned scope:
 - invoices,
 - payment confirmations.
 
-Document storage must not ship before its security architecture is ready.
+Document storage must not ship before its storage/encryption/access-control/malicious-file/backup architecture is accepted.
 
 ---
 
