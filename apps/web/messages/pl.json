@@ -1,0 +1,22 @@
+{
+  "Metadata": {
+    "title": "Nodvis Finance",
+    "description": "Prywatne, self-hosted centrum kontroli finansów gospodarstwa domowego."
+  },
+  "HomePage": {
+    "eyebrow": "Nodvis Finance · fundament aplikacji",
+    "title": "Twoja sytuacja finansowa bez księgowego chaosu.",
+    "description": "Docelowo ten ekran ma w kilka sekund odpowiedzieć, ile pieniędzy jest dostępne, co trzeba zapłacić, ile zostało długu i czy bieżący miesiąc jest bezpieczny.",
+    "summaryLabel": "Podsumowanie finansowe",
+    "noData": "Brak danych — model finansowy jest dopiero wdrażany.",
+    "cards": {
+      "available": "Dostępne teraz",
+      "upcoming": "Do zapłaty",
+      "debt": "Zadłużenie"
+    },
+    "next": {
+      "title": "Następny etap",
+      "description": "Household, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
+    }
+  }
+}
