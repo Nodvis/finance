@@ -9,9 +9,9 @@ test("renders the Polish finance summary", async ({ page }) => {
     }),
   ).toBeVisible();
 
-  await expect(page.getByText("Dostępne teraz")).toBeVisible();
-  await expect(page.getByText("Do zapłaty")).toBeVisible();
-  await expect(page.getByText("Zadłużenie")).toBeVisible();
+  await expect(page.getByText("Dostępne teraz", { exact: true })).toBeVisible();
+  await expect(page.getByText("Do zapłaty", { exact: true })).toBeVisible();
+  await expect(page.getByText("Zadłużenie", { exact: true })).toBeVisible();
 });
 
 test("renders the English finance summary", async ({ page }) => {
@@ -23,7 +23,7 @@ test("renders the English finance summary", async ({ page }) => {
     }),
   ).toBeVisible();
 
-  await expect(page.getByText("Available now")).toBeVisible();
-  await expect(page.getByText("Upcoming")).toBeVisible();
-  await expect(page.getByText("Debt")).toBeVisible();
+  await expect(page.getByText("Available now", { exact: true })).toBeVisible();
+  await expect(page.getByText("Upcoming", { exact: true })).toBeVisible();
+  await expect(page.getByText("Debt", { exact: true })).toBeVisible();
 });
