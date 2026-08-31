@@ -21,24 +21,21 @@ logs/
 *.pid
 *.seed
 
-# JavaScript / TypeScript (if selected)
+# Node.js / TypeScript / Next.js
 node_modules/
 dist/
 build/
 coverage/
 .next/
-.nuxt/
 .turbo/
 .cache/
+.pnpm-store/
 
-# Python (if selected)
-.venv/
-venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 
 # IDE / editor
 .idea/
