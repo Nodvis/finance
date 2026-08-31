@@ -42,7 +42,7 @@ The accepted foundation is documented in `docs/adr/`.
 
 - **Node.js 24 LTS**
 - **TypeScript 7** in strict mode
-- **pnpm workspace**
+- **pnpm 11 workspace**
 - **Next.js 16 / React 19**
 - **next-intl** with `/pl` and `/en` from the start
 - **Tailwind CSS 4**
@@ -100,7 +100,7 @@ The application is a **modular monolith**, not a microservice system.
 Requirements:
 
 - Node.js 24 LTS
-- pnpm 10
+- pnpm 11 (the repository pins `pnpm@11.24.0` through `packageManager`)
 - Docker + Docker Compose for the development PostgreSQL service
 
 ### 1. Install dependencies
