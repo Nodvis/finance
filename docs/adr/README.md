@@ -17,12 +17,6 @@ Use one of:
 NNNN-short-decision-name.md
 ```
 
-Example:
-
-```text
-0005-technology-stack.md
-```
-
 ## Template
 
 ```markdown
@@ -66,15 +60,21 @@ What are we choosing?
 | [0002](0002-separate-application-boundary.md) | Finance remains isolated from other Nodvis products | Accepted |
 | [0003](0003-i18n-from-the-first-commit.md) | PL + EN are architecture-level requirements | Accepted |
 | [0004](0004-core-without-mandatory-ai.md) | Core product works without mandatory AI/paid APIs | Accepted |
+| [0005](0005-technology-stack.md) | Node 24 + TypeScript + pnpm workspace + Next.js/React | Accepted |
+| [0006](0006-persistence-and-money.md) | PostgreSQL + Drizzle + bigint minor-unit money | Accepted |
+| [0007](0007-authentication.md) | Better Auth with an isolated Finance auth boundary | Accepted |
+| [0008](0008-deployment-topology.md) | Self-hosted modular monolith with web + PostgreSQL | Accepted |
 
-## Next ADRs expected
+## Decisions intentionally still open
 
-These decisions are intentionally still open:
+Record dedicated ADRs before implementing or shipping the relevant area:
 
-- technology stack,
-- database/persistence approach,
-- authentication,
-- deployment topology,
-- document storage,
+- sensitive document storage,
 - encryption/key management,
-- backup/restore model.
+- backup/restore format and verification,
+- durable background jobs/queues if required,
+- public/external API boundaries if a second client is introduced,
+- TOTP/passkey enrollment and account recovery policy,
+- any future hosted/cloud topology.
+
+Do not create ADRs for routine implementation details that do not materially change architecture, security or domain semantics.
