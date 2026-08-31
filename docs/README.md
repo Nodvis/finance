@@ -1,6 +1,6 @@
 # Nodvis Finance documentation
 
-This directory is the design source of truth for Nodvis Finance while the project is in the pre-implementation stage.
+This directory is the design source of truth for Nodvis Finance. The project has moved from pure pre-implementation planning into a **Phase 0 foundation scaffold**, but the documentation remains authoritative for domain, security and architecture decisions.
 
 ## Start here
 
@@ -10,10 +10,12 @@ This directory is the design source of truth for Nodvis Finance while the projec
 | [`mvp.md`](mvp.md) | MVP scope and explicit non-goals |
 | [`domain.md`](domain.md) | Financial concepts and invariants that implementation must preserve |
 | [`ux.md`](ux.md) | Primary UX model and core flows |
-| [`architecture.md`](architecture.md) | Architecture constraints that are already known before stack selection |
+| [`architecture.md`](architecture.md) | Accepted application architecture and boundaries |
 | [`threat-model.md`](threat-model.md) | Initial security/threat model |
-| [`adr/`](adr/) | Architectural Decision Records |
+| [`adr/`](adr/) | Accepted and proposed Architecture Decision Records |
 | [`reference/`](reference/) | Historical/source planning documents |
+
+Repository-level implementation rules for coding agents are in [`../AGENTS.md`](../AGENTS.md).
 
 ## Documentation hierarchy
 
@@ -29,9 +31,32 @@ A code implementation must not silently override a financial invariant.
 
 ## Current design status
 
-The repository is in **Phase 0 — product, domain and security design**. Some models are intentionally not final yet. Documents should clearly distinguish between:
+The repository is in **Phase 0 / foundation scaffold**.
 
-- **accepted constraints**,
+Already accepted:
+
+- self-hosted-first product boundary,
+- separate Finance application/data/auth boundary,
+- PL + EN from the application foundation,
+- core product without mandatory AI,
+- Node/TypeScript/Next.js application stack,
+- PostgreSQL/Drizzle persistence direction,
+- exact money as bigint minor units + currency,
+- Better Auth direction,
+- modular-monolith Docker deployment topology.
+
+Still intentionally open until the relevant feature is promoted into scope:
+
+- sensitive document storage,
+- encryption/key management,
+- backup/restore format and verification,
+- durable background jobs,
+- external/public API boundaries,
+- strong-auth enrollment/recovery UX and policy.
+
+Some detailed domain models are intentionally not final yet. Documents should distinguish between:
+
+- **accepted constraints/decisions**,
 - **planned behavior**,
 - **open decisions**.
 
