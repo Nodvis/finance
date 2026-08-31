@@ -7,7 +7,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -40,17 +40,24 @@ jobs:
           if [[ -f pnpm-lock.yaml ]]; then
             pnpm install --frozen-lockfile
           else
-            echo "pnpm-lock.yaml is not committed yet; installing without frozen lockfile."
+            echo "Bootstrapping pnpm-lock.yaml from the pinned workspace manifests."
             pnpm install --no-frozen-lockfile
           fi
 
-      - name: Upload generated bootstrap lockfile
-        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: pnpm-lock-bootstrap
-          path: pnpm-lock.yaml
-          retention-days: 1
+      - name: Commit bootstrap lockfile
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        shell: bash
+        run: |
+          if git ls-files --error-unmatch pnpm-lock.yaml >/dev/null 2>&1; then
+            echo "pnpm-lock.yaml is already tracked."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: add pnpm lockfile [skip ci]"
+          git push
 
       - name: Typecheck
         run: pnpm typecheck
