@@ -44,6 +44,14 @@ jobs:
             pnpm install --no-frozen-lockfile
           fi
 
+      - name: Upload generated bootstrap lockfile
+        if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pnpm-lock-bootstrap
+          path: pnpm-lock.yaml
+          retention-days: 1
+
       - name: Typecheck
         run: pnpm typecheck
 
