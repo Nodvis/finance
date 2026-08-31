@@ -1,7 +1,3 @@
 packages:
   - apps/*
   - packages/*
-
-# Reduce supply-chain risk from just-published packages while keeping security
-# updates manageable. Override deliberately when an urgent security patch lands.
-minimumReleaseAge: 1440
