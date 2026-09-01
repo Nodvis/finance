@@ -37,6 +37,24 @@ An account may have:
 - starting balance,
 - current balance.
 
+Until a transaction ledger exists, the persisted bootstrap/current value is an
+optional **balance snapshot**: exact minor units in the account currency plus
+the instant at which the balance was observed. It is not presented as a
+ledger-calculated balance. Amount and observation time are either both known or
+both unknown.
+
+Sign conventions for balance snapshots:
+
+- **Asset accounts (`checking`, `savings`, `cash`)**:
+  - `amountMinor > 0`: positive available funds (asset),
+  - `amountMinor == 0`: zero balance,
+  - `amountMinor < 0`: overdraft / negative balance.
+- **Credit-card accounts (`credit_card`)**:
+  - `amountMinor < 0`: outstanding debt / statement balance owed to the issuer (e.g. -200.00 PLN = 200 PLN liability),
+  - `amountMinor == 0`: zero balance owed,
+  - `amountMinor > 0`: overpayment / credit balance.
+  - Credit-card limits and capacity do **not** contribute to available cash (preserving INV-013).
+
 ### Transaction
 
 An actual financial event. Not every planned event is a transaction.

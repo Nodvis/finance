@@ -9,8 +9,8 @@ Nodvis Finance is a household finance application focused on a simple question:
 It is not intended to be another accounting-style ledger or a pure envelope-budgeting clone. Its core is the combination of **available cash, obligations, debt, cash flow and forecasting** presented in a way that remains useful to non-technical users.
 
 > [!IMPORTANT]
-> **Project status: Phase 0 / foundation scaffold.**
-> Architecture decisions and the first application/domain/database skeleton now exist, but the application is **not ready for real financial data or production use**.
+> **Project status: Phase 1 / core financial foundation in progress.**
+> Person, Household, membership, account ownership, persistence and authentication foundations now exist, but transactions and the remaining Phase 1 product flows are not implemented. The application is **not ready for real financial data or production use**.
 
 ## Product principles
 
@@ -127,11 +127,16 @@ The development database binds only to `127.0.0.1:5432` by default.
 
 ### 4. Database migrations
 
-The first schema exists in code. Before using it, generate and review the corresponding Drizzle migration:
+Apply the committed, reviewed migrations before using the application:
+
+```bash
+pnpm db:migrate
+```
+
+After an intentional schema change, generate and review the next migration before applying it:
 
 ```bash
 pnpm db:generate
-pnpm db:migrate
 ```
 
 Generated SQL migrations are source artifacts and should be reviewed and committed. `drizzle-kit push` is **not** the production migration workflow.

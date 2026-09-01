@@ -1,7 +1,21 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
+import { loadEnvFile } from "node:process";
 
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+
+const candidateEnvPaths = [
+  path.join(process.cwd(), ".env"),
+  path.join(process.cwd(), "../..", ".env"),
+];
+
+for (const envPath of candidateEnvPaths) {
+  if (existsSync(envPath)) {
+    loadEnvFile(envPath);
+    break;
+  }
+}
 
 const withNextIntl = createNextIntlPlugin();
 
