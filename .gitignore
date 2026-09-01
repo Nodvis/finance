@@ -30,6 +30,8 @@ coverage/
 .turbo/
 .cache/
 .pnpm-store/
+*.tsbuildinfo
+next-env.d.ts
 
 # Playwright
 playwright-report/
