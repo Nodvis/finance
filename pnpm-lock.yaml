@@ -63,6 +63,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@nodvis/finance-domain':
+        specifier: workspace:*
+        version: link:../domain
       dotenv:
         specifier: 17.4.2
         version: 17.4.2

@@ -1,0 +1,29 @@
+import "server-only";
+
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+
+import { betterAuthSchema, getDb } from "@nodvis/finance-db";
+
+const configuredOrigin = process.env.BETTER_AUTH_URL;
+const trustedOrigins = configuredOrigin ? [configuredOrigin] : [];
+
+export const auth = betterAuth({
+  appName: "Nodvis Finance",
+  database: drizzleAdapter(getDb(), {
+    provider: "pg",
+    schema: betterAuthSchema,
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+  trustedOrigins,
+  rateLimit: {
+    enabled: true,
+  },
+  advanced: {
+    database: {
+      generateId: "uuid",
+    },
+  },
+});

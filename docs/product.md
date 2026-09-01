@@ -8,7 +8,7 @@ Repository: `Nodvis/finance`
 
 ## Status
 
-**Phase 0 — product/domain/security design**
+**Phase 1 — core financial foundation in progress**
 
 ## Product statement
 

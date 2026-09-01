@@ -110,12 +110,15 @@ Planned scope:
 Foundation already started:
 
 - workspace/application skeleton,
-- exact `Money` primitive,
-- PostgreSQL/Drizzle package,
-- initial `Household` persistence seed,
+- exact `Money` primitive and core foundation domain types,
+- Person, Household, membership, Account and ownership persistence,
+- optional exact balance snapshots with explicit observation time,
+- PostgreSQL/Drizzle schema and first reviewed migration,
+- Better Auth email/password persistence and server-side session boundary,
+- household authorization boundary through explicit auth-user-to-Person links,
 - PL/EN routing and messages,
 - empty-state dashboard shell,
-- selected auth library (integration still pending).
+- selected and integrated auth library.
 
 Not in scope yet: advanced analytics or complex planning.
 
