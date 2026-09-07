@@ -192,3 +192,100 @@ export function parseNaturalDecimalToMinor(
     return { success: false, error: "invalid_format" };
   }
 }
+
+export interface ParseAccountBalanceResult {
+  success: boolean;
+  amountMinor: bigint | null;
+  error?: "invalid_format" | "too_many_decimals";
+}
+
+/**
+ * Converts natural decimal input into integer minor units as bigint.
+ * Supports negative numbers (e.g. credit-card debt or overdraft).
+ * If input is empty/null/undefined, returns success: true with amountMinor: null (preserving unknown balance as unknown).
+ * Strictly relies on BigInt; NEVER uses JavaScript Number for money.
+ */
+export function parseAccountBalanceToMinor(
+  input: string | null | undefined,
+  currency: string = "PLN",
+): ParseAccountBalanceResult {
+  if (input === null || input === undefined) {
+    return { success: true, amountMinor: null };
+  }
+  const trimmed = input.trim();
+  if (trimmed === "") {
+    return { success: true, amountMinor: null };
+  }
+
+  let isNegative = false;
+  let clean = trimmed;
+  if (clean.startsWith("-")) {
+    isNegative = true;
+    clean = clean.slice(1).trim();
+  } else if (clean.startsWith("+")) {
+    clean = clean.slice(1).trim();
+  }
+
+  const sanitized = clean.replace(/[\s\u00A0]/g, "");
+
+  if (!/^[0-9,.]+$/.test(sanitized) || /[.,]{2,}/.test(sanitized)) {
+    return { success: false, amountMinor: null, error: "invalid_format" };
+  }
+
+  const fractionDigits = getCurrencyFractionDigits(currency);
+
+  const lastDot = sanitized.lastIndexOf(".");
+  const lastComma = sanitized.lastIndexOf(",");
+  const separatorIndex = Math.max(lastDot, lastComma);
+
+  let wholeStr: string;
+  let fractionStr: string;
+
+  if (separatorIndex === -1) {
+    wholeStr = sanitized;
+    fractionStr = "";
+  } else {
+    const rawIntegerPart = sanitized.slice(0, separatorIndex);
+    wholeStr = rawIntegerPart.replace(/[.,]/g, "");
+    fractionStr = sanitized.slice(separatorIndex + 1);
+  }
+
+  wholeStr = wholeStr.replace(/^0+(?=\d)/, "");
+  if (!wholeStr) {
+    wholeStr = "0";
+  }
+
+  if (
+    !/^\d+$/.test(wholeStr) ||
+    (fractionStr.length > 0 && !/^\d+$/.test(fractionStr))
+  ) {
+    return { success: false, amountMinor: null, error: "invalid_format" };
+  }
+
+  if (fractionDigits === 0) {
+    if (fractionStr.length > 0 && BigInt(fractionStr) > 0n) {
+      return { success: false, amountMinor: null, error: "too_many_decimals" };
+    }
+    fractionStr = "";
+  } else if (fractionStr.length > fractionDigits) {
+    return { success: false, amountMinor: null, error: "too_many_decimals" };
+  }
+
+  const paddedFraction = fractionStr.padEnd(fractionDigits, "0");
+
+  try {
+    const wholeBigInt = BigInt(wholeStr);
+    const fractionBigInt =
+      paddedFraction.length > 0 ? BigInt(paddedFraction) : 0n;
+    const multiplier = 10n ** BigInt(fractionDigits);
+    const absMinor = wholeBigInt * multiplier + fractionBigInt;
+    const finalMinor = isNegative ? -absMinor : absMinor;
+
+    return {
+      success: true,
+      amountMinor: finalMinor,
+    };
+  } catch {
+    return { success: false, amountMinor: null, error: "invalid_format" };
+  }
+}

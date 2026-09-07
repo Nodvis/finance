@@ -23,6 +23,7 @@ describe("financial foundation schema", () => {
     expect(accounts.balanceSnapshotMinor.getSQLType()).toBe("bigint");
     expect(accounts.balanceSnapshotMinor.notNull).toBe(false);
     expect(accounts.balanceSnapshotAt.notNull).toBe(false);
+    expect(accounts.archivedAt.notNull).toBe(false);
 
     const accountConfig = getTableConfig(accounts);
     const checks = accountConfig.checks.map((item) => item.name);

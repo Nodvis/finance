@@ -1,0 +1,1 @@
+ALTER TABLE "finance"."accounts" ADD COLUMN "archived_at" timestamp with time zone;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getCurrencyFractionDigits,
+  parseAccountBalanceToMinor,
   parseNaturalDecimalToMinor,
 } from "./money-entry";
 
@@ -184,6 +185,80 @@ describe("parseNaturalDecimalToMinor", () => {
     expect(parseNaturalDecimalToMinor("12..34", "PLN")).toEqual({
       success: false,
       error: "invalid_format",
+    });
+  });
+});
+
+describe("parseAccountBalanceToMinor", () => {
+  it("preserves unknown balance as null for empty or missing inputs", () => {
+    expect(parseAccountBalanceToMinor("")).toEqual({
+      success: true,
+      amountMinor: null,
+    });
+    expect(parseAccountBalanceToMinor("   ")).toEqual({
+      success: true,
+      amountMinor: null,
+    });
+    expect(parseAccountBalanceToMinor(null)).toEqual({
+      success: true,
+      amountMinor: null,
+    });
+    expect(parseAccountBalanceToMinor(undefined)).toEqual({
+      success: true,
+      amountMinor: null,
+    });
+  });
+
+  it("parses positive asset balances in PL comma and EN dot notations", () => {
+    expect(parseAccountBalanceToMinor("1500,50", "PLN")).toEqual({
+      success: true,
+      amountMinor: 150050n,
+    });
+    expect(parseAccountBalanceToMinor("1500.50", "PLN")).toEqual({
+      success: true,
+      amountMinor: 150050n,
+    });
+    expect(parseAccountBalanceToMinor("0", "PLN")).toEqual({
+      success: true,
+      amountMinor: 0n,
+    });
+    expect(parseAccountBalanceToMinor("0,00", "PLN")).toEqual({
+      success: true,
+      amountMinor: 0n,
+    });
+  });
+
+  it("parses negative liabilities for credit card debt or overdrafts", () => {
+    expect(parseAccountBalanceToMinor("-250,00", "PLN")).toEqual({
+      success: true,
+      amountMinor: -25000n,
+    });
+    expect(parseAccountBalanceToMinor("-50.25", "PLN")).toEqual({
+      success: true,
+      amountMinor: -5025n,
+    });
+  });
+
+  it("rejects invalid characters and malformed decimals", () => {
+    expect(parseAccountBalanceToMinor("invalid", "PLN")).toEqual({
+      success: false,
+      amountMinor: null,
+      error: "invalid_format",
+    });
+    expect(parseAccountBalanceToMinor("12a45", "PLN")).toEqual({
+      success: false,
+      amountMinor: null,
+      error: "invalid_format",
+    });
+    expect(parseAccountBalanceToMinor("12..34", "PLN")).toEqual({
+      success: false,
+      amountMinor: null,
+      error: "invalid_format",
+    });
+    expect(parseAccountBalanceToMinor("12.345", "PLN")).toEqual({
+      success: false,
+      amountMinor: null,
+      error: "too_many_decimals",
     });
   });
 });

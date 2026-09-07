@@ -17,6 +17,7 @@ import {
   listAccountsByHousehold,
   listTransactionsByHousehold,
 } from "@nodvis/finance-db";
+import type { HouseholdAccountSummary } from "@nodvis/finance-db";
 import {
   householdId,
   isExpense,
@@ -42,6 +43,21 @@ const validPerson2 = personId("018f47a0-7762-7b9c-8d17-27f2f79e59a3");
 const validAccount1 = "018f47a0-7762-7b9c-8d17-27f2f79e59a4";
 const validAccount2 = "018f47a0-7762-7b9c-8d17-27f2f79e59a5";
 
+const makeAccount = (
+  overrides: Partial<HouseholdAccountSummary> = {},
+): HouseholdAccountSummary => ({
+  id: validAccount1,
+  householdId: validHousehold,
+  name: "Main checking",
+  type: "checking",
+  currency: "PLN",
+  balanceSnapshotMinor: null,
+  balanceSnapshotAt: null,
+  archivedAt: null,
+  ownerPersonIds: [],
+  ...overrides,
+});
+
 const testContext: AuthorizedHouseholdContext = {
   authUserId: "user-1",
   householdId: validHousehold,
@@ -54,15 +70,12 @@ describe("transaction-service", () => {
   });
   describe("createManualTransaction: expense", () => {
     it("creates an expense when account exists and currency matches", async () => {
-      vi.mocked(findAccountInHousehold).mockResolvedValueOnce({
-        id: validAccount1,
-        householdId: validHousehold,
-        name: "Main checking",
-        type: "checking",
-        currency: "PLN",
-        balanceSnapshotMinor: 100000n,
-        balanceSnapshotAt: new Date("2026-09-01T00:00:00Z"),
-      });
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(
+        makeAccount({
+          balanceSnapshotMinor: 100000n,
+          balanceSnapshotAt: new Date("2026-09-01T00:00:00Z"),
+        }),
+      );
       vi.mocked(isPersonInHousehold).mockResolvedValueOnce(true);
       vi.mocked(insertTransaction).mockImplementationOnce(async (tx) => tx);
 
@@ -84,15 +97,7 @@ describe("transaction-service", () => {
     });
 
     it("defaults paidByPersonId to context.personId when omitted", async () => {
-      vi.mocked(findAccountInHousehold).mockResolvedValueOnce({
-        id: validAccount1,
-        householdId: validHousehold,
-        name: "Main checking",
-        type: "checking",
-        currency: "PLN",
-        balanceSnapshotMinor: null,
-        balanceSnapshotAt: null,
-      });
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
       vi.mocked(insertTransaction).mockImplementationOnce(async (tx) => tx);
 
       const result = await createManualTransaction(testContext, {
@@ -122,15 +127,13 @@ describe("transaction-service", () => {
     });
 
     it("rejects expense if account currency mismatches transaction currency", async () => {
-      vi.mocked(findAccountInHousehold).mockResolvedValueOnce({
-        id: validAccount1,
-        householdId: validHousehold,
-        name: "EUR savings",
-        type: "savings",
-        currency: "EUR",
-        balanceSnapshotMinor: null,
-        balanceSnapshotAt: null,
-      });
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(
+        makeAccount({
+          name: "EUR savings",
+          type: "savings",
+          currency: "EUR",
+        }),
+      );
 
       await expect(
         createManualTransaction(testContext, {
@@ -144,15 +147,7 @@ describe("transaction-service", () => {
     });
 
     it("rejects expense if paidByPersonId is not a household member", async () => {
-      vi.mocked(findAccountInHousehold).mockResolvedValueOnce({
-        id: validAccount1,
-        householdId: validHousehold,
-        name: "Main checking",
-        type: "checking",
-        currency: "PLN",
-        balanceSnapshotMinor: null,
-        balanceSnapshotAt: null,
-      });
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
       vi.mocked(isPersonInHousehold).mockResolvedValueOnce(false);
 
       await expect(
@@ -170,15 +165,7 @@ describe("transaction-service", () => {
 
   describe("createManualTransaction: income", () => {
     it("creates income when account exists and currency matches", async () => {
-      vi.mocked(findAccountInHousehold).mockResolvedValueOnce({
-        id: validAccount1,
-        householdId: validHousehold,
-        name: "Main checking",
-        type: "checking",
-        currency: "PLN",
-        balanceSnapshotMinor: null,
-        balanceSnapshotAt: null,
-      });
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
       vi.mocked(insertTransaction).mockImplementationOnce(async (tx) => tx);
 
       const result = await createManualTransaction(testContext, {
@@ -195,15 +182,12 @@ describe("transaction-service", () => {
     });
 
     it("rejects income if account currency mismatches", async () => {
-      vi.mocked(findAccountInHousehold).mockResolvedValueOnce({
-        id: validAccount1,
-        householdId: validHousehold,
-        name: "USD Account",
-        type: "checking",
-        currency: "USD",
-        balanceSnapshotMinor: null,
-        balanceSnapshotAt: null,
-      });
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(
+        makeAccount({
+          name: "USD Account",
+          currency: "USD",
+        }),
+      );
 
       await expect(
         createManualTransaction(testContext, {
@@ -221,26 +205,10 @@ describe("transaction-service", () => {
     it("creates transfer when both accounts exist and currencies match", async () => {
       vi.mocked(findAccountInHousehold).mockImplementation(async (_hId, accId) => {
         if (accId === validAccount1) {
-          return {
-            id: validAccount1,
-            householdId: validHousehold,
-            name: "Checking",
-            type: "checking",
-            currency: "PLN",
-            balanceSnapshotMinor: null,
-            balanceSnapshotAt: null,
-          };
+          return makeAccount({ id: validAccount1, name: "Checking" });
         }
         if (accId === validAccount2) {
-          return {
-            id: validAccount2,
-            householdId: validHousehold,
-            name: "Savings",
-            type: "savings",
-            currency: "PLN",
-            balanceSnapshotMinor: null,
-            balanceSnapshotAt: null,
-          };
+          return makeAccount({ id: validAccount2, name: "Savings", type: "savings" });
         }
         return null;
       });
@@ -275,15 +243,7 @@ describe("transaction-service", () => {
 
     it("rejects transfer if destination account not found", async () => {
       vi.mocked(findAccountInHousehold)
-        .mockResolvedValueOnce({
-          id: validAccount1,
-          householdId: validHousehold,
-          name: "Checking",
-          type: "checking",
-          currency: "PLN",
-          balanceSnapshotMinor: null,
-          balanceSnapshotAt: null,
-        })
+        .mockResolvedValueOnce(makeAccount({ name: "Checking" }))
         .mockResolvedValueOnce(null);
 
       await expect(
@@ -299,24 +259,15 @@ describe("transaction-service", () => {
 
     it("rejects transfer if account currency does not match transfer currency", async () => {
       vi.mocked(findAccountInHousehold)
-        .mockResolvedValueOnce({
-          id: validAccount1,
-          householdId: validHousehold,
-          name: "Checking",
-          type: "checking",
-          currency: "PLN",
-          balanceSnapshotMinor: null,
-          balanceSnapshotAt: null,
-        })
-        .mockResolvedValueOnce({
-          id: validAccount2,
-          householdId: validHousehold,
-          name: "EUR Savings",
-          type: "savings",
-          currency: "EUR",
-          balanceSnapshotMinor: null,
-          balanceSnapshotAt: null,
-        });
+        .mockResolvedValueOnce(makeAccount({ name: "Checking" }))
+        .mockResolvedValueOnce(
+          makeAccount({
+            id: validAccount2,
+            name: "EUR Savings",
+            type: "savings",
+            currency: "EUR",
+          }),
+        );
 
       await expect(
         createManualTransaction(testContext, {
@@ -352,15 +303,7 @@ describe("transaction-service", () => {
 
   describe("listHouseholdAccounts", () => {
     it("delegates to listAccountsByHousehold with authorized householdId", async () => {
-      const mockAccounts = [
-        {
-          id: validAccount1,
-          householdId: validHousehold,
-          name: "Main checking",
-          type: "checking" as const,
-          currency: "PLN",
-        },
-      ];
+      const mockAccounts = [makeAccount()];
       vi.mocked(listAccountsByHousehold).mockResolvedValueOnce(mockAccounts);
 
       const result = await listHouseholdAccounts(testContext);

@@ -7,6 +7,7 @@
     "brand": "Nodvis Finance",
     "tagline": "Private household finance",
     "home": "Overview",
+    "accounts": "Accounts",
     "skipToContent": "Skip to main content",
     "privateBadge": "Self-hosted"
   },
@@ -48,10 +49,91 @@
     "noHouseholdTitle": "No household linked",
     "noHouseholdDescription": "This user account is not linked to any household in the system yet."
   },
+  "Onboarding": {
+    "title": "Create your household",
+    "description": "Set up your household to begin managing funds, accounts, and obligations.",
+    "householdName": "Household name",
+    "householdNamePlaceholder": "e.g. Our Household",
+    "defaultCurrency": "Base currency",
+    "yourName": "Your display name",
+    "yourNamePlaceholder": "e.g. Alice",
+    "submit": "Create household",
+    "submitting": "Creating household...",
+    "success": "Household created successfully.",
+    "errorGeneric": "Failed to create household. Please check your input and try again."
+  },
+  "HouseholdSelection": {
+    "title": "Select household",
+    "description": "You belong to multiple households. Choose which one you want to view.",
+    "selectButton": "Select",
+    "switchButton": "Switch household",
+    "selecting": "Switching..."
+  },
   "Household": {
     "label": "Household",
     "member": "Member",
     "currency": "Base currency"
+  },
+  "Accounts": {
+    "eyebrow": "Household accounts",
+    "title": "Accounts & balances",
+    "description": "Manage bank accounts, savings, cash wallets, and credit cards with exact balance snapshots.",
+    "activeAccounts": "Active accounts",
+    "archivedAccounts": "Archived accounts",
+    "showArchived": "Show archived ({count})",
+    "hideArchived": "Hide archived",
+    "emptyActiveTitle": "No active accounts",
+    "emptyActiveDescription": "Add your first bank account, cash wallet, or credit card below.",
+    "emptyArchivedDescription": "No archived accounts in this household.",
+    "balanceUnknown": "Unknown",
+    "balanceUnknownHelp": "No balance snapshot recorded",
+    "types": {
+      "checking": "Checking",
+      "savings": "Savings",
+      "cash": "Cash wallet",
+      "credit_card": "Credit card"
+    },
+    "badges": {
+      "debt": "Debt owed",
+      "credit": "Credit balance",
+      "overdraft": "Overdraft",
+      "archived": "Archived"
+    },
+    "ownersLabel": "Owners",
+    "capturedAtLabel": "Snapshot as of",
+    "actions": {
+      "addAccount": "Add account",
+      "edit": "Edit",
+      "archive": "Archive",
+      "unarchive": "Restore",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "archiving": "Archiving...",
+      "unarchiving": "Restoring..."
+    },
+    "archiveConfirm": "Archive this account? History and transactions will remain intact.",
+    "form": {
+      "name": "Account name",
+      "namePlaceholder": "e.g. Main Checking, Home Cash, Visa Card",
+      "type": "Account type",
+      "currency": "Currency",
+      "owners": "Account owners",
+      "ownersHelp": "Select who in the household owns this account.",
+      "initialBalance": "Initial balance (optional)",
+      "initialBalancePlaceholder": "e.g. 1500.50 or leave empty",
+      "initialBalanceHelp": "Leave empty if the balance is unknown. Decimals are parsed with exact minor units.",
+      "creditCardNotice": "For credit cards, enter negative value for outstanding debt (e.g. -250.00).",
+      "submitAdd": "Create account",
+      "submittingAdd": "Creating account...",
+      "successAdd": "Account created successfully.",
+      "successEdit": "Account metadata updated successfully.",
+      "successArchive": "Account archived without deleting history.",
+      "successUnarchive": "Account restored to active status.",
+      "errorGeneric": "An error occurred while saving the account.",
+      "errorOwnersRequired": "Please select at least one owner.",
+      "errorNameRequired": "Account name is required."
+    }
   },
   "Transactions": {
     "sectionTitle": "Manual transactions",
@@ -115,10 +197,17 @@
   },
   "Accessibility": {
     "mainContent": "Main content",
+    "mainNavigation": "Main navigation",
     "languageNavigation": "Interface language selection",
     "financialSummary": "Financial metrics summary",
     "transactionForms": "Transaction entry forms",
     "transactionList": "Recorded transactions table",
+    "accountsList": "Household accounts list",
+    "archivedAccountsList": "Archived accounts list",
+    "createAccountForm": "Create account form",
+    "editAccountForm": "Edit account form",
+    "householdSelection": "Household selection",
+    "onboarding": "Household onboarding",
     "authentication": "Authentication",
     "household": "Household",
     "householdTransactions": "Household transactions"

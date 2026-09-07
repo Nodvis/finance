@@ -106,6 +106,7 @@ export const accounts = financeSchema.table(
       mode: "bigint",
     }),
     balanceSnapshotAt: instant("balance_snapshot_at"),
+    archivedAt: instant("archived_at"),
     createdAt: instant("created_at").defaultNow().notNull(),
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },

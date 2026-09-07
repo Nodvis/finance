@@ -8,14 +8,15 @@ import {
 } from "@/lib/authorization/household";
 import {
   AccountInvalidOwnerError,
-  createHouseholdAccountEntry,
-  listHouseholdAccountsSummary,
+  AccountNotFoundError,
+  getHouseholdAccount,
+  updateHouseholdAccountMetadataEntry,
 } from "@/lib/accounts/service";
-import { createAccountInputSchema } from "@/lib/accounts/schema";
+import { updateAccountMetadataSchema } from "@/lib/accounts/schema";
 import { serializeAccount } from "@/lib/accounts/serialization";
 
 type RouteContext = {
-  params: Promise<{ householdId: string }>;
+  params: Promise<{ householdId: string; accountId: string }>;
 };
 
 function handleRouteError(error: unknown): NextResponse {
@@ -30,6 +31,13 @@ function handleRouteError(error: unknown): NextResponse {
     return NextResponse.json(
       { error: "Household access denied" },
       { status: 403 },
+    );
+  }
+
+  if (error instanceof AccountNotFoundError) {
+    return NextResponse.json(
+      { error: "Account not found in household" },
+      { status: 404 },
     );
   }
 
@@ -68,32 +76,37 @@ export async function GET(
   context: RouteContext,
 ): Promise<NextResponse> {
   try {
-    const { householdId } = await context.params;
+    const { householdId, accountId } = await context.params;
     const access = await requireHouseholdAccess(householdId);
-    const accounts = await listHouseholdAccountsSummary(access);
-    const serialized = accounts.map(serializeAccount);
+    const account = await getHouseholdAccount(access, accountId);
 
-    return NextResponse.json({ data: serialized }, { status: 200 });
+    return NextResponse.json({ data: serializeAccount(account) }, { status: 200 });
   } catch (error) {
     return handleRouteError(error);
   }
 }
 
-export async function POST(
+export async function PATCH(
   request: Request,
   context: RouteContext,
 ): Promise<NextResponse> {
   try {
-    const { householdId } = await context.params;
+    const { householdId, accountId } = await context.params;
     const access = await requireHouseholdAccess(householdId);
 
     const body = await request.json();
-    const parsed = createAccountInputSchema.parse(body);
+    const parsed = updateAccountMetadataSchema.parse(body);
 
-    const created = await createHouseholdAccountEntry(access, parsed);
-    const serialized = serializeAccount(created);
+    const updated = await updateHouseholdAccountMetadataEntry(
+      access,
+      accountId,
+      parsed,
+    );
 
-    return NextResponse.json({ data: serialized }, { status: 201 });
+    return NextResponse.json(
+      { data: serializeAccount(updated) },
+      { status: 200 },
+    );
   } catch (error) {
     return handleRouteError(error);
   }

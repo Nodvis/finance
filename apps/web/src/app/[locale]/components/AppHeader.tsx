@@ -59,6 +59,25 @@ export function AppHeader() {
           </span>
         </div>
 
+        {/* Navigation links */}
+        <nav
+          className="flex items-center gap-1 sm:gap-2"
+          aria-label={tAccess("mainNavigation")}
+        >
+          <Link
+            href="/"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800/80 hover:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-400"
+          >
+            {tNav("home")}
+          </Link>
+          <Link
+            href="/accounts"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800/80 hover:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-400"
+          >
+            {tNav("accounts")}
+          </Link>
+        </nav>
+
         {/* Global actions: Language Switcher */}
         <div
           className="flex items-center gap-3"

@@ -12,8 +12,12 @@ export type { CurrencyCode, Money } from "./money";
 export {
   ACCOUNT_TYPES,
   accountType,
+  archiveAccount,
   contributesToAvailableCash,
   createAccount,
+  isAccountArchived,
+  unarchiveAccount,
+  updateAccountMetadata,
 } from "./account";
 export type {
   Account,

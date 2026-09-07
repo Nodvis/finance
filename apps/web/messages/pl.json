@@ -7,6 +7,7 @@
     "brand": "Nodvis Finance",
     "tagline": "Prywatne finanse domowe",
     "home": "Podsumowanie",
+    "accounts": "Konta",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Self-hosted"
   },
@@ -48,10 +49,91 @@
     "noHouseholdTitle": "Brak przypisanego gospodarstwa domowego",
     "noHouseholdDescription": "To konto użytkownika nie jest jeszcze powiązane z żadnym gospodarstwem domowym."
   },
+  "Onboarding": {
+    "title": "Utwórz gospodarstwo domowe",
+    "description": "Skonfiguruj gospodarstwo domowe, aby rozpocząć rejestrowanie finansów, kont i zobowiązań.",
+    "householdName": "Nazwa gospodarstwa",
+    "householdNamePlaceholder": "np. Nasze Finanse",
+    "defaultCurrency": "Waluta bazowa",
+    "yourName": "Twoja nazwa wyświetlana",
+    "yourNamePlaceholder": "np. Jan",
+    "submit": "Utwórz gospodarstwo",
+    "submitting": "Tworzenie gospodarstwa...",
+    "success": "Gospodarstwo domowe zostało utworzone.",
+    "errorGeneric": "Nie udało się utworzyć gospodarstwa. Sprawdź dane i spróbuj ponownie."
+  },
+  "HouseholdSelection": {
+    "title": "Wybierz gospodarstwo domowe",
+    "description": "Należysz do wielu gospodarstw domowych. Wybierz to, które chcesz otworzyć.",
+    "selectButton": "Wybierz",
+    "switchButton": "Zmień gospodarstwo",
+    "selecting": "Przełączanie..."
+  },
   "Household": {
     "label": "Gospodarstwo domowe",
     "member": "Użytkownik",
     "currency": "Waluta bazowa"
+  },
+  "Accounts": {
+    "eyebrow": "Konta gospodarstwa",
+    "title": "Konta i salda",
+    "description": "Zarządzaj kontami bankowymi, oszczędnościami, portfelami gotówkowymi i kartami kredytowymi z dokładnymi saldami.",
+    "activeAccounts": "Aktywne konta",
+    "archivedAccounts": "Zarchiwizowane konta",
+    "showArchived": "Pokaż zarchiwizowane ({count})",
+    "hideArchived": "Ukryj zarchiwizowane",
+    "emptyActiveTitle": "Brak aktywnych kont",
+    "emptyActiveDescription": "Dodaj poniżej swoje pierwsze konto bankowe, portfel gotówkowy lub kartę kredytową.",
+    "emptyArchivedDescription": "Brak zarchiwizowanych kont w tym gospodarstwie domowym.",
+    "balanceUnknown": "Nieznane",
+    "balanceUnknownHelp": "Brak zarejestrowanego salda",
+    "types": {
+      "checking": "Konto bieżące",
+      "savings": "Konto oszczędnościowe",
+      "cash": "Gotówka",
+      "credit_card": "Karta kredytowa"
+    },
+    "badges": {
+      "debt": "Zadłużenie",
+      "credit": "Nadpłata",
+      "overdraft": "Debet",
+      "archived": "Zarchiwizowane"
+    },
+    "ownersLabel": "Właściciele",
+    "capturedAtLabel": "Saldo na dzień",
+    "actions": {
+      "addAccount": "Dodaj konto",
+      "edit": "Edytuj",
+      "archive": "Zarchiwizuj",
+      "unarchive": "Przywróć",
+      "cancel": "Anuluj",
+      "save": "Zapisz zmiany",
+      "saving": "Zapisywanie...",
+      "archiving": "Archiwizowanie...",
+      "unarchiving": "Przywracanie..."
+    },
+    "archiveConfirm": "Zarchiwizować to konto? Historia i transakcje pozostaną nienaruszone.",
+    "form": {
+      "name": "Nazwa konta",
+      "namePlaceholder": "np. Konto główne, Gotówka w domu, Karta Visa",
+      "type": "Typ konta",
+      "currency": "Waluta",
+      "owners": "Właściciele konta",
+      "ownersHelp": "Wybierz, kto z domowników jest właścicielem konta.",
+      "initialBalance": "Saldo początkowe (opcjonalnie)",
+      "initialBalancePlaceholder": "np. 1500,50 lub pozostaw puste",
+      "initialBalanceHelp": "Pozostaw puste, jeśli saldo jest nieznane. Wartości dziesiętne są parsowane z dokładnymi jednostkami.",
+      "creditCardNotice": "W przypadku karty kredytowej wpisz kwotę ujemną przy zadłużeniu (np. -250,00).",
+      "submitAdd": "Utwórz konto",
+      "submittingAdd": "Tworzenie konta...",
+      "successAdd": "Konto zostało pomyślnie utworzone.",
+      "successEdit": "Dane konta zostały pomyślnie zaktualizowane.",
+      "successArchive": "Konto zostało zarchiwizowane bez usuwania historii.",
+      "successUnarchive": "Konto zostało przywrócone do aktywnych.",
+      "errorGeneric": "Wystąpił błąd podczas zapisywania konta.",
+      "errorOwnersRequired": "Wybierz co najmniej jednego właściciela.",
+      "errorNameRequired": "Podanie nazwy konta jest wymagane."
+    }
   },
   "Transactions": {
     "sectionTitle": "Ręczne transakcje",
@@ -115,10 +197,17 @@
   },
   "Accessibility": {
     "mainContent": "Treść główna",
+    "mainNavigation": "Główna nawigacja",
     "languageNavigation": "Wybór języka interfejsu",
     "financialSummary": "Zestawienie wskaźników finansowych",
     "transactionForms": "Formularze dodawania transakcji",
     "transactionList": "Tabela zarejestrowanych transakcji",
+    "accountsList": "Lista kont gospodarstwa domowego",
+    "archivedAccountsList": "Lista zarchiwizowanych kont",
+    "createAccountForm": "Formularz tworzenia konta",
+    "editAccountForm": "Formularz edycji konta",
+    "householdSelection": "Wybór gospodarstwa domowego",
+    "onboarding": "Konfiguracja gospodarstwa domowego",
     "authentication": "Logowanie",
     "household": "Gospodarstwo domowe",
     "householdTransactions": "Transakcje gospodarstwa domowego"

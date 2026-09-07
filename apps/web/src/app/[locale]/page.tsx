@@ -1,11 +1,13 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
-import { getCurrentUserHouseholdContext } from "@/lib/authorization/household";
+import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
 
+import { HouseholdSelectionCard } from "./components/HouseholdSelectionCard";
 import { NoHouseholdCard } from "./components/NoHouseholdCard";
 import { SignInCard } from "./components/SignInCard";
 import { SignOutButton } from "./components/SignOutButton";
@@ -19,16 +21,25 @@ type HomePageProps = {
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
   const t = await getTranslations("HomePage");
+  const tNav = await getTranslations("Navigation");
   const tHousehold = await getTranslations("Household");
   const tAccess = await getTranslations("Accessibility");
 
   const session = await getCurrentSession();
-  const householdContext = session
-    ? await getCurrentUserHouseholdContext()
-    : null;
+  const householdStatus = session
+    ? await getCurrentUserHouseholdsStatus()
+    : { status: "unauthenticated" as const };
+
+  const householdContext =
+    householdStatus.status === "single" ||
+    householdStatus.status === "multiple_selected"
+      ? householdStatus.activeContext
+      : null;
 
   const accounts = householdContext
-    ? await listAccountsByHousehold(householdContext.householdId)
+    ? await listAccountsByHousehold(householdContext.householdId, {
+        includeArchived: false,
+      })
     : [];
 
   const rawTransactions = householdContext
@@ -81,16 +92,26 @@ export default async function HomePage({ params }: HomePageProps) {
         ))}
       </section>
 
-      {/* Main flow: Unauthenticated, No Household, or Authenticated Transactions */}
+      {/* Main flow: Unauthenticated, No Household, Multiple Households Needs Selection, or Authenticated Transactions */}
       {!session ? (
         <section aria-label={tAccess("authentication")}>
           <SignInCard />
         </section>
-      ) : !householdContext ? (
+      ) : householdStatus.status === "none" ? (
         <section aria-label={tAccess("household")}>
-          <NoHouseholdCard email={session.user.email} />
+          <NoHouseholdCard
+            email={session.user.email}
+            defaultDisplayName={session.user.name ?? undefined}
+          />
         </section>
-      ) : (
+      ) : householdStatus.status === "multiple_needs_selection" ? (
+        <section aria-label={tAccess("householdSelection")}>
+          <HouseholdSelectionCard
+            households={householdStatus.households}
+            email={session.user.email}
+          />
+        </section>
+      ) : householdContext ? (
         <section
           aria-label={tAccess("householdTransactions")}
           className="flex flex-col gap-8"
@@ -123,7 +144,15 @@ export default async function HomePage({ params }: HomePageProps) {
                 </span>
               </div>
             </div>
-            <SignOutButton />
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/${locale}/accounts`}
+                className="rounded-lg border border-stone-700 bg-stone-800/80 px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-600 hover:text-stone-100"
+              >
+                {tNav("accounts")}
+              </Link>
+              <SignOutButton />
+            </div>
           </div>
 
           {/* Transaction Creation Forms (Expense, Income, Transfer) */}
@@ -145,7 +174,7 @@ export default async function HomePage({ params }: HomePageProps) {
             />
           </div>
         </section>
-      )}
+      ) : null}
     </div>
   );
 }
