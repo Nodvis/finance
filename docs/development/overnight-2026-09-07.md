@@ -28,6 +28,7 @@ Priority scope is a secure onboarding/accounts vertical slice, followed by the h
 - Baseline inspected and verified; baseline checkpoint `d7ea18f` published to the feature branch.
 - `f3540b9` — authenticated first-use household onboarding, multi-household selection, account list/create/edit/archive/restore UI and localized PL/EN messages.
 - `a41c8cb` — registered reviewed `archived_at` migration metadata.
+- `74c764b` — CI build environment and PostgreSQL-backed migration/browser smoke setup; GitHub CI passed (`34164755201`, 3 Playwright tests).
 - Onboarding/account tests, authorization tests, translation parity, typecheck, lint, build and full workspace tests passed.
 - Private Compose migration applied successfully using the committed migration after a verified backup. Backup: `/tmp/nodvis-finance-private-20260907-214115.dump` (35,507 bytes; `pg_restore -l` verified in a PostgreSQL 18 container).
 - Private web image rebuilt and force-recreated. PostgreSQL and web healthchecks passed; `http://192.168.1.119:3000/pl` returned HTTP 200.
@@ -38,7 +39,8 @@ Priority scope is a secure onboarding/accounts vertical slice, followed by the h
 - Categories, transaction correction, truthful period overview metrics, server-side history filtering/pagination, CSV export and full bilingual browser acceptance for those features.
 - New-user sign-up was not added; onboarding starts after the existing supported Better Auth sign-in.
 - The preserved `e2e/auth-temp.spec.ts` remains untracked because it contains temporary synthetic credentials and a hardcoded legacy household id.
-- Final PR/merge decision.
+
+- Final integration: PR #8 (`https://github.com/Nodvis/finance/pull/8`) merged normally into `main` at `4aaf7e8f1780688bba34d519e4615ae6042d9db0`; source branch was retained.
 
 ## Notes
 
