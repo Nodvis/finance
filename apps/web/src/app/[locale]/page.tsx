@@ -1,7 +1,40 @@
 import { getTranslations } from "next-intl/server";
 
-export default async function HomePage() {
+import { listAccountsByHousehold } from "@nodvis/finance-db";
+import { getCurrentSession } from "@/lib/auth/session";
+import { getCurrentUserHouseholdContext } from "@/lib/authorization/household";
+import { serializeTransaction } from "@/lib/transactions/serialization";
+import { listManualTransactions } from "@/lib/transactions/service";
+
+import { NoHouseholdCard } from "./components/NoHouseholdCard";
+import { SignInCard } from "./components/SignInCard";
+import { SignOutButton } from "./components/SignOutButton";
+import { TransactionForms } from "./components/TransactionForms";
+import { TransactionList } from "./components/TransactionList";
+
+type HomePageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function HomePage({ params }: HomePageProps) {
+  const { locale } = await params;
   const t = await getTranslations("HomePage");
+  const tHousehold = await getTranslations("Household");
+
+  const session = await getCurrentSession();
+  const householdContext = session
+    ? await getCurrentUserHouseholdContext()
+    : null;
+
+  const accounts = householdContext
+    ? await listAccountsByHousehold(householdContext.householdId)
+    : [];
+
+  const rawTransactions = householdContext
+    ? await listManualTransactions(householdContext, { limit: 50, offset: 0 })
+    : [];
+
+  const serializedTransactions = rawTransactions.map(serializeTransaction);
 
   const summaryCards = [
     { key: "available", label: t("cards.available") },
@@ -23,6 +56,7 @@ export default async function HomePage() {
         </p>
       </header>
 
+      {/* Financial Summary Cards */}
       <section
         aria-label={t("summaryLabel")}
         className="grid gap-4 md:grid-cols-3"
@@ -43,12 +77,64 @@ export default async function HomePage() {
         ))}
       </section>
 
-      <section className="rounded-2xl border border-dashed border-stone-300 p-6 dark:border-stone-700">
-        <h2 className="text-lg font-semibold">{t("next.title")}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600 dark:text-stone-300">
-          {t("next.description")}
-        </p>
-      </section>
+      {/* Authenticated Flow */}
+      {!session ? (
+        <section aria-label="Authentication">
+          <SignInCard />
+        </section>
+      ) : !householdContext ? (
+        <section aria-label="Household">
+          <NoHouseholdCard email={session.user.email} />
+        </section>
+      ) : (
+        <section aria-label="Household Transactions" className="flex flex-col gap-8">
+          {/* Household Context Header */}
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-800 dark:bg-stone-900/50">
+            <div className="flex flex-wrap items-center gap-6 text-sm">
+              <div>
+                <span className="text-stone-500 dark:text-stone-400">
+                  {tHousehold("label")}:{" "}
+                </span>
+                <span className="font-semibold text-stone-900 dark:text-stone-100">
+                  {householdContext.householdName}
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-500 dark:text-stone-400">
+                  {tHousehold("member")}:{" "}
+                </span>
+                <span className="font-medium text-stone-900 dark:text-stone-100">
+                  {householdContext.personDisplayName}
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-500 dark:text-stone-400">
+                  {tHousehold("currency")}:{" "}
+                </span>
+                <span className="font-semibold text-stone-900 dark:text-stone-100">
+                  {householdContext.defaultCurrency}
+                </span>
+              </div>
+            </div>
+            <SignOutButton />
+          </div>
+
+          {/* Transaction Creation Forms (Expense, Income, Transfer) */}
+          <TransactionForms
+            householdId={householdContext.householdId}
+            accounts={accounts}
+            defaultCurrency={householdContext.defaultCurrency}
+            locale={locale}
+          />
+
+          {/* Transaction List and Empty State */}
+          <TransactionList
+            transactions={serializedTransactions}
+            accounts={accounts}
+            locale={locale}
+          />
+        </section>
+      )}
     </main>
   );
 }

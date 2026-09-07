@@ -6,6 +6,7 @@ vi.mock("@nodvis/finance-db", () => ({
   findAccountInHousehold: vi.fn(),
   insertTransaction: vi.fn(),
   isPersonInHousehold: vi.fn(),
+  listAccountsByHousehold: vi.fn(),
   listTransactionsByHousehold: vi.fn(),
 }));
 
@@ -13,6 +14,7 @@ import {
   findAccountInHousehold,
   insertTransaction,
   isPersonInHousehold,
+  listAccountsByHousehold,
   listTransactionsByHousehold,
 } from "@nodvis/finance-db";
 import {
@@ -26,6 +28,7 @@ import {
 
 import {
   createManualTransaction,
+  listHouseholdAccounts,
   listManualTransactions,
   TransactionAccountNotFoundError,
   TransactionCurrencyMismatchError,
@@ -344,6 +347,26 @@ describe("transaction-service", () => {
         limit: 20,
         offset: 10,
       });
+    });
+  });
+
+  describe("listHouseholdAccounts", () => {
+    it("delegates to listAccountsByHousehold with authorized householdId", async () => {
+      const mockAccounts = [
+        {
+          id: validAccount1,
+          householdId: validHousehold,
+          name: "Main checking",
+          type: "checking" as const,
+          currency: "PLN",
+        },
+      ];
+      vi.mocked(listAccountsByHousehold).mockResolvedValueOnce(mockAccounts);
+
+      const result = await listHouseholdAccounts(testContext);
+
+      expect(result).toEqual(mockAccounts);
+      expect(listAccountsByHousehold).toHaveBeenCalledWith(validHousehold);
     });
   });
 });

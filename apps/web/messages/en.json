@@ -18,5 +18,80 @@
       "title": "Next stage",
       "description": "Household, accounts, cash, balances, categories, manual transactions and transfers — without double-counting money movements or collapsing available cash into debt."
     }
+  },
+  "Auth": {
+    "signInTitle": "Sign in to your household",
+    "signInDescription": "Enter your email and password to access household transactions.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "signInButton": "Sign in",
+    "signingIn": "Signing in...",
+    "signOutButton": "Sign out",
+    "signedInAs": "Signed in as",
+    "errorInvalidCredentials": "Invalid email or password.",
+    "noHouseholdTitle": "No household linked",
+    "noHouseholdDescription": "This user account is not linked to any household in the system yet."
+  },
+  "Household": {
+    "label": "Household",
+    "member": "Member",
+    "currency": "Base currency"
+  },
+  "Transactions": {
+    "sectionTitle": "Manual transactions",
+    "sectionDescription": "Record expenses, income, and transfers between owned accounts while preserving financial rules.",
+    "tabs": {
+      "expense": "Expense",
+      "income": "Income",
+      "transfer": "Transfer"
+    },
+    "form": {
+      "account": "Account",
+      "selectAccount": "Select account...",
+      "fromAccount": "From account (source)",
+      "toAccount": "To account (destination)",
+      "selectSourceAccount": "Select source account...",
+      "selectDestinationAccount": "Select destination account...",
+      "payee": "Payee / merchant",
+      "payeePlaceholder": "e.g. Grocery Store, Pharmacy, Landlord",
+      "source": "Income source",
+      "sourcePlaceholder": "e.g. Salary, Bonus, Sale",
+      "amountMinor": "Amount in minor units (string)",
+      "amountMinorPlaceholder": "e.g. 4500 (for 45.00 PLN)",
+      "amountHelp": "Enter amount in minor units as string (e.g. 1250 = 12.50). You can also type decimal format (12.50).",
+      "amountPreview": "Amount preview",
+      "currency": "Currency",
+      "date": "Transaction date",
+      "submitExpense": "Add expense",
+      "submitIncome": "Add income",
+      "submitTransfer": "Record transfer",
+      "submitting": "Saving...",
+      "success": "Transaction recorded successfully.",
+      "errorGeneric": "An error occurred while saving the transaction.",
+      "transferInvariantNotice": "Per financial rules, an internal transfer is neither income nor spending and does not change total household funds (INV-001).",
+      "transferRequiresTwoAccounts": "At least two accounts are required in the household to record a transfer.",
+      "transferSameAccountError": "Source and destination accounts must be different.",
+      "transferCurrencyMismatchError": "Transfers are only supported between accounts with the same currency.",
+      "transferNoMatchingCurrency": "No other account shares the same currency as the selected source account.",
+      "noAccounts": "No accounts in the household yet. Please add an account to record transactions.",
+      "amountRequired": "Amount is required and must be a positive integer of minor units.",
+      "payeeRequired": "Payee is required.",
+      "sourceRequired": "Income source is required."
+    },
+    "list": {
+      "title": "Recent transactions",
+      "description": "Recorded financial operations in the household.",
+      "colDate": "Date",
+      "colType": "Type",
+      "colDescription": "Description / Counterparty",
+      "colAccount": "Account",
+      "colAmount": "Amount",
+      "kindExpense": "Expense",
+      "kindIncome": "Income",
+      "kindTransfer": "Transfer",
+      "emptyTitle": "No transactions yet",
+      "emptyDescription": "No transactions have been recorded in this household yet. Use the form above to add an expense, income, or transfer."
+    }
   }
 }

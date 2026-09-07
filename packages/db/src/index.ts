@@ -1,9 +1,14 @@
 export { closeDb, getDb } from "./client";
 export {
+  findDefaultHouseholdForAuthUser,
   findHouseholdAccessForAuthUser,
   isPersonInHousehold,
 } from "./access/household";
-export { findAccountInHousehold } from "./access/accounts";
+export {
+  findAccountInHousehold,
+  listAccountsByHousehold,
+} from "./access/accounts";
+export type { HouseholdAccountSummary } from "./access/accounts";
 export {
   findTransactionById,
   insertTransaction,

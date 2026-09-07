@@ -4,6 +4,7 @@ import {
   findAccountInHousehold,
   insertTransaction,
   isPersonInHousehold,
+  listAccountsByHousehold,
   listTransactionsByHousehold,
 } from "@nodvis/finance-db";
 import {
@@ -196,4 +197,10 @@ export async function listManualTransactions(
     limit: query.limit,
     offset: query.offset,
   });
+}
+
+export async function listHouseholdAccounts(
+  context: AuthorizedHouseholdContext,
+) {
+  return await listAccountsByHousehold(context.householdId);
 }

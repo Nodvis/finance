@@ -3,7 +3,9 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "../client";
 import {
   householdMemberships,
+  households,
   personAuthLinks,
+  persons,
 } from "../schema/foundation";
 
 export async function findHouseholdAccessForAuthUser(
@@ -47,4 +49,32 @@ export async function isPersonInHousehold(
     .limit(1);
 
   return Boolean(membership);
+}
+
+export async function findDefaultHouseholdForAuthUser(authUserId: string) {
+  const [access] = await getDb()
+    .select({
+      householdId: householdMemberships.householdId,
+      personId: householdMemberships.personId,
+      householdName: households.name,
+      defaultCurrency: households.defaultCurrency,
+      personDisplayName: persons.displayName,
+    })
+    .from(personAuthLinks)
+    .innerJoin(
+      householdMemberships,
+      eq(personAuthLinks.personId, householdMemberships.personId),
+    )
+    .innerJoin(
+      households,
+      eq(householdMemberships.householdId, households.id),
+    )
+    .innerJoin(
+      persons,
+      eq(householdMemberships.personId, persons.id),
+    )
+    .where(eq(personAuthLinks.authUserId, authUserId))
+    .limit(1);
+
+  return access ?? null;
 }

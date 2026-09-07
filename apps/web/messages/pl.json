@@ -18,5 +18,80 @@
       "title": "Następny etap",
       "description": "Household, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
     }
+  },
+  "Auth": {
+    "signInTitle": "Zaloguj się do gospodarstwa domowego",
+    "signInDescription": "Wprowadź adres e-mail i hasło, aby uzyskać dostęp do transakcji gospodarstwa.",
+    "emailLabel": "Adres e-mail",
+    "emailPlaceholder": "twoj@email.pl",
+    "passwordLabel": "Hasło",
+    "signInButton": "Zaloguj się",
+    "signingIn": "Logowanie...",
+    "signOutButton": "Wyloguj się",
+    "signedInAs": "Zalogowano jako",
+    "errorInvalidCredentials": "Nieprawidłowy adres e-mail lub hasło.",
+    "noHouseholdTitle": "Brak przypisanego gospodarstwa domowego",
+    "noHouseholdDescription": "To konto użytkownika nie jest jeszcze powiązane z żadnym gospodarstwem domowym."
+  },
+  "Household": {
+    "label": "Gospodarstwo domowe",
+    "member": "Użytkownik",
+    "currency": "Waluta bazowa"
+  },
+  "Transactions": {
+    "sectionTitle": "Ręczne transakcje",
+    "sectionDescription": "Wprowadzaj wydatki, przychody oraz przelewy między kontami z zachowaniem reguł finansowych.",
+    "tabs": {
+      "expense": "Wydatek",
+      "income": "Przychód",
+      "transfer": "Przelew"
+    },
+    "form": {
+      "account": "Konto",
+      "selectAccount": "Wybierz konto...",
+      "fromAccount": "Konto źródłowe",
+      "toAccount": "Konto docelowe",
+      "selectSourceAccount": "Wybierz konto źródłowe...",
+      "selectDestinationAccount": "Wybierz konto docelowe...",
+      "payee": "Odbiorca / sklep",
+      "payeePlaceholder": "np. Biedronka, Apteka, Czynsz",
+      "source": "Źródło przychodu",
+      "sourcePlaceholder": "np. Wynagrodzenie, Premia, Sprzedaż",
+      "amountMinor": "Kwota w jednostkach mniejszych (string)",
+      "amountMinorPlaceholder": "np. 4500 (dla 45,00 PLN)",
+      "amountHelp": "Wprowadź kwotę w jednostkach mniejszych jako string (np. 1250 = 12,50). Możesz też wpisać format dziesiętny (12.50).",
+      "amountPreview": "Podgląd kwoty",
+      "currency": "Waluta",
+      "date": "Data transakcji",
+      "submitExpense": "Zapisz wydatek",
+      "submitIncome": "Zapisz przychód",
+      "submitTransfer": "Zapisz przelew",
+      "submitting": "Zapisywanie...",
+      "success": "Transakcja została pomyślnie zapisana.",
+      "errorGeneric": "Wystąpił błąd podczas zapisywania transakcji.",
+      "transferInvariantNotice": "Zgodnie z regułami finansowymi przelew wewnętrzny nie jest kosztem ani przychodem i nie zmienia łącznych środków gospodarstwa (INV-001).",
+      "transferRequiresTwoAccounts": "Do wykonania przelewu wymagane są co najmniej dwa konta w gospodarstwie domowym.",
+      "transferSameAccountError": "Konto źródłowe i docelowe muszą być różne.",
+      "transferCurrencyMismatchError": "Przelew jest możliwy tylko między kontami o tej samej walucie.",
+      "transferNoMatchingCurrency": "Brak innego konta o tej samej walucie.",
+      "noAccounts": "Brak kont w gospodarstwie domowym. Dodaj konto, aby rejestrować operacje.",
+      "amountRequired": "Kwota jest wymagana i musi być dodatnią liczbą całkowitą jednostek mniejszych.",
+      "payeeRequired": "Podanie odbiorcy jest wymagane.",
+      "sourceRequired": "Podanie źródła przychodu jest wymagane."
+    },
+    "list": {
+      "title": "Ostatnie transakcje",
+      "description": "Zarejestrowane operacje finansowe w gospodarstwie domowym.",
+      "colDate": "Data",
+      "colType": "Typ",
+      "colDescription": "Opis / Kontrahent",
+      "colAccount": "Konto",
+      "colAmount": "Kwota",
+      "kindExpense": "Wydatek",
+      "kindIncome": "Przychód",
+      "kindTransfer": "Przelew",
+      "emptyTitle": "Brak transakcji",
+      "emptyDescription": "W tym gospodarstwie domowym nie zarejestrowano jeszcze żadnych transakcji. Skorzystaj z formularza powyżej, aby dodać wydatek, przychód lub przelew."
+    }
   }
 }
