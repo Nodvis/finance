@@ -170,6 +170,8 @@ cp .env.production.example .env
 
 Generate secure secrets for `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` (e.g. using `openssl rand -base64 32`). Set `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to the canonical domain or LAN address.
 
+For a private LAN-only instance, set `WEB_BIND_ADDRESS` to the host's private LAN address. The default is `127.0.0.1`, which intentionally does not allow other devices to connect.
+
 ### 2. Build
 
 Build the production images:
@@ -229,6 +231,8 @@ docker compose down
 ```
 
 Database state persists across restarts in the named volume `nodvis-finance-postgres-data`.
+
+To inspect the stack, use `docker compose ps` and `docker compose logs -f web postgres`. Keep the same Compose project name when operating a separate instance, for example `docker compose --project-name nodvis-finance-private --env-file .env.private -f compose.yaml ps`.
 
 ## Verification commands
 
