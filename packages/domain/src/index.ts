@@ -21,8 +21,13 @@ export type {
   AccountType,
 } from "./account";
 
-export { accountId, householdId, personId } from "./identity";
-export type { AccountId, HouseholdId, PersonId } from "./identity";
+export { accountId, householdId, personId, transactionId } from "./identity";
+export type {
+  AccountId,
+  HouseholdId,
+  PersonId,
+  TransactionId,
+} from "./identity";
 
 export {
   createHousehold,
@@ -34,3 +39,24 @@ export type {
   HouseholdMembership,
   Person,
 } from "./household";
+
+export {
+  TRANSACTION_KINDS,
+  createExpense,
+  createIncome,
+  createTransfer,
+  isExpense,
+  isIncome,
+  isTransfer,
+  ledgerEntries,
+  netMoneyEffect,
+  transactionKind,
+} from "./transaction";
+export type {
+  ExpenseTransaction,
+  IncomeTransaction,
+  LedgerEntry,
+  Transaction,
+  TransactionKind,
+  TransferTransaction,
+} from "./transaction";

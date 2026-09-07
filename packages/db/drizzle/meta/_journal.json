@@ -8,6 +8,13 @@
       "when": 1788289657627,
       "tag": "0000_glossy_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788799717158,
+      "tag": "0001_slimy_slayback",
+      "breakpoints": true
     }
   ]
 }

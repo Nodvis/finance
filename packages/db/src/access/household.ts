@@ -30,3 +30,21 @@ export async function findHouseholdAccessForAuthUser(
 
   return access ?? null;
 }
+
+export async function isPersonInHousehold(
+  householdId: string,
+  personId: string,
+): Promise<boolean> {
+  const [membership] = await getDb()
+    .select({ personId: householdMemberships.personId })
+    .from(householdMemberships)
+    .where(
+      and(
+        eq(householdMemberships.householdId, householdId),
+        eq(householdMemberships.personId, personId),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(membership);
+}
