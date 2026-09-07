@@ -1,0 +1,33 @@
+# Dependencies and workspace stores
+node_modules
+.pnpm-store
+
+# Next.js and build outputs
+.next
+out
+dist
+*.tsbuildinfo
+
+# Version control and IDE files
+.git
+.github
+.vscode
+.idea
+
+# Environment files
+.env
+.env*.local
+
+# Tests and documentation
+e2e
+docs
+*.md
+!packages/**/README.md
+
+# Logs and system caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+*.tmp

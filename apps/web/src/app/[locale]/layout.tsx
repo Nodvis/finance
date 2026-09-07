@@ -5,6 +5,8 @@ import { getMessages, getTranslations } from "next-intl/server";
 
 import { routing } from "@/i18n/routing";
 
+import { AppFooter } from "./components/AppFooter";
+import { AppHeader } from "./components/AppHeader";
 import "../globals.css";
 
 type LocaleLayoutProps = {
@@ -33,6 +35,7 @@ export async function generateMetadata({
   };
 }
 
+
 export default async function LocaleLayout({
   children,
   params,
@@ -46,10 +49,16 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body>
+    <html lang={locale} className="dark">
+      <body className="min-h-screen bg-stone-950 text-stone-100 antialiased selection:bg-stone-800 selection:text-stone-100">
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <div className="flex min-h-screen flex-col bg-stone-950 text-stone-100">
+            <AppHeader />
+            <div id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+              {children}
+            </div>
+            <AppFooter />
+          </div>
         </NextIntlClientProvider>
       </body>
     </html>

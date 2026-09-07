@@ -3,10 +3,26 @@
     "title": "Nodvis Finance",
     "description": "Prywatne, self-hosted centrum kontroli finansów gospodarstwa domowego."
   },
+  "Navigation": {
+    "brand": "Nodvis Finance",
+    "tagline": "Prywatne finanse domowe",
+    "home": "Podsumowanie",
+    "accounts": "Konta",
+    "skipToContent": "Przejdź do treści głównej",
+    "privateBadge": "Self-hosted"
+  },
+  "LanguageSwitcher": {
+    "label": "Wybierz język",
+    "switchToPl": "Przełącz na język polski",
+    "switchToEn": "Przełącz na język angielski",
+    "switchTo": "Przełącz na język {language}",
+    "pl": "Polski",
+    "en": "English"
+  },
   "HomePage": {
-    "eyebrow": "Nodvis Finance · fundament aplikacji",
+    "eyebrow": "Centrum kontroli finansowej",
     "title": "Twoja sytuacja finansowa bez księgowego chaosu.",
-    "description": "Docelowo ten ekran ma w kilka sekund odpowiedzieć, ile pieniędzy jest dostępne, co trzeba zapłacić, ile zostało długu i czy bieżący miesiąc jest bezpieczny.",
+    "description": "Zestawienie dostępnych środków, bieżących zobowiązań oraz długu gospodarstwa domowego w czasie rzeczywistym.",
     "summaryLabel": "Podsumowanie finansowe",
     "noData": "Brak danych — model finansowy jest dopiero wdrażany.",
     "cards": {
@@ -18,5 +34,182 @@
       "title": "Następny etap",
       "description": "Household, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
     }
+  },
+  "Auth": {
+    "signInTitle": "Zaloguj się do gospodarstwa domowego",
+    "signInDescription": "Wprowadź adres e-mail i hasło, aby uzyskać dostęp do transakcji gospodarstwa.",
+    "emailLabel": "Adres e-mail",
+    "emailPlaceholder": "twoj@email.pl",
+    "passwordLabel": "Hasło",
+    "signInButton": "Zaloguj się",
+    "signingIn": "Logowanie...",
+    "signOutButton": "Wyloguj się",
+    "signedInAs": "Zalogowano jako",
+    "errorInvalidCredentials": "Nieprawidłowy adres e-mail lub hasło.",
+    "noHouseholdTitle": "Brak przypisanego gospodarstwa domowego",
+    "noHouseholdDescription": "To konto użytkownika nie jest jeszcze powiązane z żadnym gospodarstwem domowym."
+  },
+  "Onboarding": {
+    "title": "Utwórz gospodarstwo domowe",
+    "description": "Skonfiguruj gospodarstwo domowe, aby rozpocząć rejestrowanie finansów, kont i zobowiązań.",
+    "householdName": "Nazwa gospodarstwa",
+    "householdNamePlaceholder": "np. Nasze Finanse",
+    "defaultCurrency": "Waluta bazowa",
+    "yourName": "Twoja nazwa wyświetlana",
+    "yourNamePlaceholder": "np. Jan",
+    "submit": "Utwórz gospodarstwo",
+    "submitting": "Tworzenie gospodarstwa...",
+    "success": "Gospodarstwo domowe zostało utworzone.",
+    "errorGeneric": "Nie udało się utworzyć gospodarstwa. Sprawdź dane i spróbuj ponownie."
+  },
+  "HouseholdSelection": {
+    "title": "Wybierz gospodarstwo domowe",
+    "description": "Należysz do wielu gospodarstw domowych. Wybierz to, które chcesz otworzyć.",
+    "selectButton": "Wybierz",
+    "switchButton": "Zmień gospodarstwo",
+    "selecting": "Przełączanie..."
+  },
+  "Household": {
+    "label": "Gospodarstwo domowe",
+    "member": "Użytkownik",
+    "currency": "Waluta bazowa"
+  },
+  "Accounts": {
+    "eyebrow": "Konta gospodarstwa",
+    "title": "Konta i salda",
+    "description": "Zarządzaj kontami bankowymi, oszczędnościami, portfelami gotówkowymi i kartami kredytowymi z dokładnymi saldami.",
+    "activeAccounts": "Aktywne konta",
+    "archivedAccounts": "Zarchiwizowane konta",
+    "showArchived": "Pokaż zarchiwizowane ({count})",
+    "hideArchived": "Ukryj zarchiwizowane",
+    "emptyActiveTitle": "Brak aktywnych kont",
+    "emptyActiveDescription": "Dodaj poniżej swoje pierwsze konto bankowe, portfel gotówkowy lub kartę kredytową.",
+    "emptyArchivedDescription": "Brak zarchiwizowanych kont w tym gospodarstwie domowym.",
+    "balanceUnknown": "Nieznane",
+    "balanceUnknownHelp": "Brak zarejestrowanego salda",
+    "types": {
+      "checking": "Konto bieżące",
+      "savings": "Konto oszczędnościowe",
+      "cash": "Gotówka",
+      "credit_card": "Karta kredytowa"
+    },
+    "badges": {
+      "debt": "Zadłużenie",
+      "credit": "Nadpłata",
+      "overdraft": "Debet",
+      "archived": "Zarchiwizowane"
+    },
+    "ownersLabel": "Właściciele",
+    "capturedAtLabel": "Saldo na dzień",
+    "actions": {
+      "addAccount": "Dodaj konto",
+      "edit": "Edytuj",
+      "archive": "Zarchiwizuj",
+      "unarchive": "Przywróć",
+      "cancel": "Anuluj",
+      "save": "Zapisz zmiany",
+      "saving": "Zapisywanie...",
+      "archiving": "Archiwizowanie...",
+      "unarchiving": "Przywracanie..."
+    },
+    "archiveConfirm": "Zarchiwizować to konto? Historia i transakcje pozostaną nienaruszone.",
+    "form": {
+      "name": "Nazwa konta",
+      "namePlaceholder": "np. Konto główne, Gotówka w domu, Karta Visa",
+      "type": "Typ konta",
+      "currency": "Waluta",
+      "owners": "Właściciele konta",
+      "ownersHelp": "Wybierz, kto z domowników jest właścicielem konta.",
+      "initialBalance": "Saldo początkowe (opcjonalnie)",
+      "initialBalancePlaceholder": "np. 1500,50 lub pozostaw puste",
+      "initialBalanceHelp": "Pozostaw puste, jeśli saldo jest nieznane. Wartości dziesiętne są parsowane z dokładnymi jednostkami.",
+      "creditCardNotice": "W przypadku karty kredytowej wpisz kwotę ujemną przy zadłużeniu (np. -250,00).",
+      "submitAdd": "Utwórz konto",
+      "submittingAdd": "Tworzenie konta...",
+      "successAdd": "Konto zostało pomyślnie utworzone.",
+      "successEdit": "Dane konta zostały pomyślnie zaktualizowane.",
+      "successArchive": "Konto zostało zarchiwizowane bez usuwania historii.",
+      "successUnarchive": "Konto zostało przywrócone do aktywnych.",
+      "errorGeneric": "Wystąpił błąd podczas zapisywania konta.",
+      "errorOwnersRequired": "Wybierz co najmniej jednego właściciela.",
+      "errorNameRequired": "Podanie nazwy konta jest wymagane."
+    }
+  },
+  "Transactions": {
+    "sectionTitle": "Ręczne transakcje",
+    "sectionDescription": "Wprowadzaj wydatki, przychody oraz przelewy między kontami z zachowaniem reguł finansowych.",
+    "tabs": {
+      "expense": "Wydatek",
+      "income": "Przychód",
+      "transfer": "Przelew"
+    },
+    "form": {
+      "account": "Konto",
+      "selectAccount": "Wybierz konto...",
+      "fromAccount": "Konto źródłowe",
+      "toAccount": "Konto docelowe",
+      "selectSourceAccount": "Wybierz konto źródłowe...",
+      "selectDestinationAccount": "Wybierz konto docelowe...",
+      "payee": "Odbiorca / sklep",
+      "payeePlaceholder": "np. Biedronka, Apteka, Czynsz",
+      "source": "Źródło",
+      "sourcePlaceholder": "np. Wynagrodzenie, Premia, Sprzedaż",
+      "amountMinor": "Kwota",
+      "amountMinorPlaceholder": "np. 123,45",
+      "amountHelp": "Wpisz kwotę w formacie dziesiętnym (np. 123,45 lub 100). Obsługiwany jest przecinek oraz kropka.",
+      "amountPreview": "Podgląd kwoty",
+      "currency": "Waluta",
+      "date": "Data transakcji",
+      "submitExpense": "Zapisz wydatek",
+      "submitIncome": "Zapisz przychód",
+      "submitTransfer": "Zapisz przelew",
+      "submitting": "Zapisywanie...",
+      "success": "Transakcja została pomyślnie zapisana.",
+      "errorGeneric": "Wystąpił błąd podczas zapisywania transakcji.",
+      "transferInvariantNotice": "Zgodnie z regułami finansowymi przelew wewnętrzny nie jest kosztem ani przychodem i nie zmienia łącznych środków gospodarstwa (INV-001).",
+      "transferRequiresTwoAccounts": "Do wykonania przelewu wymagane są co najmniej dwa konta w gospodarstwie domowym.",
+      "transferSameAccountError": "Konto źródłowe i docelowe muszą być różne.",
+      "transferCurrencyMismatchError": "Przelew jest możliwy tylko między kontami o tej samej walucie.",
+      "transferNoMatchingCurrency": "Brak innego konta o tej samej walucie.",
+      "noAccounts": "Brak kont w gospodarstwie domowym. Dodaj konto, aby rejestrować operacje.",
+      "amountRequired": "Wprowadź prawidłową kwotę większą od zera (np. 123,45).",
+      "payeeRequired": "Podanie odbiorcy jest wymagane.",
+      "sourceRequired": "Podanie źródła przychodu jest wymagane."
+    },
+    "list": {
+      "title": "Ostatnie transakcje",
+      "description": "Zarejestrowane operacje finansowe w gospodarstwie domowym.",
+      "colDate": "Data",
+      "colType": "Typ",
+      "colDescription": "Opis / Kontrahent",
+      "colAccount": "Konto",
+      "colAmount": "Kwota",
+      "kindExpense": "Wydatek",
+      "kindIncome": "Przychód",
+      "kindTransfer": "Przelew",
+      "emptyTitle": "Brak transakcji",
+      "emptyDescription": "W tym gospodarstwie domowym nie zarejestrowano jeszcze żadnych transakcji. Skorzystaj z formularza powyżej, aby dodać wydatek, przychód lub przelew."
+    }
+  },
+  "Footer": {
+    "tagline": "Nodvis Finance — prywatne, self-hosted centrum finansów domowych.",
+    "privacyNote": "Wszystkie dane finansowe i operacje pozostają pod Twoją wyłączną kontrolą na lokalnym serwerze."
+  },
+  "Accessibility": {
+    "mainContent": "Treść główna",
+    "mainNavigation": "Główna nawigacja",
+    "languageNavigation": "Wybór języka interfejsu",
+    "financialSummary": "Zestawienie wskaźników finansowych",
+    "transactionForms": "Formularze dodawania transakcji",
+    "transactionList": "Tabela zarejestrowanych transakcji",
+    "accountsList": "Lista kont gospodarstwa domowego",
+    "archivedAccountsList": "Lista zarchiwizowanych kont",
+    "createAccountForm": "Formularz tworzenia konta",
+    "editAccountForm": "Formularz edycji konta",
+    "householdSelection": "Wybór gospodarstwa domowego",
+    "onboarding": "Konfiguracja gospodarstwa domowego",
+    "authentication": "Logowanie",
+    "household": "Gospodarstwo domowe",
+    "householdTransactions": "Transakcje gospodarstwa domowego"
   }
 }

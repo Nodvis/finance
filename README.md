@@ -90,6 +90,8 @@ The application is a **modular monolith**, not a microservice system.
 ├── SECURITY.md
 ├── CONTRIBUTING.md
 ├── compose.dev.yaml
+├── compose.yaml
+├── Dockerfile
 ├── package.json
 ├── pnpm-workspace.yaml
 └── tsconfig.base.json
@@ -153,6 +155,84 @@ The initial UI supports:
 - `/en`
 
 It intentionally displays empty financial values rather than fake sample money.
+
+## Production deployment (Docker Compose)
+
+The production reference deployment uses Docker Compose (`compose.yaml`) with a multi-stage standalone Next.js image, PostgreSQL 18, persistent DB volume, healthchecks, and controlled repeatable Drizzle migrations using committed SQL.
+
+### 1. Environment configuration
+
+Copy the production environment template:
+
+```bash
+cp .env.production.example .env
+```
+
+Generate secure secrets for `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` (e.g. using `openssl rand -base64 32`). Set `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to the canonical domain or LAN address.
+
+For a private LAN-only instance, set `WEB_BIND_ADDRESS` to the host's private LAN address. The default is `127.0.0.1`, which intentionally does not allow other devices to connect.
+
+### 2. Build
+
+Build the production images:
+
+```bash
+docker compose build
+```
+
+### 3. Start PostgreSQL
+
+Start PostgreSQL and wait for its healthcheck:
+
+```bash
+docker compose up -d postgres
+```
+
+### 4. Database migrations
+
+Run pending migrations using committed SQL:
+
+```bash
+docker compose run --rm migrate
+```
+
+Migrations execute `drizzle-kit migrate` against committed SQL migrations in `packages/db/drizzle`. Schema push (`drizzle-kit push`) is never used in production.
+
+### 5. Start the web service
+
+After migrations complete, start the application:
+
+```bash
+docker compose up -d web
+```
+
+Compose waits for PostgreSQL to be healthy before starting `web`.
+
+### 6. Database backup and restore
+
+To create a consistent SQL backup while the database container is running:
+
+```bash
+docker compose exec -T postgres pg_dump -U ${POSTGRES_USER:-nodvis_finance} -d ${POSTGRES_DB:-nodvis_finance} > backup-$(date +%Y%m%d%H%M%S).sql
+```
+
+To restore from an existing backup file:
+
+```bash
+docker compose exec -T postgres psql -U ${POSTGRES_USER:-nodvis_finance} -d ${POSTGRES_DB:-nodvis_finance} < backup.sql
+```
+
+### 7. Stop
+
+Stop all running containers:
+
+```bash
+docker compose down
+```
+
+Database state persists across restarts in the named volume `nodvis-finance-postgres-data`.
+
+To inspect the stack, use `docker compose ps` and `docker compose logs -f web postgres`. Keep the same Compose project name when operating a separate instance, for example `docker compose --project-name nodvis-finance-private --env-file .env.private -f compose.yaml ps`.
 
 ## Verification commands
 

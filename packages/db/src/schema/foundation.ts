@@ -18,10 +18,10 @@ import { financeSchema } from "./namespace";
 
 export const accountTypeEnum = financeSchema.enum("account_type", ACCOUNT_TYPES);
 
-const instant = (name: string) =>
+export const instant = (name: string) =>
   timestamp(name, { withTimezone: true, mode: "date" });
 
-const currencyCheck = (column: { getSQLType(): string }) =>
+export const currencyCheck = (column: { getSQLType(): string }) =>
   sql`${column} ~ '^[A-Z]{3}$'`;
 
 export const households = financeSchema.table(
@@ -106,6 +106,7 @@ export const accounts = financeSchema.table(
       mode: "bigint",
     }),
     balanceSnapshotAt: instant("balance_snapshot_at"),
+    archivedAt: instant("archived_at"),
     createdAt: instant("created_at").defaultNow().notNull(),
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },

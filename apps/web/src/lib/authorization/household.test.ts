@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { ZodError } from "zod";
 
 import {
+  getCurrentUserHouseholdContext,
+  getCurrentUserHouseholdsStatus,
   HouseholdAccessDeniedError,
+  requireCurrentUserHouseholdContext,
   requireHouseholdAccess,
 } from "./household";
 import { AuthenticationRequiredError } from "../auth/session";
@@ -10,7 +13,9 @@ import { AuthenticationRequiredError } from "../auth/session";
 vi.mock("server-only", () => ({}));
 
 vi.mock("@nodvis/finance-db", () => ({
+  findDefaultHouseholdForAuthUser: vi.fn(),
   findHouseholdAccessForAuthUser: vi.fn(),
+  listHouseholdsForAuthUser: vi.fn(),
   getDb: vi.fn(() => ({})),
   betterAuthSchema: {},
 }));
@@ -24,6 +29,7 @@ vi.mock("@/lib/auth/auth", () => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({
+  getCurrentSession: vi.fn(),
   requireCurrentSession: vi.fn(),
   AuthenticationRequiredError: class AuthenticationRequiredError extends Error {
     constructor() {
@@ -33,8 +39,12 @@ vi.mock("@/lib/auth/session", () => ({
   },
 }));
 
-import { findHouseholdAccessForAuthUser } from "@nodvis/finance-db";
-import { requireCurrentSession } from "@/lib/auth/session";
+import {
+  findDefaultHouseholdForAuthUser,
+  findHouseholdAccessForAuthUser,
+  listHouseholdsForAuthUser,
+} from "@nodvis/finance-db";
+import { getCurrentSession, requireCurrentSession } from "@/lib/auth/session";
 
 const validHouseholdId = "018f47a0-7762-7b9c-8d17-27f2f79e59a1";
 const validPersonId = "018f47a0-7762-7b9c-8d17-27f2f79e59a2";
@@ -94,5 +104,173 @@ describe("requireHouseholdAccess", () => {
       householdId: validHouseholdId,
       personId: validPersonId,
     });
+  });
+});
+
+describe("getCurrentUserHouseholdContext", () => {
+  it("returns null when no session is present", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce(null);
+
+    const context = await getCurrentUserHouseholdContext();
+    expect(context).toBeNull();
+  });
+
+  it("returns null when user has no linked household", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    vi.mocked(findDefaultHouseholdForAuthUser).mockResolvedValueOnce(null);
+
+    const context = await getCurrentUserHouseholdContext();
+    expect(context).toBeNull();
+    expect(findDefaultHouseholdForAuthUser).toHaveBeenCalledWith(validAuthUserId);
+  });
+
+  it("returns authorized household context when user is linked to a household", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    vi.mocked(findDefaultHouseholdForAuthUser).mockResolvedValueOnce({
+      householdId: validHouseholdId,
+      householdName: "Our Household",
+      personId: validPersonId,
+      personDisplayName: "Alice",
+      defaultCurrency: "PLN",
+    });
+
+    const context = await getCurrentUserHouseholdContext();
+    expect(context).toEqual({
+      authUserId: validAuthUserId,
+      householdId: validHouseholdId,
+      householdName: "Our Household",
+      personId: validPersonId,
+      personDisplayName: "Alice",
+      defaultCurrency: "PLN",
+    });
+  });
+});
+
+describe("requireCurrentUserHouseholdContext", () => {
+  it("throws AuthenticationRequiredError when unauthenticated", async () => {
+    vi.mocked(requireCurrentSession).mockRejectedValueOnce(
+      new AuthenticationRequiredError(),
+    );
+
+    await expect(requireCurrentUserHouseholdContext()).rejects.toThrow(
+      AuthenticationRequiredError,
+    );
+  });
+
+  it("throws HouseholdAccessDeniedError when user has no linked household", async () => {
+    vi.mocked(requireCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    vi.mocked(findDefaultHouseholdForAuthUser).mockResolvedValueOnce(null);
+
+    await expect(requireCurrentUserHouseholdContext()).rejects.toThrow(
+      HouseholdAccessDeniedError,
+    );
+  });
+
+  it("returns context when user has a linked household", async () => {
+    vi.mocked(requireCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    vi.mocked(findDefaultHouseholdForAuthUser).mockResolvedValueOnce({
+      householdId: validHouseholdId,
+      householdName: "Our Household",
+      personId: validPersonId,
+      personDisplayName: "Alice",
+      defaultCurrency: "PLN",
+    });
+
+    const context = await requireCurrentUserHouseholdContext();
+    expect(context).toEqual({
+      authUserId: validAuthUserId,
+      householdId: validHouseholdId,
+      householdName: "Our Household",
+      personId: validPersonId,
+      personDisplayName: "Alice",
+      defaultCurrency: "PLN",
+    });
+  });
+});
+
+describe("getCurrentUserHouseholdsStatus", () => {
+  it("returns unauthenticated when there is no active session", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce(null);
+    const status = await getCurrentUserHouseholdsStatus();
+    expect(status).toEqual({ status: "unauthenticated" });
+  });
+
+  it("returns none when user has no households linked", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    vi.mocked(listHouseholdsForAuthUser).mockResolvedValueOnce([]);
+
+    const status = await getCurrentUserHouseholdsStatus();
+    expect(status).toEqual({ status: "none" });
+  });
+
+  it("returns single with activeContext when user has exactly one household", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    vi.mocked(listHouseholdsForAuthUser).mockResolvedValueOnce([
+      {
+        householdId: validHouseholdId,
+        personId: validPersonId,
+        householdName: "Solo Household",
+        defaultCurrency: "PLN",
+        personDisplayName: "Eryk",
+      },
+    ]);
+
+    const status = await getCurrentUserHouseholdsStatus();
+    expect(status.status).toBe("single");
+    if (status.status === "single") {
+      expect(status.activeContext.householdId).toBe(validHouseholdId);
+      expect(status.activeContext.householdName).toBe("Solo Household");
+    }
+  });
+
+  it("returns multiple_needs_selection without silently picking when multiple exist and none selected", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce({
+      user: { id: validAuthUserId, email: "user@example.com", name: "User", emailVerified: true, createdAt: new Date(), updatedAt: new Date() },
+      session: { id: "session-1", createdAt: new Date(), updatedAt: new Date(), userId: validAuthUserId, expiresAt: new Date(), token: "tok" },
+    });
+    const secondHouseholdId = "018f47a0-7762-7b9c-8d17-27f2f79e59a4";
+    const householdsList = [
+      {
+        householdId: validHouseholdId,
+        personId: validPersonId,
+        householdName: "Household A",
+        defaultCurrency: "PLN",
+        personDisplayName: "Eryk",
+      },
+      {
+        householdId: secondHouseholdId,
+        personId: validPersonId,
+        householdName: "Household B",
+        defaultCurrency: "EUR",
+        personDisplayName: "Eryk",
+      },
+    ];
+    vi.mocked(listHouseholdsForAuthUser).mockResolvedValueOnce(householdsList);
+
+    const status = await getCurrentUserHouseholdsStatus();
+    expect(status.status).toBe("multiple_needs_selection");
+    if (status.status === "multiple_needs_selection") {
+      expect(status.households).toHaveLength(2);
+      expect(status.households[0]!.householdName).toBe("Household A");
+      expect(status.households[1]!.householdName).toBe("Household B");
+    }
   });
 });

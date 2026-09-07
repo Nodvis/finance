@@ -37,6 +37,7 @@ export type Account = Readonly<{
   currency: CurrencyCode;
   ownerPersonIds: readonly PersonId[];
   balanceSnapshot: AccountBalanceSnapshot | null;
+  archivedAt: Date | null;
 }>;
 
 export function accountType(value: string): AccountType {
@@ -54,6 +55,7 @@ export function createAccount(input: {
   currency: CurrencyCode | string;
   ownerPersonIds: readonly PersonId[];
   balanceSnapshot?: AccountBalanceSnapshot | null;
+  archivedAt?: Date | null;
 }): Account {
   const name = input.name.trim();
   if (name.length === 0 || name.length > 160) {
@@ -79,6 +81,11 @@ export function createAccount(input: {
     throw new Error("Invalid account balance snapshot timestamp");
   }
 
+  const archivedAt = input.archivedAt ? new Date(input.archivedAt) : null;
+  if (archivedAt && Number.isNaN(archivedAt.getTime())) {
+    throw new Error("Invalid account archived timestamp");
+  }
+
   return Object.freeze({
     id: input.id,
     householdId: input.householdId,
@@ -92,6 +99,61 @@ export function createAccount(input: {
           capturedAt: new Date(balanceSnapshot.capturedAt),
         })
       : null,
+    archivedAt,
+  });
+}
+
+export function archiveAccount(
+  account: Account,
+  archivedAt: Date = new Date(),
+): Account {
+  if (account.archivedAt) {
+    return account;
+  }
+  return Object.freeze({
+    ...account,
+    archivedAt: new Date(archivedAt),
+  });
+}
+
+export function unarchiveAccount(account: Account): Account {
+  if (!account.archivedAt) {
+    return account;
+  }
+  return Object.freeze({
+    ...account,
+    archivedAt: null,
+  });
+}
+
+export function isAccountArchived(account: Account): boolean {
+  return account.archivedAt !== null;
+}
+
+export function updateAccountMetadata(
+  account: Account,
+  input: {
+    name?: string;
+    ownerPersonIds?: readonly PersonId[];
+  },
+): Account {
+  const newName = input.name !== undefined ? input.name.trim() : account.name;
+  if (newName.length === 0 || newName.length > 160) {
+    throw new Error("Invalid account name");
+  }
+
+  let newOwners = account.ownerPersonIds;
+  if (input.ownerPersonIds !== undefined) {
+    newOwners = Object.freeze([...new Set(input.ownerPersonIds)]);
+    if (newOwners.length === 0) {
+      throw new Error("An account must have at least one owner");
+    }
+  }
+
+  return Object.freeze({
+    ...account,
+    name: newName,
+    ownerPersonIds: newOwners,
   });
 }
 

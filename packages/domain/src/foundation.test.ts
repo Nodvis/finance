@@ -3,14 +3,18 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   accountId,
   accountType,
+  archiveAccount,
   contributesToAvailableCash,
   createAccount,
   createHousehold,
   createPerson,
   householdId,
   householdMembership,
+  isAccountArchived,
   money,
   personId,
+  unarchiveAccount,
+  updateAccountMetadata,
 } from "./index";
 
 const householdUuid = "018f47a0-7762-7b9c-8d17-27f2f79e59a1";
@@ -223,5 +227,78 @@ describe("core financial foundation", () => {
         ownerPersonIds: [validPersonId],
       }),
     ).toThrow(/Invalid account name/);
+  });
+
+  it("supports archiving and unarchiving accounts without deleting them or altering identity", () => {
+    const account = createAccount({
+      id: accountId(accountUuid),
+      householdId: householdId(householdUuid),
+      name: "Savings to retire",
+      type: "savings",
+      currency: "PLN",
+      ownerPersonIds: [personId(personUuid)],
+    });
+
+    expect(isAccountArchived(account)).toBe(false);
+    expect(account.archivedAt).toBeNull();
+
+    const archiveTime = new Date("2026-09-07T15:00:00Z");
+    const archived = archiveAccount(account, archiveTime);
+
+    expect(isAccountArchived(archived)).toBe(true);
+    expect(archived.archivedAt).toEqual(archiveTime);
+    expect(archived.id).toBe(account.id);
+    expect(archived.name).toBe(account.name);
+    expect(archived.type).toBe(account.type);
+
+    const unarchived = unarchiveAccount(archived);
+    expect(isAccountArchived(unarchived)).toBe(false);
+    expect(unarchived.archivedAt).toBeNull();
+  });
+
+  it("preserves unknown balance as null when no snapshot is provided", () => {
+    const account = createAccount({
+      id: accountId(accountUuid),
+      householdId: householdId(householdUuid),
+      name: "Cash Wallet with Unknown Balance",
+      type: "cash",
+      currency: "PLN",
+      ownerPersonIds: [personId(personUuid)],
+    });
+
+    expect(account.balanceSnapshot).toBeNull();
+  });
+
+  it("allows updating ordinary account metadata while enforcing constraints", () => {
+    const owner1 = personId(personUuid);
+    const owner2 = personId("018f47a0-7762-7b9c-8d17-27f2f79e59a4");
+    const account = createAccount({
+      id: accountId(accountUuid),
+      householdId: householdId(householdUuid),
+      name: "Old Name",
+      type: "checking",
+      currency: "PLN",
+      ownerPersonIds: [owner1],
+    });
+
+    const updated = updateAccountMetadata(account, {
+      name: "New Name",
+      ownerPersonIds: [owner1, owner2],
+    });
+
+    expect(updated.name).toBe("New Name");
+    expect(updated.ownerPersonIds).toEqual([owner1, owner2]);
+    expect(updated.type).toBe("checking");
+    expect(updated.currency).toBe("PLN");
+
+    // Rejects empty name
+    expect(() =>
+      updateAccountMetadata(account, { name: "   " }),
+    ).toThrow(/Invalid account name/);
+
+    // Rejects empty owners
+    expect(() =>
+      updateAccountMetadata(account, { ownerPersonIds: [] }),
+    ).toThrow(/at least one owner/);
   });
 });
