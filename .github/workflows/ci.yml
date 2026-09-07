@@ -17,6 +17,20 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ci -d ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout
@@ -53,5 +67,14 @@ jobs:
       - name: Install Chromium for Playwright
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Migrate CI database
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+        run: pnpm db:migrate
+
       - name: End-to-end smoke tests
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+          BETTER_AUTH_SECRET: ci-only-e2e-secret-not-for-runtime
+          BETTER_AUTH_URL: http://127.0.0.1:3000
         run: pnpm test:e2e
