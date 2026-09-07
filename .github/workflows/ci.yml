@@ -44,6 +44,10 @@ jobs:
         run: pnpm test
 
       - name: Build
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+          BETTER_AUTH_SECRET: ci-only-build-secret-not-for-runtime
+          BETTER_AUTH_URL: http://localhost:3000
         run: pnpm build
 
       - name: Install Chromium for Playwright
