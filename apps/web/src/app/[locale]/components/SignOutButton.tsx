@@ -26,9 +26,9 @@ export function SignOutButton() {
       type="button"
       onClick={handleSignOut}
       disabled={isSigningOut}
-      className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+      className="rounded-lg border border-stone-800 bg-stone-900 px-3 py-1.5 text-xs font-medium text-stone-300 shadow-xs transition-colors hover:bg-stone-800 hover:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-500 disabled:opacity-50"
     >
-      {t("signOutButton")}
+      {isSigningOut ? t("signingIn") : t("signOutButton")}
     </button>
   );
 }

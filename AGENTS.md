@@ -123,9 +123,7 @@ AI may later assist with OCR/extraction/classification, but it must not become a
 ## 8. Internationalization
 
 Polish and English are foundation requirements.
-
 Do not introduce user-facing hardcoded strings outside the next-intl message system.
-
 All user-visible handling of:
 
 - dates,
@@ -137,6 +135,20 @@ All user-visible handling of:
 must be locale-aware.
 
 Do not assume Polish formatting in domain or persistence code.
+
+### Adding a new locale process
+
+1. Register the new locale in `apps/web/src/i18n/config.ts` (`LOCALES` and `LOCALE_CONFIGS`).
+2. Add `apps/web/messages/<locale>.json` with complete leaf key parity.
+3. Verify parity using `pnpm --filter @nodvis/finance-web test src/i18n/localization.test.ts`.
+
+### Translation definition-of-done
+
+- Complete 100% leaf key parity between `messages/pl.json`, `messages/en.json`, and any added catalog.
+- Zero technical minor-unit labels or database internals exposed to users (e.g. natural "Kwota" / "Amount").
+- Decimal input parsed via BigInt arithmetic according to currency fraction digits, never JavaScript `Number`.
+- Accessible names, landmarks, skip links, and ARIA labels localized.
+- Parity, decimal parsing, and component tests pass without regressions.
 
 ## 9. Data modeling
 

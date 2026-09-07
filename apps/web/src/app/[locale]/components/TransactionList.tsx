@@ -36,25 +36,25 @@ export function TransactionList({
   return (
     <section
       aria-label={t("list.title")}
-      className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900"
+      className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs"
     >
       <header className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+          <h2 className="text-xl font-semibold tracking-tight text-stone-100">
             {t("list.title")}
           </h2>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+          <p className="mt-1 text-sm text-stone-400">
             {t("list.description")}
           </p>
         </div>
-        <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-700 dark:bg-stone-800 dark:text-stone-300">
+        <span className="rounded-full border border-stone-800 bg-stone-950 px-3 py-1 font-mono text-xs font-semibold text-stone-300">
           {transactions.length}
         </span>
       </header>
 
       {transactions.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-stone-300 py-12 px-6 text-center dark:border-stone-700">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+        <div className="rounded-xl border border-dashed border-stone-800 bg-stone-950/40 py-12 px-6 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-800 bg-stone-900 text-stone-400">
             <svg
               className="h-6 w-6"
               fill="none"
@@ -70,10 +70,10 @@ export function TransactionList({
               />
             </svg>
           </div>
-          <h3 className="mt-3 text-base font-medium text-stone-900 dark:text-stone-100">
+          <h3 className="mt-3 text-base font-medium text-stone-200">
             {t("list.emptyTitle")}
           </h3>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-stone-500 dark:text-stone-400">
+          <p className="mx-auto mt-1 max-w-sm text-sm text-stone-400">
             {t("list.emptyDescription")}
           </p>
         </div>
@@ -81,7 +81,7 @@ export function TransactionList({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-stone-200 text-xs font-medium uppercase tracking-wider text-stone-500 dark:border-stone-800 dark:text-stone-400">
+              <tr className="border-b border-stone-800 text-xs font-medium uppercase tracking-wider text-stone-400">
                 <th scope="col" className="pb-3 pr-4">
                   {t("list.colDate")}
                 </th>
@@ -99,7 +99,7 @@ export function TransactionList({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+            <tbody className="divide-y divide-stone-800/80">
               {transactions.map((tx) => {
                 let badgeClass = "";
                 let typeLabel = "";
@@ -110,26 +110,26 @@ export function TransactionList({
 
                 if (tx.kind === "expense") {
                   badgeClass =
-                    "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200";
+                    "bg-rose-950/70 text-rose-300 border border-rose-800/50";
                   typeLabel = t("list.kindExpense");
                   description = tx.payee;
                   const acc = accountMap.get(tx.accountId);
                   accountLabel = acc ? acc.name : tx.accountId;
                   amountSign = "- ";
-                  amountClass = "text-rose-600 dark:text-rose-400";
+                  amountClass = "text-rose-400 font-mono";
                 } else if (tx.kind === "income") {
                   badgeClass =
-                    "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200";
+                    "bg-emerald-950/70 text-emerald-300 border border-emerald-800/50";
                   typeLabel = t("list.kindIncome");
                   description = tx.source;
                   const acc = accountMap.get(tx.accountId);
                   accountLabel = acc ? acc.name : tx.accountId;
                   amountSign = "+ ";
-                  amountClass = "text-emerald-600 dark:text-emerald-400";
+                  amountClass = "text-emerald-400 font-mono";
                 } else {
                   // transfer
                   badgeClass =
-                    "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-200";
+                    "bg-sky-950/70 text-sky-300 border border-sky-800/50";
                   typeLabel = t("list.kindTransfer");
                   const fromAcc = accountMap.get(tx.fromAccountId);
                   const toAcc = accountMap.get(tx.toAccountId);
@@ -138,25 +138,25 @@ export function TransactionList({
                   description = `${fromName} → ${toName}`;
                   accountLabel = `${fromName} → ${toName}`;
                   amountSign = "";
-                  amountClass = "text-stone-900 dark:text-stone-100";
+                  amountClass = "text-stone-100 font-mono";
                 }
 
                 return (
-                  <tr key={tx.id} className="hover:bg-stone-50/50 dark:hover:bg-stone-800/30">
-                    <td className="py-3 pr-4 text-stone-600 dark:text-stone-400 whitespace-nowrap">
+                  <tr key={tx.id} className="hover:bg-stone-800/30 transition-colors">
+                    <td className="py-3 pr-4 text-stone-400 whitespace-nowrap">
                       {formatDate(tx.occurredOn)}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span
-                        className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${badgeClass}`}
+                        className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${badgeClass}`}
                       >
                         {typeLabel}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-medium text-stone-900 dark:text-stone-100">
+                    <td className="py-3 px-4 font-medium text-stone-100">
                       {description}
                     </td>
-                    <td className="py-3 px-4 text-stone-500 dark:text-stone-400 whitespace-nowrap">
+                    <td className="py-3 px-4 text-stone-400 whitespace-nowrap">
                       {accountLabel}
                     </td>
                     <td className="py-3 pl-4 text-right whitespace-nowrap">
@@ -166,9 +166,6 @@ export function TransactionList({
                           tx.amount.amountMinor,
                           tx.amount.currency,
                         )}
-                      </span>
-                      <span className="block text-[11px] text-stone-400">
-                        {tx.amount.amountMinor} minor units
                       </span>
                     </td>
                   </tr>

@@ -3,10 +3,25 @@
     "title": "Nodvis Finance",
     "description": "A private, self-hosted household finance control center."
   },
+  "Navigation": {
+    "brand": "Nodvis Finance",
+    "tagline": "Private household finance",
+    "home": "Overview",
+    "skipToContent": "Skip to main content",
+    "privateBadge": "Self-hosted"
+  },
+  "LanguageSwitcher": {
+    "label": "Select language",
+    "switchToPl": "Switch to Polish",
+    "switchToEn": "Switch to English",
+    "switchTo": "Switch to {language}",
+    "pl": "Polski",
+    "en": "English"
+  },
   "HomePage": {
-    "eyebrow": "Nodvis Finance · application foundation",
+    "eyebrow": "Household financial control",
     "title": "Your financial situation without the accounting clutter.",
-    "description": "This screen is intended to answer, within seconds, how much money is available, what must be paid, how much debt remains and whether the current month is financially safe.",
+    "description": "A clear, real-time snapshot of available funds, upcoming obligations, and household debt.",
     "summaryLabel": "Financial summary",
     "noData": "No data yet — the financial model is being implemented.",
     "cards": {
@@ -57,9 +72,9 @@
       "payeePlaceholder": "e.g. Grocery Store, Pharmacy, Landlord",
       "source": "Income source",
       "sourcePlaceholder": "e.g. Salary, Bonus, Sale",
-      "amountMinor": "Amount in minor units (string)",
-      "amountMinorPlaceholder": "e.g. 4500 (for 45.00 PLN)",
-      "amountHelp": "Enter amount in minor units as string (e.g. 1250 = 12.50). You can also type decimal format (12.50).",
+      "amountMinor": "Amount",
+      "amountMinorPlaceholder": "e.g. 123.45",
+      "amountHelp": "Enter amount in decimal format (e.g. 123.45 or 100). Both dot and comma are accepted.",
       "amountPreview": "Amount preview",
       "currency": "Currency",
       "date": "Transaction date",
@@ -75,7 +90,7 @@
       "transferCurrencyMismatchError": "Transfers are only supported between accounts with the same currency.",
       "transferNoMatchingCurrency": "No other account shares the same currency as the selected source account.",
       "noAccounts": "No accounts in the household yet. Please add an account to record transactions.",
-      "amountRequired": "Amount is required and must be a positive integer of minor units.",
+      "amountRequired": "Enter a valid positive amount greater than zero (e.g. 123.45).",
       "payeeRequired": "Payee is required.",
       "sourceRequired": "Income source is required."
     },
@@ -93,5 +108,19 @@
       "emptyTitle": "No transactions yet",
       "emptyDescription": "No transactions have been recorded in this household yet. Use the form above to add an expense, income, or transfer."
     }
+  },
+  "Footer": {
+    "tagline": "Nodvis Finance — private, self-hosted household finance control center.",
+    "privacyNote": "All financial data and operations remain under your exclusive control on your local server."
+  },
+  "Accessibility": {
+    "mainContent": "Main content",
+    "languageNavigation": "Interface language selection",
+    "financialSummary": "Financial metrics summary",
+    "transactionForms": "Transaction entry forms",
+    "transactionList": "Recorded transactions table",
+    "authentication": "Authentication",
+    "household": "Household",
+    "householdTransactions": "Household transactions"
   }
 }

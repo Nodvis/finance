@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import type { HouseholdAccountSummary } from "@nodvis/finance-db";
+import { parseNaturalDecimalToMinor } from "@/lib/transactions/money-entry";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 
 type TransactionFormsProps = {
@@ -16,26 +17,14 @@ type TransactionFormsProps = {
 
 type TabKind = "expense" | "income" | "transfer";
 
+const DRAFT_STORAGE_KEY = "nodvis_tx_form_draft";
+
 function getTodayDateString(): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function parseToMinorString(input: string): string | null {
-  const trimmed = input.trim().replace(",", ".");
-  if (/^[1-9]\d*$/.test(trimmed)) {
-    return trimmed;
-  }
-  const match = trimmed.match(/^([1-9]\d*)\.(\d{1,2})$/);
-  if (match && match[1] && match[2]) {
-    const whole = match[1];
-    const fraction = match[2].padEnd(2, "0");
-    return `${whole}${fraction}`;
-  }
-  return null;
 }
 
 export function TransactionForms({
@@ -69,6 +58,60 @@ export function TransactionForms({
     message: string;
   } | null>(null);
 
+  // Restore draft state from sessionStorage across locale switches/page reloads
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.activeTab) setActiveTab(draft.activeTab);
+        if (draft.selectedAccountId && accounts.some((a) => a.id === draft.selectedAccountId)) {
+          setSelectedAccountId(draft.selectedAccountId);
+        }
+        if (draft.fromAccountId && accounts.some((a) => a.id === draft.fromAccountId)) {
+          setFromAccountId(draft.fromAccountId);
+        }
+        if (draft.toAccountId && accounts.some((a) => a.id === draft.toAccountId)) {
+          setToAccountId(draft.toAccountId);
+        }
+        if (draft.amountInput) setAmountInput(draft.amountInput);
+        if (draft.payee) setPayee(draft.payee);
+        if (draft.source) setSource(draft.source);
+        if (draft.occurredOn) setOccurredOn(draft.occurredOn);
+      }
+    } catch {
+      // Ignore storage read errors
+    }
+  }, [accounts]);
+
+  // Persist draft to sessionStorage whenever form values change
+  useEffect(() => {
+    try {
+      const draft = {
+        activeTab,
+        selectedAccountId,
+        fromAccountId,
+        toAccountId,
+        amountInput,
+        payee,
+        source,
+        occurredOn,
+      };
+      sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    } catch {
+      // Ignore storage write errors
+    }
+  }, [
+    activeTab,
+    selectedAccountId,
+    fromAccountId,
+    toAccountId,
+    amountInput,
+    payee,
+    source,
+    occurredOn,
+  ]);
+
   // Selected account for expense/income
   const selectedAccount = useMemo(() => {
     return accounts.find((a) => a.id === selectedAccountId) ?? accounts[0];
@@ -89,29 +132,34 @@ export function TransactionForms({
     );
   }, [accounts, selectedFromAccount]);
 
-  // Current currency for amount preview
+  // Current currency for amount preview and fraction digit parsing
   const currentCurrency =
     activeTab === "transfer"
       ? selectedFromAccount?.currency ?? defaultCurrency
       : selectedAccount?.currency ?? defaultCurrency;
 
-  // Live amount preview
-  const parsedMinor = useMemo(
-    () => parseToMinorString(amountInput),
-    [amountInput],
+  // Natural decimal conversion using exact BigInt arithmetic
+  const parseResult = useMemo(
+    () => parseNaturalDecimalToMinor(amountInput, currentCurrency),
+    [amountInput, currentCurrency],
   );
 
+  // Live amount preview formatted to user locale
   const formattedPreview = useMemo(() => {
-    if (!parsedMinor) return null;
-    return formatAmountPresentation(parsedMinor, currentCurrency, locale);
-  }, [parsedMinor, locale, currentCurrency]);
+    if (!parseResult.success || !parseResult.amountMinor) return null;
+    return formatAmountPresentation(
+      parseResult.amountMinor,
+      currentCurrency,
+      locale,
+    );
+  }, [parseResult, locale, currentCurrency]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setNotification(null);
 
-    const minorUnits = parseToMinorString(amountInput);
-    if (!minorUnits) {
+    const parseRes = parseNaturalDecimalToMinor(amountInput, currentCurrency);
+    if (!parseRes.success || !parseRes.amountMinor) {
       setNotification({
         type: "error",
         message: t("form.amountRequired"),
@@ -119,6 +167,7 @@ export function TransactionForms({
       return;
     }
 
+    const minorUnits = parseRes.amountMinor;
     setIsSubmitting(true);
 
     try {
@@ -192,6 +241,11 @@ export function TransactionForms({
         setAmountInput("");
         setPayee("");
         setSource("");
+        try {
+          sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+        } catch {
+          // Ignore storage cleanup error
+        }
         router.refresh();
       }
     } catch {
@@ -206,11 +260,11 @@ export function TransactionForms({
 
   if (accounts.length === 0) {
     return (
-      <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900">
-        <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+      <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs">
+        <h2 className="text-lg font-semibold text-stone-100">
           {t("sectionTitle")}
         </h2>
-        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+        <p className="mt-2 text-sm text-stone-400">
           {t("form.noAccounts")}
         </p>
       </div>
@@ -218,12 +272,12 @@ export function TransactionForms({
   }
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900">
+    <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs">
       <header className="mb-5">
-        <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+        <h2 className="text-xl font-semibold tracking-tight text-stone-100">
           {t("sectionTitle")}
         </h2>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+        <p className="mt-1 text-sm text-stone-400">
           {t("sectionDescription")}
         </p>
       </header>
@@ -232,7 +286,7 @@ export function TransactionForms({
       <div
         role="tablist"
         aria-label={t("sectionTitle")}
-        className="flex gap-2 border-b border-stone-200 pb-3 dark:border-stone-800"
+        className="flex gap-2 border-b border-stone-800 pb-3"
       >
         <button
           type="button"
@@ -242,10 +296,10 @@ export function TransactionForms({
             setActiveTab("expense");
             setNotification(null);
           }}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
             activeTab === "expense"
-              ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200"
-              : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+              ? "bg-rose-950/70 text-rose-200 border border-rose-800/60 shadow-xs"
+              : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
           }`}
         >
           {t("tabs.expense")}
@@ -259,10 +313,10 @@ export function TransactionForms({
             setActiveTab("income");
             setNotification(null);
           }}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
             activeTab === "income"
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200"
-              : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+              ? "bg-emerald-950/70 text-emerald-200 border border-emerald-800/60 shadow-xs"
+              : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
           }`}
         >
           {t("tabs.income")}
@@ -276,10 +330,10 @@ export function TransactionForms({
             setActiveTab("transfer");
             setNotification(null);
           }}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/50 ${
             activeTab === "transfer"
-              ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-200"
-              : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+              ? "bg-sky-950/70 text-sky-200 border border-sky-800/60 shadow-xs"
+              : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
           }`}
         >
           {t("tabs.transfer")}
@@ -291,8 +345,8 @@ export function TransactionForms({
           role="alert"
           className={`mt-4 rounded-lg p-3 text-sm border ${
             notification.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-200 dark:border-emerald-900"
-              : "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/50 dark:text-rose-200 dark:border-rose-900"
+              ? "bg-emerald-950/50 text-emerald-200 border-emerald-900"
+              : "bg-rose-950/50 text-rose-200 border-rose-900"
           }`}
         >
           {notification.message}
@@ -301,7 +355,7 @@ export function TransactionForms({
 
       {/* Transfer requires 2 accounts check */}
       {activeTab === "transfer" && accounts.length < 2 ? (
-        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="mt-5 rounded-lg border border-amber-900/60 bg-amber-950/30 p-4 text-sm text-amber-200">
           <p className="font-medium">{t("form.transferRequiresTwoAccounts")}</p>
           <p className="mt-1 text-xs opacity-90">
             {t("form.transferInvariantNotice")}
@@ -310,7 +364,7 @@ export function TransactionForms({
       ) : (
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {activeTab === "transfer" && (
-            <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-stone-800/60 dark:text-stone-300">
+            <div className="rounded-lg border border-stone-800 bg-stone-950/60 p-3 text-xs text-stone-400">
               {t("form.transferInvariantNotice")}
             </div>
           )}
@@ -321,7 +375,7 @@ export function TransactionForms({
               <div>
                 <label
                   htmlFor="from-account"
-                  className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                  className="block text-sm font-medium text-stone-300"
                 >
                   {t("form.fromAccount")}
                 </label>
@@ -339,7 +393,7 @@ export function TransactionForms({
                       setToAccountId(firstEligible.id);
                     }
                   }}
-                  className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+                  className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
                 >
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
@@ -352,7 +406,7 @@ export function TransactionForms({
               <div>
                 <label
                   htmlFor="to-account"
-                  className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                  className="block text-sm font-medium text-stone-300"
                 >
                   {t("form.toAccount")}
                 </label>
@@ -360,7 +414,7 @@ export function TransactionForms({
                   id="to-account"
                   value={toAccountId}
                   onChange={(e) => setToAccountId(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+                  className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
                 >
                   {eligibleToAccounts.length === 0 ? (
                     <option disabled value="">
@@ -380,7 +434,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="single-account"
-                className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                className="block text-sm font-medium text-stone-300"
               >
                 {t("form.account")}
               </label>
@@ -388,7 +442,7 @@ export function TransactionForms({
                 id="single-account"
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -404,7 +458,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="expense-payee"
-                className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                className="block text-sm font-medium text-stone-300"
               >
                 {t("form.payee")}
               </label>
@@ -416,7 +470,7 @@ export function TransactionForms({
                 value={payee}
                 onChange={(e) => setPayee(e.target.value)}
                 placeholder={t("form.payeePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
               />
             </div>
           )}
@@ -425,7 +479,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="income-source"
-                className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                className="block text-sm font-medium text-stone-300"
               >
                 {t("form.source")}
               </label>
@@ -437,41 +491,38 @@ export function TransactionForms({
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
                 placeholder={t("form.sourcePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
               />
             </div>
           )}
 
-          {/* Amount Minor (Exact String) & Currency */}
+          {/* Amount (Natural Decimal Input) & Currency */}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="sm:col-span-2">
               <label
-                htmlFor="amount-minor"
-                className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                htmlFor="amount-input"
+                className="block text-sm font-medium text-stone-300"
               >
                 {t("form.amountMinor")}
               </label>
               <input
-                id="amount-minor"
+                id="amount-input"
                 type="text"
-                inputMode="numeric"
+                inputMode="decimal"
                 required
                 value={amountInput}
                 onChange={(e) => setAmountInput(e.target.value)}
                 placeholder={t("form.amountMinorPlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm font-mono text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
               />
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              <p className="mt-1 text-xs text-stone-400">
                 {t("form.amountHelp")}
               </p>
               {formattedPreview && (
-                <p className="mt-1 text-xs font-medium text-stone-700 dark:text-stone-300">
+                <p className="mt-1.5 text-xs text-stone-400">
                   {t("form.amountPreview")}:{" "}
-                  <span className="font-semibold text-stone-900 dark:text-stone-100">
+                  <span className="font-semibold text-stone-100 font-mono">
                     {formattedPreview}
-                  </span>{" "}
-                  <span className="text-stone-400">
-                    ({parsedMinor} minor units)
                   </span>
                 </p>
               )}
@@ -480,7 +531,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="transaction-currency"
-                className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                className="block text-sm font-medium text-stone-300"
               >
                 {t("form.currency")}
               </label>
@@ -489,7 +540,7 @@ export function TransactionForms({
                 type="text"
                 readOnly
                 value={currentCurrency}
-                className="mt-1 block w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-700 shadow-sm dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300"
+                className="mt-1 block w-full rounded-lg border border-stone-800 bg-stone-950 px-3 py-2 text-sm font-mono font-semibold text-stone-300 shadow-xs"
               />
             </div>
           </div>
@@ -498,7 +549,7 @@ export function TransactionForms({
           <div>
             <label
               htmlFor="occurred-on"
-              className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+              className="block text-sm font-medium text-stone-300"
             >
               {t("form.date")}
             </label>
@@ -508,11 +559,11 @@ export function TransactionForms({
               required
               value={occurredOn}
               onChange={(e) => setOccurredOn(e.target.value)}
-              className="mt-1 block w-full max-w-xs rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
+              className="mt-1 block w-full max-w-xs rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
             />
           </div>
 
-          {/* Submit */}
+          {/* Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
@@ -520,7 +571,7 @@ export function TransactionForms({
                 isSubmitting ||
                 (activeTab === "transfer" && eligibleToAccounts.length === 0)
               }
-              className="rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white shadow hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+              className="rounded-lg bg-stone-100 px-5 py-2.5 text-sm font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 focus:ring-offset-stone-900 disabled:opacity-50"
             >
               {isSubmitting
                 ? t("form.submitting")

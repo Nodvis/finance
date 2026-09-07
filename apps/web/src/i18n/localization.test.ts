@@ -61,4 +61,26 @@ describe("i18n localization messages", () => {
     expect(plKeys).toContain("Auth.signInButton");
     expect(plKeys).toContain("Auth.signOutButton");
   });
+
+  it("defines language switcher, navigation, and accessibility keys in both catalogs", () => {
+    const plKeys = getLeafKeys(plMessages);
+    expect(plKeys).toContain("LanguageSwitcher.label");
+    expect(plKeys).toContain("LanguageSwitcher.switchToPl");
+    expect(plKeys).toContain("LanguageSwitcher.switchToEn");
+    expect(plKeys).toContain("LanguageSwitcher.pl");
+    expect(plKeys).toContain("LanguageSwitcher.en");
+    expect(plKeys).toContain("Navigation.brand");
+    expect(plKeys).toContain("Navigation.home");
+    expect(plKeys).toContain("Navigation.skipToContent");
+    expect(plKeys).toContain("Accessibility.languageNavigation");
+    expect(plKeys).toContain("Accessibility.financialSummary");
+    expect(plKeys).toContain("Footer.tagline");
+  });
+
+  it("does not expose technical minor-unit labels in user-facing amount labels", () => {
+    expect(plMessages.Transactions.form.amountMinor).toBe("Kwota");
+    expect(enMessages.Transactions.form.amountMinor).toBe("Amount");
+    expect(plMessages.Transactions.form.amountMinor).not.toContain("jednostkach mniejszych");
+    expect(enMessages.Transactions.form.amountMinor).not.toContain("minor units");
+  });
 });

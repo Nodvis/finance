@@ -50,7 +50,31 @@ See `SECURITY.md` for repository security rules.
 
 ## Internationalization
 
-Polish and English are supported from the beginning. New user-facing copy must use the project's i18n mechanism once the application scaffold exists.
+Polish and English are supported from the beginning. New user-facing copy must use the project's i18n mechanism (`next-intl`).
+
+### Adding a new locale process
+
+To add a new language/locale to the application:
+
+1. **Central configuration**:
+   Register the new locale code in `apps/web/src/i18n/config.ts` by adding it to `LOCALES` and providing display names, decimal separator, and grouping configuration in `LOCALE_CONFIGS`.
+2. **Message catalog**:
+   Create `apps/web/messages/<locale>.json` by duplicating an existing catalog and translating all strings.
+3. **Parity and validation verification**:
+   Run `pnpm --filter @nodvis/finance-web test src/i18n/localization.test.ts` to ensure 100% leaf key parity and non-empty translation strings.
+4. **Natural number and currency check**:
+   Ensure natural decimal entry and locale formatting follow native conventions for that locale without technical minor-unit jargon.
+
+### Translation definition-of-done
+
+A translation or localization change is considered done when:
+
+- [ ] Complete 100% key parity with all other supported message catalogs (`pl.json`, `en.json`).
+- [ ] All translated values are non-empty and naturally phrased for household users.
+- [ ] No technical minor-unit labels, internal database column names, or raw schema jargon are visible to users.
+- [ ] Decimal amount entry supports both native separators (comma / dot) and converts via exact `BigInt` minor units without floating-point `Number` coercion.
+- [ ] Accessibility labels (`aria-label`, `aria-describedby`, landmark roles, skip links) are localized and screen-reader tested.
+- [ ] Automated parity and component tests pass via `pnpm test`.
 
 ## Scope
 

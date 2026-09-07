@@ -3,10 +3,25 @@
     "title": "Nodvis Finance",
     "description": "Prywatne, self-hosted centrum kontroli finansów gospodarstwa domowego."
   },
+  "Navigation": {
+    "brand": "Nodvis Finance",
+    "tagline": "Prywatne finanse domowe",
+    "home": "Podsumowanie",
+    "skipToContent": "Przejdź do treści głównej",
+    "privateBadge": "Self-hosted"
+  },
+  "LanguageSwitcher": {
+    "label": "Wybierz język",
+    "switchToPl": "Przełącz na język polski",
+    "switchToEn": "Przełącz na język angielski",
+    "switchTo": "Przełącz na język {language}",
+    "pl": "Polski",
+    "en": "English"
+  },
   "HomePage": {
-    "eyebrow": "Nodvis Finance · fundament aplikacji",
+    "eyebrow": "Centrum kontroli finansowej",
     "title": "Twoja sytuacja finansowa bez księgowego chaosu.",
-    "description": "Docelowo ten ekran ma w kilka sekund odpowiedzieć, ile pieniędzy jest dostępne, co trzeba zapłacić, ile zostało długu i czy bieżący miesiąc jest bezpieczny.",
+    "description": "Zestawienie dostępnych środków, bieżących zobowiązań oraz długu gospodarstwa domowego w czasie rzeczywistym.",
     "summaryLabel": "Podsumowanie finansowe",
     "noData": "Brak danych — model finansowy jest dopiero wdrażany.",
     "cards": {
@@ -55,11 +70,11 @@
       "selectDestinationAccount": "Wybierz konto docelowe...",
       "payee": "Odbiorca / sklep",
       "payeePlaceholder": "np. Biedronka, Apteka, Czynsz",
-      "source": "Źródło przychodu",
+      "source": "Źródło",
       "sourcePlaceholder": "np. Wynagrodzenie, Premia, Sprzedaż",
-      "amountMinor": "Kwota w jednostkach mniejszych (string)",
-      "amountMinorPlaceholder": "np. 4500 (dla 45,00 PLN)",
-      "amountHelp": "Wprowadź kwotę w jednostkach mniejszych jako string (np. 1250 = 12,50). Możesz też wpisać format dziesiętny (12.50).",
+      "amountMinor": "Kwota",
+      "amountMinorPlaceholder": "np. 123,45",
+      "amountHelp": "Wpisz kwotę w formacie dziesiętnym (np. 123,45 lub 100). Obsługiwany jest przecinek oraz kropka.",
       "amountPreview": "Podgląd kwoty",
       "currency": "Waluta",
       "date": "Data transakcji",
@@ -75,7 +90,7 @@
       "transferCurrencyMismatchError": "Przelew jest możliwy tylko między kontami o tej samej walucie.",
       "transferNoMatchingCurrency": "Brak innego konta o tej samej walucie.",
       "noAccounts": "Brak kont w gospodarstwie domowym. Dodaj konto, aby rejestrować operacje.",
-      "amountRequired": "Kwota jest wymagana i musi być dodatnią liczbą całkowitą jednostek mniejszych.",
+      "amountRequired": "Wprowadź prawidłową kwotę większą od zera (np. 123,45).",
       "payeeRequired": "Podanie odbiorcy jest wymagane.",
       "sourceRequired": "Podanie źródła przychodu jest wymagane."
     },
@@ -93,5 +108,19 @@
       "emptyTitle": "Brak transakcji",
       "emptyDescription": "W tym gospodarstwie domowym nie zarejestrowano jeszcze żadnych transakcji. Skorzystaj z formularza powyżej, aby dodać wydatek, przychód lub przelew."
     }
+  },
+  "Footer": {
+    "tagline": "Nodvis Finance — prywatne, self-hosted centrum finansów domowych.",
+    "privacyNote": "Wszystkie dane finansowe i operacje pozostają pod Twoją wyłączną kontrolą na lokalnym serwerze."
+  },
+  "Accessibility": {
+    "mainContent": "Treść główna",
+    "languageNavigation": "Wybór języka interfejsu",
+    "financialSummary": "Zestawienie wskaźników finansowych",
+    "transactionForms": "Formularze dodawania transakcji",
+    "transactionList": "Tabela zarejestrowanych transakcji",
+    "authentication": "Logowanie",
+    "household": "Gospodarstwo domowe",
+    "householdTransactions": "Transakcje gospodarstwa domowego"
   }
 }

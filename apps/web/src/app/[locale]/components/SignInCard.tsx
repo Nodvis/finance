@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { authClient } from "@/lib/auth/client";
+
+const EMAIL_DRAFT_KEY = "nodvis_auth_email_draft";
 
 export function SignInCard() {
   const t = useTranslations("Auth");
@@ -14,6 +16,27 @@ export function SignInCard() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Restore email draft across language switches
+  useEffect(() => {
+    try {
+      const savedEmail = sessionStorage.getItem(EMAIL_DRAFT_KEY);
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+    } catch {
+      // Ignore storage read errors
+    }
+  }, []);
+
+  const handleEmailChange = (newEmail: string) => {
+    setEmail(newEmail);
+    try {
+      sessionStorage.setItem(EMAIL_DRAFT_KEY, newEmail);
+    } catch {
+      // Ignore storage write errors
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,6 +52,11 @@ export function SignInCard() {
       if (res.error) {
         setErrorMessage(res.error.message || t("errorInvalidCredentials"));
       } else {
+        try {
+          sessionStorage.removeItem(EMAIL_DRAFT_KEY);
+        } catch {
+          // Ignore storage cleanup error
+        }
         router.refresh();
       }
     } catch {
@@ -39,19 +67,19 @@ export function SignInCard() {
   };
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900">
+    <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs">
       <div className="max-w-md">
-        <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+        <h2 className="text-xl font-semibold tracking-tight text-stone-100">
           {t("signInTitle")}
         </h2>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+        <p className="mt-1 text-sm text-stone-400">
           {t("signInDescription")}
         </p>
 
         {errorMessage && (
           <div
             role="alert"
-            className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-900"
+            className="mt-4 rounded-lg border border-rose-900/80 bg-rose-950/60 p-3 text-sm text-rose-200"
           >
             {errorMessage}
           </div>
@@ -61,7 +89,7 @@ export function SignInCard() {
           <div>
             <label
               htmlFor="signin-email"
-              className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+              className="block text-sm font-medium text-stone-300"
             >
               {t("emailLabel")}
             </label>
@@ -70,16 +98,16 @@ export function SignInCard() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder={t("emailPlaceholder")}
-              className="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:focus:border-stone-100 dark:focus:ring-stone-100"
+              className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
             />
           </div>
 
           <div>
             <label
               htmlFor="signin-password"
-              className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+              className="block text-sm font-medium text-stone-300"
             >
               {t("passwordLabel")}
             </label>
@@ -89,14 +117,14 @@ export function SignInCard() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:focus:border-stone-100 dark:focus:ring-stone-100"
+              className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+            className="w-full rounded-lg bg-stone-100 px-4 py-2.5 text-sm font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 focus:ring-offset-stone-900 disabled:opacity-50"
           >
             {isSubmitting ? t("signingIn") : t("signInButton")}
           </button>
