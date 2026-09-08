@@ -31,6 +31,7 @@ export {
   categoryId,
   householdId,
   personId,
+  statementImportProfileId,
   transactionId,
 } from "./identity";
 export type {
@@ -39,6 +40,7 @@ export type {
   CategoryId,
   HouseholdId,
   PersonId,
+  StatementImportProfileId,
   TransactionId,
 } from "./identity";
 
@@ -176,6 +178,15 @@ export type {
   StatementImportRowStatus,
   SupportedDateFormat,
 } from "./import";
+
+export {
+  isSafeToAutoCommitRow,
+  validateStatementImportProfileInput,
+} from "./import-profile";
+export type {
+  CreateStatementImportProfileInput,
+  StatementImportProfile,
+} from "./import-profile";
 
 export {
   ACCOUNT_IDENTIFIER_TYPES,

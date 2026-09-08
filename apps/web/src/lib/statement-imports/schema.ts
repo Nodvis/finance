@@ -20,6 +20,10 @@ export const statementImportMappingConfigSchema = z.object({
   fixedCurrency: z.string().optional(),
   descriptionColumn: z.string().min(1),
   sourceRowIdentityColumn: z.string().optional(),
+  authoritativeIdColumn: z.string().optional(),
+  sourceNamespace: z.string().optional(),
+  sourceAccountId: z.string().optional(),
+  sourceAccountIdColumn: z.string().optional(),
   delimiter: z.enum(CSV_DELIMITERS).default(","),
   hasHeader: z.boolean().default(true),
   headerRowIndex: z.number().int().min(0).default(0),
@@ -30,8 +34,40 @@ export type StatementImportMappingConfigInput = z.infer<
   typeof statementImportMappingConfigSchema
 >;
 
-export const commitImportBatchSchema = z.object({
-  selectedRowIndices: z.array(z.number().int().min(0)),
-});
+export const commitImportBatchSchema = z
+  .object({
+    selectedRowIndices: z.array(z.number().int().min(0)).optional(),
+    safeOnly: z.boolean().optional(),
+  })
+  .refine(
+    (data) => data.safeOnly === true || (Array.isArray(data.selectedRowIndices) && data.selectedRowIndices.length > 0),
+    {
+      message: "Either safeOnly must be true or selectedRowIndices must contain at least one row",
+    },
+  );
 
 export type CommitImportBatchInput = z.infer<typeof commitImportBatchSchema>;
+
+export const createStatementImportProfileSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  mappingConfig: statementImportMappingConfigSchema,
+  autoProcessSafe: z.boolean().default(false),
+  isDefault: z.boolean().default(false),
+  accountId: z.string().uuid().nullable().optional(),
+});
+
+export type CreateStatementImportProfileInput = z.infer<
+  typeof createStatementImportProfileSchema
+>;
+
+export const updateStatementImportProfileSchema = z.object({
+  name: z.string().trim().min(1).max(160).optional(),
+  mappingConfig: statementImportMappingConfigSchema.optional(),
+  autoProcessSafe: z.boolean().optional(),
+  isDefault: z.boolean().optional(),
+  accountId: z.string().uuid().nullable().optional(),
+});
+
+export type UpdateStatementImportProfileInput = z.infer<
+  typeof updateStatementImportProfileSchema
+>;

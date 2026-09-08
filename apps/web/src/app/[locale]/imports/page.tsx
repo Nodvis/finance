@@ -8,6 +8,7 @@ import { listHouseholdAccountsSummary } from "@/lib/accounts/service";
 import { serializeAccount } from "@/lib/accounts/serialization";
 import { SignInCard } from "../components/SignInCard";
 import { NoHouseholdCard } from "../components/NoHouseholdCard";
+import { listImportProfiles } from "@/lib/statement-imports/service";
 import { ImportView } from "./ImportView";
 
 type Props = { params: Promise<{ locale: string }>; searchParams: Promise<{ accountId?: string }> };
@@ -24,5 +25,16 @@ export default async function ImportsPage({ params, searchParams }: Props) {
   if (status.status !== "single" && status.status !== "multiple_selected") return <div className="mx-auto w-full max-w-6xl px-4 py-8"><p className="text-stone-300">{t("selectHousehold")}</p></div>;
   const context = status.activeContext;
   const accounts = (await listHouseholdAccountsSummary(context)).filter((account) => account.archivedAt === null).map(serializeAccount);
-  return <ImportView householdId={context.householdId} accounts={accounts} initialAccountId={accountId} />;
+  const initialTargetAccountId = accountId ?? accounts[0]?.id;
+  const initialProfiles = initialTargetAccountId
+    ? await listImportProfiles({ context, accountId: initialTargetAccountId })
+    : [];
+  return (
+    <ImportView
+      householdId={context.householdId}
+      accounts={accounts}
+      initialAccountId={accountId}
+      initialProfiles={initialProfiles}
+    />
+  );
 }

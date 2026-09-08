@@ -103,6 +103,20 @@ export type {
 } from "./access/statement-imports";
 
 export {
+  DuplicateStatementImportProfileNameError,
+  StatementImportProfileNotFoundError,
+  createStatementImportProfileInDb,
+  deleteStatementImportProfileInDb,
+  findStatementImportProfileById,
+  listStatementImportProfilesByHousehold,
+  updateStatementImportProfileInDb,
+} from "./access/statement-import-profiles";
+export type {
+  NewStatementImportProfileRow,
+  StatementImportProfileRow,
+} from "./access/statement-import-profiles";
+
+export {
   AccountIdentifierNotFoundError,
   DuplicateAccountIdentifierError,
   InvalidAccountIdentifierError,

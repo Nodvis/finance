@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { SerializedHouseholdAccount } from "@/lib/accounts/serialization";
+import type { StatementImportProfileDto } from "@/lib/statement-imports/service";
 
 type Props = {
   householdId: string;
   accounts: SerializedHouseholdAccount[];
   initialAccountId?: string | undefined;
+  initialProfiles?: StatementImportProfileDto[] | undefined;
 };
 
 type Inspect = {
@@ -42,6 +44,12 @@ type Preview = {
   safeToCommitCount: number;
   attentionRowCount: number;
   rows: PreviewRow[];
+  autoCommitted?: {
+    batchId: string;
+    importedCount: number;
+    skippedCount: number;
+    committedTransactionIds: string[];
+  };
 };
 
 function formatFileSize(bytes: number): string {
@@ -50,26 +58,98 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function ImportView({ householdId, accounts, initialAccountId }: Props) {
+export function ImportView({
+  householdId,
+  accounts,
+  initialAccountId,
+  initialProfiles = [],
+}: Props) {
   const t = useTranslations("Imports");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [accountId, setAccountId] = useState(initialAccountId ?? accounts[0]?.id ?? "");
+  const [accountId, setAccountId] = useState(
+    initialAccountId ?? accounts[0]?.id ?? "",
+  );
   const account = accounts.find((item) => item.id === accountId);
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [inspect, setInspect] = useState<Inspect | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
+
+  // Mapping state
   const [dateColumn, setDateColumn] = useState("");
   const [amountColumn, setAmountColumn] = useState("");
   const [descriptionColumn, setDescriptionColumn] = useState("");
+
+  // Profiles state
+  const [profiles, setProfiles] =
+    useState<StatementImportProfileDto[]>(initialProfiles);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [showSaveProfileModal, setShowSaveProfileModal] = useState(false);
+  const [newProfileName, setNewProfileName] = useState("");
+  const [newProfileIsDefault, setNewProfileIsDefault] = useState(false);
+  const [newProfileAutoProcessSafe, setNewProfileAutoProcessSafe] =
+    useState(false);
+
+  // Safe Automatic Processing option
+  const [autoProcessSafe, setAutoProcessSafe] = useState(false);
+
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
 
   const selectedRows = useMemo(
-    () => preview?.rows.filter((row) => row.selected).map((row) => row.rowIndex) ?? [],
+    () =>
+      preview?.rows
+        .filter((row) => row.selected)
+        .map((row) => row.rowIndex) ?? [],
     [preview],
   );
+
+  // Fetch profiles when account changes
+  useEffect(() => {
+    if (!householdId || !accountId) return;
+    fetch(
+      `/api/households/${householdId}/accounts/${accountId}/imports/profiles`,
+    )
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.data && Array.isArray(json.data)) {
+          setProfiles(json.data);
+          const defaultProf = json.data.find(
+            (p: StatementImportProfileDto) => p.isDefault,
+          );
+          if (defaultProf) {
+            applyProfile(defaultProf);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [householdId, accountId]);
+
+  const applyProfile = (p: StatementImportProfileDto) => {
+    setSelectedProfileId(p.id);
+    if (p.mappingConfig.dateColumn) setDateColumn(p.mappingConfig.dateColumn);
+    if (p.mappingConfig.amountColumn)
+      setAmountColumn(p.mappingConfig.amountColumn);
+    if (p.mappingConfig.descriptionColumn)
+      setDescriptionColumn(p.mappingConfig.descriptionColumn);
+    setAutoProcessSafe(p.autoProcessSafe);
+  };
+
+  const handleProfileChange = (profileId: string) => {
+    setSelectedProfileId(profileId);
+    if (!profileId) {
+      // Custom mapping: leave columns as detected
+      return;
+    }
+    const found = profiles.find((p) => p.id === profileId);
+    if (found) {
+      applyProfile(found);
+    }
+  };
 
   const inspectFile = async () => {
     if (!file || !accountId) return;
@@ -87,9 +167,25 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
       if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
       const result = json.data as Inspect;
       setInspect(result);
-      setDateColumn(result.headers[0] ?? "");
-      setAmountColumn(result.headers[1] ?? "");
-      setDescriptionColumn(result.headers[2] ?? result.headers[1] ?? "");
+
+      // If a profile is already selected, apply its columns
+      const activeProfile = profiles.find((p) => p.id === selectedProfileId);
+      if (activeProfile) {
+        setDateColumn(
+          activeProfile.mappingConfig.dateColumn || (result.headers[0] ?? ""),
+        );
+        setAmountColumn(
+          activeProfile.mappingConfig.amountColumn || (result.headers[1] ?? ""),
+        );
+        setDescriptionColumn(
+          activeProfile.mappingConfig.descriptionColumn ||
+            (result.headers[2] ?? result.headers[1] ?? ""),
+        );
+      } else {
+        setDateColumn(result.headers[0] ?? "");
+        setAmountColumn(result.headers[1] ?? "");
+        setDescriptionColumn(result.headers[2] ?? result.headers[1] ?? "");
+      }
     } catch (error) {
       setMessage({
         type: "error",
@@ -124,13 +220,37 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
           skipLeadingRows: 0,
         }),
       );
+      if (autoProcessSafe) {
+        body.append("autoProcessSafe", "true");
+      }
+
       const response = await fetch(
         `/api/households/${householdId}/accounts/${accountId}/imports/preview`,
         { method: "POST", body },
       );
       const json = await response.json();
       if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
-      setPreview(json.data as Preview);
+      const prevData = json.data as Preview;
+      setPreview(prevData);
+
+      if (prevData.autoCommitted) {
+        if (prevData.attentionRowCount === 0) {
+          setMessage({
+            type: "success",
+            text: t("allRowsSafeCommitted", {
+              count: prevData.autoCommitted.importedCount,
+            }),
+          });
+        } else {
+          setMessage({
+            type: "success",
+            text: t("autoCommittedSuccess", {
+              count: prevData.autoCommitted.importedCount,
+              attention: prevData.attentionRowCount,
+            }),
+          });
+        }
+      }
     } catch (error) {
       setMessage({
         type: "error",
@@ -171,13 +291,125 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
     }
   };
 
+  const commitSafeOnly = async () => {
+    if (!preview || !accountId) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/households/${householdId}/accounts/${accountId}/imports/${preview.batchId}/commit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ safeOnly: true }),
+        },
+      );
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      setMessage({
+        type: "success",
+        text: t("success", { count: json.data.importedCount }),
+      });
+      setPreview(null);
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("errors.generic"),
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProfileName.trim() || !accountId || !inspect) return;
+    setBusy(true);
+    try {
+      const response = await fetch(
+        `/api/households/${householdId}/accounts/${accountId}/imports/profiles`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: newProfileName.trim(),
+            mappingConfig: {
+              dateColumn,
+              dateFormat: "auto",
+              timezone: "UTC",
+              amountMode: "signed",
+              amountColumn,
+              invertAmount: false,
+              currencyMode: "account",
+              descriptionColumn,
+              delimiter: inspect.detectedDelimiter,
+              hasHeader: true,
+              headerRowIndex: 0,
+              skipLeadingRows: 0,
+            },
+            autoProcessSafe: newProfileAutoProcessSafe,
+            isDefault: newProfileIsDefault,
+            accountId,
+          }),
+        },
+      );
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      const savedProfile = json.data as StatementImportProfileDto;
+      setProfiles((prev) => [
+        savedProfile,
+        ...prev.filter((p) => p.id !== savedProfile.id),
+      ]);
+      setSelectedProfileId(savedProfile.id);
+      setAutoProcessSafe(savedProfile.autoProcessSafe);
+      setShowSaveProfileModal(false);
+      setNewProfileName("");
+      setMessage({ type: "success", text: t("profileSaved") });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("errors.generic"),
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!selectedProfileId || !accountId) return;
+    if (!window.confirm(t("deleteProfileConfirm"))) return;
+    setBusy(true);
+    try {
+      const response = await fetch(
+        `/api/households/${householdId}/accounts/${accountId}/imports/profiles/${selectedProfileId}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        const json = await response.json();
+        throw new Error(json.error ?? t("errors.generic"));
+      }
+      setProfiles((prev) => prev.filter((p) => p.id !== selectedProfileId));
+      setSelectedProfileId("");
+      setMessage({ type: "success", text: t("profileDeleted") });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("errors.generic"),
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const toggleRow = (rowIndex: number) =>
     setPreview((current) =>
       current
         ? {
             ...current,
             rows: current.rows.map((row) =>
-              row.rowIndex === rowIndex ? { ...row, selected: !row.selected } : row,
+              row.rowIndex === rowIndex
+                ? { ...row, selected: !row.selected }
+                : row,
             ),
           }
         : current,
@@ -398,7 +630,7 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
         </div>
       </section>
 
-      {/* Step 2: Column Mapping */}
+      {/* Step 2: Column Mapping & Profiles */}
       {inspect && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-stone-800 dark:bg-stone-900/60">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-3 dark:border-stone-800">
@@ -414,15 +646,71 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
             </span>
           </div>
 
+          {/* Mapping Profiles Selector Bar */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-stone-800 dark:bg-stone-900/30">
+            <div className="flex flex-1 items-center gap-2.5 min-w-[240px]">
+              <label
+                htmlFor="mapping-profile-select"
+                className="text-xs font-semibold text-slate-700 dark:text-stone-300 shrink-0"
+              >
+                {t("profiles")}:
+              </label>
+              <select
+                id="mapping-profile-select"
+                value={selectedProfileId}
+                onChange={(e) => handleProfileChange(e.target.value)}
+                className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+              >
+                <option value="">{t("customMapping")}</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.isDefault ? ` (${t("defaultProfileBadge")})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                id="save-profile-btn"
+                onClick={() => setShowSaveProfileModal(true)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
+              >
+                {t("saveProfile")}
+              </button>
+
+              {selectedProfileId && (
+                <button
+                  type="button"
+                  id="delete-profile-btn"
+                  onClick={handleDeleteProfile}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 shadow-xs hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300 dark:hover:bg-rose-900/60"
+                >
+                  {t("deleteProfile")}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Columns Config */}
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             {(
               [
                 [t("date"), dateColumn, setDateColumn],
                 [t("amount"), amountColumn, setAmountColumn],
-                [t("descriptionColumn"), descriptionColumn, setDescriptionColumn],
+                [
+                  t("descriptionColumn"),
+                  descriptionColumn,
+                  setDescriptionColumn,
+                ],
               ] as const
             ).map(([label, value, setter]) => (
-              <label key={label} className="flex flex-col gap-1.5 text-sm font-medium text-slate-700 dark:text-stone-300">
+              <label
+                key={label}
+                className="flex flex-col gap-1.5 text-sm font-medium text-slate-700 dark:text-stone-300"
+              >
                 {label}
                 <select
                   value={value}
@@ -437,6 +725,27 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
                 </select>
               </label>
             ))}
+          </div>
+
+          {/* Safe Automatic Processing Option */}
+          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-stone-800 dark:bg-stone-900/40">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="auto-process-safe-checkbox"
+                checked={autoProcessSafe}
+                onChange={(e) => setAutoProcessSafe(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900"
+              />
+              <div>
+                <span className="text-xs font-semibold text-slate-900 dark:text-stone-100">
+                  {t("autoProcessSafeCheckbox")}
+                </span>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-stone-400 leading-relaxed">
+                  {t("autoProcessSafeHint")}
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="mt-5 flex justify-end">
@@ -476,14 +785,35 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
               </p>
             </div>
 
-            <button
-              type="button"
-              disabled={busy || selectedRows.length === 0}
-              onClick={commit}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
-            >
-              {busy ? t("working") : t("commit", { count: selectedRows.length })}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Safe Only Action */}
+              {preview.safeToCommitCount > 0 && !preview.autoCommitted && (
+                <button
+                  type="button"
+                  id="commit-safe-only-btn"
+                  disabled={busy}
+                  onClick={commitSafeOnly}
+                  className="rounded-lg border border-emerald-600 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 shadow-xs transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:border-emerald-500/80 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
+                >
+                  {busy
+                    ? t("working")
+                    : t("commitSafeOnly", { count: preview.safeToCommitCount })}
+                </button>
+              )}
+
+              {/* Standard Review Commit */}
+              <button
+                type="button"
+                id="commit-selected-btn"
+                disabled={busy || selectedRows.length === 0}
+                onClick={commit}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+              >
+                {busy
+                  ? t("working")
+                  : t("commit", { count: selectedRows.length })}
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-stone-800">
@@ -499,7 +829,8 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
                 {preview.rows.map((row) => {
-                  const isPending = row.valid && row.status === "pending" && !row.possibleMatch;
+                  const isPending =
+                    row.valid && row.status === "pending" && !row.possibleMatch;
                   return (
                     <tr
                       key={row.rowIndex}
@@ -519,7 +850,9 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
                         />
                       </td>
                       <td className="p-3 text-xs text-slate-700 dark:text-stone-300">
-                        {row.date ? new Date(row.date).toLocaleDateString() : "—"}
+                        {row.date
+                          ? new Date(row.date).toLocaleDateString()
+                          : "—"}
                       </td>
                       <td className="p-3 font-mono text-xs font-semibold text-slate-900 dark:text-stone-100">
                         {row.formattedAmount ?? row.amountMinor ?? "—"}
@@ -549,6 +882,92 @@ export function ImportView({ householdId, accounts, initialAccountId }: Props) {
             </table>
           </div>
         </section>
+      )}
+
+      {/* Modal: Save Mapping Profile */}
+      {showSaveProfileModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="save-profile-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-stone-800 dark:bg-stone-900">
+            <h3
+              id="save-profile-dialog-title"
+              className="text-base font-semibold text-slate-900 dark:text-stone-100"
+            >
+              {t("saveProfile")}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500 dark:text-stone-400">
+              {t("description")}
+            </p>
+
+            <form onSubmit={handleSaveProfile} className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="save-profile-name"
+                  className="block text-xs font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {t("profileName")}
+                </label>
+                <input
+                  type="text"
+                  id="save-profile-name"
+                  required
+                  maxLength={160}
+                  value={newProfileName}
+                  onChange={(e) => setNewProfileName(e.target.value)}
+                  placeholder={t("profileNamePlaceholder")}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-stone-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="save-profile-default"
+                    checked={newProfileIsDefault}
+                    onChange={(e) => setNewProfileIsDefault(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900"
+                  />
+                  <span>{t("defaultProfileBadge")}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-stone-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="save-profile-auto-safe"
+                    checked={newProfileAutoProcessSafe}
+                    onChange={(e) =>
+                      setNewProfileAutoProcessSafe(e.target.checked)
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900"
+                  />
+                  <span>{t("autoProcessSafeCheckbox")}</span>
+                </label>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSaveProfileModal(false)}
+                  className="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+                >
+                  {t("cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={busy || !newProfileName.trim()}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+                >
+                  {busy ? t("savingProfile") : t("saveProfileButton")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </main>
   );

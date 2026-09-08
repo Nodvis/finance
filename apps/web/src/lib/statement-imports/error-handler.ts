@@ -6,10 +6,12 @@ import { HouseholdAccessDeniedError } from "@/lib/authorization/household";
 import { TransactionAccountNotFoundError } from "@/lib/transactions/service";
 import {
   DuplicateImportRowError,
+  DuplicateStatementImportProfileNameError,
   EmptyCsvError,
   FileTooLargeError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
+  StatementImportProfileNotFoundError,
 } from "./service";
 
 export function handleImportRouteError(error: unknown): NextResponse {
@@ -29,7 +31,8 @@ export function handleImportRouteError(error: unknown): NextResponse {
 
   if (
     error instanceof TransactionAccountNotFoundError ||
-    error instanceof ImportBatchNotFoundError
+    error instanceof ImportBatchNotFoundError ||
+    error instanceof StatementImportProfileNotFoundError
   ) {
     return NextResponse.json(
       { error: error.message },
@@ -39,7 +42,8 @@ export function handleImportRouteError(error: unknown): NextResponse {
 
   if (
     error instanceof ImportBatchAlreadyCommittedError ||
-    error instanceof DuplicateImportRowError
+    error instanceof DuplicateImportRowError ||
+    error instanceof DuplicateStatementImportProfileNameError
   ) {
     return NextResponse.json(
       { error: error.message },

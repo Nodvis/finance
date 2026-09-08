@@ -7,6 +7,7 @@ declare const accountIdBrand: unique symbol;
 declare const transactionIdBrand: unique symbol;
 declare const categoryIdBrand: unique symbol;
 declare const accountIdentifierIdBrand: unique symbol;
+declare const statementImportProfileIdBrand: unique symbol;
 
 export type HouseholdId = string & { readonly [householdIdBrand]: true };
 export type PersonId = string & { readonly [personIdBrand]: true };
@@ -15,6 +16,9 @@ export type TransactionId = string & { readonly [transactionIdBrand]: true };
 export type CategoryId = string & { readonly [categoryIdBrand]: true };
 export type AccountIdentifierId = string & {
   readonly [accountIdentifierIdBrand]: true;
+};
+export type StatementImportProfileId = string & {
+  readonly [statementImportProfileIdBrand]: true;
 };
 
 export function householdId(value: string): HouseholdId {
@@ -39,6 +43,10 @@ export function categoryId(value: string): CategoryId {
 
 export function accountIdentifierId(value: string): AccountIdentifierId {
   return domainId(value, "account identifier") as AccountIdentifierId;
+}
+
+export function statementImportProfileId(value: string): StatementImportProfileId {
+  return domainId(value, "statement import profile") as StatementImportProfileId;
 }
 
 function domainId(value: string, kind: string): string {

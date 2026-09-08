@@ -18,13 +18,14 @@ export async function POST(request: Request, context: RouteContext) {
     const authContext = await requireHouseholdAccess(householdId);
 
     const body = await request.json();
-    const { selectedRowIndices } = commitImportBatchSchema.parse(body);
+    const { selectedRowIndices, safeOnly } = commitImportBatchSchema.parse(body);
 
     const result = await commitStatementImport({
       context: authContext,
       accountId,
       batchId,
       selectedRowIndices,
+      safeOnly,
     });
 
     return NextResponse.json({ data: result });

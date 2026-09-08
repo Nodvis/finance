@@ -231,9 +231,53 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - P0 remaining limitation: route tree still uses the existing locale page boundary with server session branching; no new financial schema/migration was introduced.
 
 ## Remaining scope checklist after P0
-- [ ] P1 automatic safe CSV processing with explicit consent, saved import profiles and review-only uncertainty.
-- [ ] P2 known account identifiers, person/counterparty relationships and safe transfer matching/reconciliation.
+- [x] P1 automatic safe CSV processing with explicit consent, saved import profiles and review-only uncertainty.
+- [x] P2 known account identifiers, person/counterparty relationships and safe transfer matching/reconciliation — source/CI complete, private deployment now verified.
 - [ ] P3 liability/loan repayment relationships with unknown principal/interest preserved.
 - [ ] P4 explainable category rules, approved learning, recurring recognition and data-backed analytics.
 - [ ] P5 verified bank-format adapters only where real format semantics can be tested.
 - P2 implementation guardrails: additive migration only; dated verified backup before persistent migration; household-scoped normalized IBAN/domestic identifiers; no ownership inference from name alone; automatic transfer matching requires verified relationship plus compatible evidence; one-sided, ambiguous, cross-currency and conflicting cases remain pending review.
+- P2 deployment recovery: stale migrator image `b1ba7ffd…` had journal metadata for 0008 but omitted the SQL file, leaving the private journal inconsistent with the schema. A fresh current migrator image was built; standard `drizzle-kit migrate` applied the reviewed SQL without direct SQL or journal edits. Repeat run passed; private read-back shows 9 migration rows including the reviewed 0008 SQL, `finance.account_identifiers`, `finance.transfer_matches`, enum and 22 constraints; existing data was preserved (15 accounts/95 transactions at that checkpoint, later synthetic E2E data increased this to 21/127). Disposable PostgreSQL migration passed twice with 9 rows and both tables. Backup `/home/erza_agent/backups/nodvis-finance-private-20260908T210256Z-post-0008.dump` is a valid `PGDMP` archive with 153 entries.
+- P2 deployed evidence: web rebuilt from current branch as `sha256:fba2f00e722eefe85451e42cc36bae4c10947aa3caf62c77cdc0640e86634029`, recreated healthy at `http://192.168.1.119:3000/pl`; authenticated synthetic Chromium smoke `e2e/smoke.spec.ts e2e/finance.spec.ts e2e/transfers.spec.ts` passed 7/7.
+
+## Checkpoint: P1 saved import mapping profiles and safe automatic processing — locally verified
+
+- **Domain Package (`@nodvis/finance-domain`)**:
+  - Defined `StatementImportProfile`, `StatementImportProfileId`, and input types in `packages/domain/src/import-profile.ts`.
+  - Implemented server-side policy rule `isSafeToAutoCommitRow`: strictly limits automated commit to rows classified as `ready` / `insert`, with `selected = true`, no duplicate conflict, and no ambiguity. Ambiguous, invalid, duplicate, voided, or possible manual match rows are never auto-committed.
+  - Added unit test suite `packages/domain/src/import-profile.test.ts` (10 tests).
+- **Database Package (`@nodvis/finance-db`)**:
+  - Added `finance.statement_import_profiles` table schema with household FK, account FK, unique compound index on `(household_id, coalesce(account_id, zero_uuid), name)`.
+  - Generated additive migration `packages/db/drizzle/0009_quiet_venus.sql` and journal entry.
+  - Applied migration idempotently to dev PostgreSQL.
+  - Implemented CRUD access functions in `packages/db/src/access/statement-import-profiles.ts`.
+  - Updated `commitStatementImportBatchInDb` in `packages/db/src/access/statement-imports.ts` to support `safeOnly: boolean` using `isSafeToAutoCommitRow`.
+  - Added test suites `packages/db/src/access/statement-import-profiles.test.ts` and updated `statement-imports.test.ts`.
+- **Web Package (`apps/web`)**:
+  - Added schemas in `apps/web/src/lib/statement-imports/schema.ts` for profile validation and `safeOnly` / `autoCommitSafe` options.
+  - Updated `service.ts` with profile CRUD and auto-commit integration.
+  - Added REST API routes:
+    - `POST/GET /api/households/:householdId/accounts/:accountId/imports/profiles`
+    - `GET/PATCH/DELETE /api/households/:householdId/accounts/:accountId/imports/profiles/:profileId`
+    - Updated `preview` route to accept `autoCommitSafe` / `autoProcessSafe`.
+    - Updated `commit` route to accept `safeOnly`.
+  - Updated UI in `apps/web/src/app/[locale]/imports/ImportView.tsx` with:
+    - Profile selection dropdown with account-scoped and household-scoped profile indicators.
+    - Modal dialog to save current CSV mapping as a new reusable profile (or update existing).
+    - Profile deletion.
+    - Explicit opt-in checkbox for safe automatic processing (conservative default: review-first, unchecked).
+    - Step 3 action to commit only safe rows when some rows need review.
+  - Maintained full PL and EN localization parity in `messages/pl.json` and `messages/en.json`.
+  - Added unit and integration tests: `service.test.ts`, `profiles/route.test.ts`, `route.test.ts`, `ImportView.test.tsx`.
+- **Verification**:
+  - `pnpm -r typecheck`: passed with zero errors across all workspace packages.
+  - `pnpm -r lint`: passed with zero errors across all workspace packages.
+  - Domain tests: 10/10 test files passed, 154/154 tests passed.
+  - DB tests: 12/12 test files passed, 69/69 tests passed.
+  - Web tests: 45/45 test files passed, 308/308 tests passed.
+  - `git diff --check`: passed.
+- **Deployment verification**:
+  - Fresh migrator applied 0009 on private PostgreSQL; repeat migration was idempotent. Private read-back confirmed 10 journal rows and `finance.statement_import_profiles`; no existing financial rows were removed.
+  - Private web rebuilt/recreated healthy with image `sha256:f8a5edc94fd9848bb0ebe12d95c244892c733c5763075d0bc328bb92b0e69297`; `/pl` returned HTTP 200.
+  - Synthetic deployed P1 browser flow passed 1/1: save profile, API read-back, reload/reuse saved mapping, and safe auto-processing of a later CSV.
+  - Final authenticated Chromium regression on this exact image passed 7/7: PL/EN public shell, language/theme, finance flows and transfer reconciliation.
