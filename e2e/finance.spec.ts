@@ -134,7 +134,10 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   const voidButton = page.getByRole("button", { name: new RegExp(`Void.*E2E corrected expense ${locale}|Anuluj.*E2E corrected expense ${locale}`) });
   await voidButton.click();
   await page.locator("#void-reason").fill("E2E correction test");
-  await page.getByRole("dialog").getByRole("button", { name: /Confirm void|Potwierdź anulowanie/ }).click();
+  await Promise.all([
+    page.waitForResponse((response) => response.url().includes("/void") && response.request().method() === "POST"),
+    page.getByRole("dialog").getByRole("button", { name: /Confirm void|Potwierdź anulowanie/ }).click(),
+  ]);
 
   const after = await page.request.get(`/api/households/${household.householdId}/transactions?status=all`);
   const afterTransactions = (await after.json()).data as Array<Record<string, unknown>>;
@@ -169,7 +172,13 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   await page.locator("#tx-filter-search").fill(`E2E pagination ${locale}`);
   await expect(page.getByText(/Showing|Wyświetlanie/)).toBeVisible();
   await page.locator("#tx-page-size").selectOption("10");
-  await page.getByRole("button", { name: /Next|Następna/ }).click();
+  await expect(page.getByText(/(?:Showing|Wyświetlanie)\s+1[–-]10/)).toBeVisible();
+  const nextPage = page.getByRole("button", { name: /^(Next|Następna)$/ });
+  await expect(nextPage).toBeEnabled();
+  await Promise.all([
+    page.waitForResponse((response) => response.url().includes("/transactions?") && response.request().method() === "GET"),
+    nextPage.click(),
+  ]);
   await expect(page.getByText(/Page 2|Strona 2/)).toBeVisible();
   await expect(page.locator('a[download]')).toHaveAttribute("href", /\/transactions\/export\?/);
 
