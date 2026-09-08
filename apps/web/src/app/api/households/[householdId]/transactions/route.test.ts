@@ -21,28 +21,14 @@ vi.mock("../../../../../lib/authorization/household", () => ({
   requireHouseholdAccess: vi.fn(),
 }));
 
-vi.mock("../../../../../lib/transactions/service", () => ({
-  createManualTransaction: vi.fn(),
-  listManualTransactions: vi.fn(),
-  TransactionAccountNotFoundError: class TransactionAccountNotFoundError extends Error {
-    constructor(msg: string) {
-      super(msg);
-      this.name = "TransactionAccountNotFoundError";
-    }
-  },
-  TransactionCurrencyMismatchError: class TransactionCurrencyMismatchError extends Error {
-    constructor(msg: string) {
-      super(msg);
-      this.name = "TransactionCurrencyMismatchError";
-    }
-  },
-  TransactionInvalidPersonError: class TransactionInvalidPersonError extends Error {
-    constructor(msg: string) {
-      super(msg);
-      this.name = "TransactionInvalidPersonError";
-    }
-  },
-}));
+vi.mock("../../../../../lib/transactions/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../../lib/transactions/service")>();
+  return {
+    ...actual,
+    createManualTransaction: vi.fn(),
+    listManualTransactions: vi.fn(),
+  };
+});
 
 import { AuthenticationRequiredError } from "../../../../../lib/auth/session";
 import {
@@ -235,6 +221,9 @@ describe("Transactions API Route Handler", () => {
         payee: "Grocery Store",
         paidByPersonId: validPerson,
         occurredOn: "2026-09-07T12:00:00.000Z",
+        version: 1,
+        voidedAt: null,
+        voidReason: null,
       });
     });
 
@@ -278,6 +267,9 @@ describe("Transactions API Route Handler", () => {
         toAccountId: validAccount2,
         amount: { amountMinor: "50000", currency: "PLN" },
         occurredOn: "2026-09-07T14:00:00.000Z",
+        version: 1,
+        voidedAt: null,
+        voidReason: null,
       });
     });
   });

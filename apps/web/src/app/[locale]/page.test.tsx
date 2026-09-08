@@ -149,7 +149,7 @@ describe("HomePage Server Component", () => {
     });
     expect(listManualTransactions).toHaveBeenCalledWith(
       expect.objectContaining({ householdId: "018f47a0-7762-7b9c-8d17-27f2f79e59a1" }),
-      { limit: 50, offset: 0 },
+      { limit: 50, offset: 0, includeVoided: true },
     );
   });
 });

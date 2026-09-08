@@ -1,4 +1,4 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 import {
   accountId,
@@ -21,6 +21,34 @@ import { transactions } from "../schema/transactions";
 export type TransactionRow = typeof transactions.$inferSelect;
 export type NewTransactionRow = typeof transactions.$inferInsert;
 
+export class TransactionNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionNotFoundError";
+  }
+}
+
+export class TransactionAlreadyVoidedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionAlreadyVoidedError";
+  }
+}
+
+export class TransactionVersionConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionVersionConflictError";
+  }
+}
+
+export class DuplicateSubmissionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DuplicateSubmissionError";
+  }
+}
+
 export function mapRowToTransaction(row: TransactionRow): Transaction {
   const amount = money(row.amountMinor, row.currency);
   const id = transactionId(row.id);
@@ -39,6 +67,9 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       paidByPersonId: personId(row.paidByPersonId),
       occurredOn: row.occurredOn,
       categoryId: row.categoryId ? categoryId(row.categoryId) : null,
+      version: row.version,
+      voidedAt: row.voidedAt,
+      voidReason: row.voidReason,
     });
   }
 
@@ -55,6 +86,9 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       receivedByPersonId: personId(row.receivedByPersonId),
       occurredOn: row.occurredOn,
       categoryId: row.categoryId ? categoryId(row.categoryId) : null,
+      version: row.version,
+      voidedAt: row.voidedAt,
+      voidReason: row.voidReason,
     });
   }
 
@@ -69,13 +103,19 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       toAccountId: accountId(row.toAccountId),
       amount,
       occurredOn: row.occurredOn,
+      version: row.version,
+      voidedAt: row.voidedAt,
+      voidReason: row.voidReason,
     });
   }
 
   throw new Error(`Unknown transaction kind: ${(row as { kind: string }).kind}`);
 }
 
-export async function insertTransaction(tx: Transaction): Promise<Transaction> {
+export async function insertTransaction(
+  tx: Transaction,
+  options?: { submissionId?: string | undefined },
+): Promise<Transaction> {
   const baseValues = {
     id: tx.id,
     householdId: tx.householdId,
@@ -83,6 +123,10 @@ export async function insertTransaction(tx: Transaction): Promise<Transaction> {
     amountMinor: tx.amount.amountMinor,
     currency: tx.amount.currency,
     occurredOn: tx.occurredOn,
+    version: tx.version,
+    voidedAt: tx.voidedAt ?? null,
+    voidReason: tx.voidReason ?? null,
+    submissionId: options?.submissionId?.trim() || null,
   };
 
   let values: NewTransactionRow;
@@ -124,22 +168,181 @@ export async function insertTransaction(tx: Transaction): Promise<Transaction> {
     };
   }
 
-  const [inserted] = await getDb()
-    .insert(transactions)
-    .values(values)
-    .returning();
+  try {
+    const [inserted] = await getDb()
+      .insert(transactions)
+      .values(values)
+      .returning();
 
-  if (!inserted) {
-    throw new Error("Failed to insert transaction");
+    if (!inserted) {
+      throw new Error("Failed to insert transaction");
+    }
+
+    return mapRowToTransaction(inserted);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: string }).code === "23505" &&
+      String((error as { detail?: string }).detail ?? "").includes("submission_id")
+    ) {
+      throw new DuplicateSubmissionError(
+        `Duplicate submission rejected: submissionId ${options?.submissionId} already processed`,
+      );
+    }
+    throw error;
+  }
+}
+
+export async function updateTransactionInDb(params: {
+  householdId: string;
+  id: string;
+  expectedVersion: number;
+  transaction: Transaction;
+}): Promise<Transaction> {
+  const tx = params.transaction;
+  const baseValues = {
+    amountMinor: tx.amount.amountMinor,
+    currency: tx.amount.currency,
+    occurredOn: tx.occurredOn,
+    version: params.expectedVersion + 1,
+    updatedAt: new Date(),
+  };
+
+  let values: Partial<NewTransactionRow>;
+  if (tx.kind === "expense") {
+    values = {
+      ...baseValues,
+      kind: "expense",
+      accountId: tx.accountId,
+      categoryId: tx.categoryId ?? null,
+      payee: tx.payee,
+      paidByPersonId: tx.paidByPersonId,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+    };
+  } else if (tx.kind === "income") {
+    values = {
+      ...baseValues,
+      kind: "income",
+      accountId: tx.accountId,
+      categoryId: tx.categoryId ?? null,
+      source: tx.source,
+      receivedByPersonId: tx.receivedByPersonId,
+      payee: null,
+      paidByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+    };
+  } else {
+    values = {
+      ...baseValues,
+      kind: "transfer",
+      fromAccountId: tx.fromAccountId,
+      toAccountId: tx.toAccountId,
+      accountId: null,
+      categoryId: null,
+      payee: null,
+      paidByPersonId: null,
+      source: null,
+      receivedByPersonId: null,
+    };
   }
 
-  return mapRowToTransaction(inserted);
+  const [updated] = await getDb()
+    .update(transactions)
+    .set(values)
+    .where(
+      and(
+        eq(transactions.householdId, params.householdId),
+        eq(transactions.id, params.id),
+        eq(transactions.version, params.expectedVersion),
+        isNull(transactions.voidedAt),
+      ),
+    )
+    .returning();
+
+  if (updated) {
+    return mapRowToTransaction(updated);
+  }
+
+  const existing = await findTransactionById(params.householdId, params.id);
+  if (!existing) {
+    throw new TransactionNotFoundError(
+      `Transaction ${params.id} not found in household`,
+    );
+  }
+  if (existing.voidedAt !== null) {
+    throw new TransactionAlreadyVoidedError(
+      `Transaction ${params.id} is voided and cannot be edited`,
+    );
+  }
+  if (existing.version !== params.expectedVersion) {
+    throw new TransactionVersionConflictError(
+      `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
+    );
+  }
+
+  throw new Error(`Failed to update transaction ${params.id}`);
+}
+
+export async function voidTransactionInDb(params: {
+  householdId: string;
+  id: string;
+  expectedVersion: number;
+  voidReason?: string | null | undefined;
+  voidedAt?: Date | undefined;
+}): Promise<Transaction> {
+  const [voided] = await getDb()
+    .update(transactions)
+    .set({
+      voidedAt: params.voidedAt ?? new Date(),
+      voidReason: params.voidReason?.trim() || null,
+      version: params.expectedVersion + 1,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(transactions.householdId, params.householdId),
+        eq(transactions.id, params.id),
+        eq(transactions.version, params.expectedVersion),
+        isNull(transactions.voidedAt),
+      ),
+    )
+    .returning();
+
+  if (voided) {
+    return mapRowToTransaction(voided);
+  }
+
+  const existing = await findTransactionById(params.householdId, params.id);
+  if (!existing) {
+    throw new TransactionNotFoundError(
+      `Transaction ${params.id} not found in household`,
+    );
+  }
+  if (existing.voidedAt !== null) {
+    throw new TransactionAlreadyVoidedError(
+      `Transaction ${params.id} is already voided`,
+    );
+  }
+  if (existing.version !== params.expectedVersion) {
+    throw new TransactionVersionConflictError(
+      `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
+    );
+  }
+
+  throw new Error(`Failed to void transaction ${params.id}`);
 }
 
 export type ListTransactionsParams = {
   householdId: string;
   accountId?: string | undefined;
   categoryId?: string | undefined;
+  includeVoided?: boolean | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
 };
@@ -148,6 +351,10 @@ export async function listTransactionsByHousehold(
   params: ListTransactionsParams,
 ): Promise<Transaction[]> {
   const conditions = [eq(transactions.householdId, params.householdId)];
+
+  if (!params.includeVoided) {
+    conditions.push(isNull(transactions.voidedAt));
+  }
 
   if (params.accountId) {
     conditions.push(

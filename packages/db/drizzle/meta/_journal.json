@@ -29,6 +29,13 @@
       "when": 1788855521198,
       "tag": "0003_condemned_dorian_gray",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788856961370,
+      "tag": "0004_normal_onslaught",
+      "breakpoints": true
     }
   ]
 }

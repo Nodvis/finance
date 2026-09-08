@@ -21,6 +21,9 @@ export type ExpenseTransaction = Readonly<{
   paidByPersonId: PersonId; // payer (transaction context, distinct from account owner)
   occurredOn: Date;
   categoryId: CategoryId | null;
+  version: number;
+  voidedAt: Date | null;
+  voidReason: string | null;
 }>;
 
 export type IncomeTransaction = Readonly<{
@@ -33,6 +36,9 @@ export type IncomeTransaction = Readonly<{
   receivedByPersonId: PersonId; // beneficiary (transaction context)
   occurredOn: Date;
   categoryId: CategoryId | null;
+  version: number;
+  voidedAt: Date | null;
+  voidReason: string | null;
 }>;
 
 export type TransferTransaction = Readonly<{
@@ -43,6 +49,9 @@ export type TransferTransaction = Readonly<{
   toAccountId: AccountId;
   amount: Money; // positive magnitude
   occurredOn: Date;
+  version: number;
+  voidedAt: Date | null;
+  voidReason: string | null;
 }>;
 
 export type Transaction =
@@ -51,6 +60,7 @@ export type Transaction =
   | TransferTransaction;
 
 const MAX_COUNTERPARTY_LENGTH = 160;
+const MAX_VOID_REASON_LENGTH = 280;
 
 function assertPositiveAmount(amount: Money): void {
   if (!amount || typeof amount.amountMinor !== "bigint" || amount.amountMinor <= 0n) {
@@ -77,6 +87,18 @@ function normalizeCounterparty(value: string, fieldName: "payee" | "source"): st
   return normalized;
 }
 
+function normalizeVoidReason(reason?: string | null): string | null {
+  if (!reason) return null;
+  const normalized = reason.trim();
+  if (normalized.length === 0) return null;
+  if (normalized.length > MAX_VOID_REASON_LENGTH) {
+    throw new Error(
+      `Void reason must be at most ${MAX_VOID_REASON_LENGTH} characters`,
+    );
+  }
+  return normalized;
+}
+
 function deepFreeze<T extends object>(obj: T): T {
   Object.freeze(obj);
   for (const key of Object.keys(obj)) {
@@ -97,10 +119,15 @@ export function createExpense(input: {
   paidByPersonId: PersonId;
   occurredOn: Date;
   categoryId?: CategoryId | null;
+  version?: number;
+  voidedAt?: Date | null;
+  voidReason?: string | null;
 }): ExpenseTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
   const payee = normalizeCounterparty(input.payee, "payee");
+  const voidedAt = input.voidedAt ? assertValidDate(input.voidedAt) : null;
+  const voidReason = normalizeVoidReason(input.voidReason);
 
   return deepFreeze({
     id: input.id,
@@ -112,6 +139,43 @@ export function createExpense(input: {
     paidByPersonId: input.paidByPersonId,
     occurredOn,
     categoryId: input.categoryId ?? null,
+    version: input.version ?? 1,
+    voidedAt,
+    voidReason,
+  });
+}
+
+export function correctExpense(
+  existing: ExpenseTransaction,
+  input: {
+    accountId: AccountId;
+    amount: Money;
+    payee: string;
+    paidByPersonId?: PersonId;
+    occurredOn: Date;
+    categoryId?: CategoryId | null;
+  },
+): ExpenseTransaction {
+  if (existing.voidedAt !== null) {
+    throw new Error("Cannot correct a voided transaction");
+  }
+  assertPositiveAmount(input.amount);
+  const occurredOn = assertValidDate(input.occurredOn);
+  const payee = normalizeCounterparty(input.payee, "payee");
+
+  return deepFreeze({
+    id: existing.id,
+    householdId: existing.householdId,
+    kind: "expense" as const,
+    accountId: input.accountId,
+    amount: input.amount,
+    payee,
+    paidByPersonId: input.paidByPersonId ?? existing.paidByPersonId,
+    occurredOn,
+    categoryId: input.categoryId ?? null,
+    version: existing.version + 1,
+    voidedAt: null,
+    voidReason: null,
   });
 }
 
@@ -124,10 +188,15 @@ export function createIncome(input: {
   receivedByPersonId: PersonId;
   occurredOn: Date;
   categoryId?: CategoryId | null;
+  version?: number;
+  voidedAt?: Date | null;
+  voidReason?: string | null;
 }): IncomeTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
   const source = normalizeCounterparty(input.source, "source");
+  const voidedAt = input.voidedAt ? assertValidDate(input.voidedAt) : null;
+  const voidReason = normalizeVoidReason(input.voidReason);
 
   return deepFreeze({
     id: input.id,
@@ -139,6 +208,43 @@ export function createIncome(input: {
     receivedByPersonId: input.receivedByPersonId,
     occurredOn,
     categoryId: input.categoryId ?? null,
+    version: input.version ?? 1,
+    voidedAt,
+    voidReason,
+  });
+}
+
+export function correctIncome(
+  existing: IncomeTransaction,
+  input: {
+    accountId: AccountId;
+    amount: Money;
+    source: string;
+    receivedByPersonId?: PersonId;
+    occurredOn: Date;
+    categoryId?: CategoryId | null;
+  },
+): IncomeTransaction {
+  if (existing.voidedAt !== null) {
+    throw new Error("Cannot correct a voided transaction");
+  }
+  assertPositiveAmount(input.amount);
+  const occurredOn = assertValidDate(input.occurredOn);
+  const source = normalizeCounterparty(input.source, "source");
+
+  return deepFreeze({
+    id: existing.id,
+    householdId: existing.householdId,
+    kind: "income" as const,
+    accountId: input.accountId,
+    amount: input.amount,
+    source,
+    receivedByPersonId: input.receivedByPersonId ?? existing.receivedByPersonId,
+    occurredOn,
+    categoryId: input.categoryId ?? null,
+    version: existing.version + 1,
+    voidedAt: null,
+    voidReason: null,
   });
 }
 
@@ -150,6 +256,9 @@ export function createTransfer(input: {
   amount: Money;
   occurredOn: Date;
   categoryId?: unknown;
+  version?: number;
+  voidedAt?: Date | null;
+  voidReason?: string | null;
 }): TransferTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
@@ -164,6 +273,9 @@ export function createTransfer(input: {
     );
   }
 
+  const voidedAt = input.voidedAt ? assertValidDate(input.voidedAt) : null;
+  const voidReason = normalizeVoidReason(input.voidReason);
+
   return deepFreeze({
     id: input.id,
     householdId: input.householdId,
@@ -172,7 +284,73 @@ export function createTransfer(input: {
     toAccountId: input.toAccountId,
     amount: input.amount,
     occurredOn,
+    version: input.version ?? 1,
+    voidedAt,
+    voidReason,
   });
+}
+
+export function correctTransfer(
+  existing: TransferTransaction,
+  input: {
+    fromAccountId: AccountId;
+    toAccountId: AccountId;
+    amount: Money;
+    occurredOn: Date;
+    categoryId?: unknown;
+  },
+): TransferTransaction {
+  if (existing.voidedAt !== null) {
+    throw new Error("Cannot correct a voided transaction");
+  }
+  assertPositiveAmount(input.amount);
+  const occurredOn = assertValidDate(input.occurredOn);
+
+  if (input.categoryId !== undefined && input.categoryId !== null) {
+    throw new Error("Transfer transactions cannot have a category");
+  }
+
+  if (input.fromAccountId === input.toAccountId) {
+    throw new Error(
+      "Transfer fromAccountId and toAccountId must be different (self-transfer rejected)",
+    );
+  }
+
+  return deepFreeze({
+    id: existing.id,
+    householdId: existing.householdId,
+    kind: "transfer" as const,
+    fromAccountId: input.fromAccountId,
+    toAccountId: input.toAccountId,
+    amount: input.amount,
+    occurredOn,
+    version: existing.version + 1,
+    voidedAt: null,
+    voidReason: null,
+  });
+}
+
+export function voidTransaction<T extends Transaction>(
+  tx: T,
+  reason?: string | null,
+  voidedAt: Date = new Date(),
+): T {
+  if (tx.voidedAt !== null) {
+    throw new Error("Transaction is already voided");
+  }
+  const validVoidedAt = assertValidDate(voidedAt);
+  const normalizedReason = normalizeVoidReason(reason);
+
+  return deepFreeze({
+    ...tx,
+    version: tx.version + 1,
+    voidedAt: validVoidedAt,
+    voidReason: normalizedReason,
+  }) as T;
+}
+
+export function isVoided(tx: Transaction): boolean {
+  return tx.voidedAt !== null;
 }
 
 export function transactionKind(tx: Transaction): TransactionKind {
@@ -194,10 +372,15 @@ export function isTransfer(tx: Transaction): tx is TransferTransaction {
 export type LedgerEntry = Readonly<{ accountId: AccountId; effect: Money }>;
 
 // Signed per-account balance movements.
+// A voided transaction produces empty ledger effects.
 //   expense:  [{ accountId, effect: -amount }]
 //   income:   [{ accountId, effect: +amount }]
 //   transfer: [{ fromAccountId, effect: -amount }, { toAccountId, effect: +amount }]
 export function ledgerEntries(tx: Transaction): readonly LedgerEntry[] {
+  if (tx.voidedAt !== null) {
+    return Object.freeze([]);
+  }
+
   switch (tx.kind) {
     case "expense":
       return Object.freeze([
@@ -227,7 +410,7 @@ export function ledgerEntries(tx: Transaction): readonly LedgerEntry[] {
   }
 }
 
-// Sum of ledgerEntries effects (single currency). Exactly zero for transfers.
+// Sum of ledgerEntries effects (single currency). Exactly zero for transfers or voided transactions.
 export function netMoneyEffect(tx: Transaction): Money {
   const entries = ledgerEntries(tx);
   let total = money(0n, tx.amount.currency);

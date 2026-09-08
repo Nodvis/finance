@@ -50,7 +50,11 @@ export default async function HomePage({ params }: HomePageProps) {
     : [];
 
   const rawTransactions = householdContext
-    ? await listManualTransactions(householdContext, { limit: 50, offset: 0 })
+    ? await listManualTransactions(householdContext, {
+        limit: 50,
+        offset: 0,
+        includeVoided: true,
+      })
     : [];
 
   const serializedTransactions = rawTransactions.map(serializeTransaction);
@@ -186,6 +190,7 @@ export default async function HomePage({ params }: HomePageProps) {
               accounts={accounts}
               categories={categories}
               locale={locale}
+              householdId={householdContext.householdId}
             />
           </div>
         </section>

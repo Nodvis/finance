@@ -29,10 +29,16 @@ export type {
   UpdateHouseholdAccountMetadataInput,
 } from "./access/accounts";
 export {
+  DuplicateSubmissionError,
+  TransactionAlreadyVoidedError,
+  TransactionNotFoundError,
+  TransactionVersionConflictError,
   findTransactionById,
   insertTransaction,
   listTransactionsByHousehold,
   mapRowToTransaction,
+  updateTransactionInDb,
+  voidTransactionInDb,
 } from "./access/transactions";
 export type {
   ListTransactionsParams,

@@ -4,6 +4,8 @@ import {
   check,
   foreignKey,
   index,
+  integer,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -57,6 +59,14 @@ export const transactions = financeSchema.table(
     fromAccountId: uuid("from_account_id"),
     toAccountId: uuid("to_account_id"),
 
+    // Audit and correction tracking
+    version: integer("version").notNull().default(1),
+    voidedAt: instant("voided_at"),
+    voidReason: varchar("void_reason", { length: 280 }),
+
+    // Idempotency / duplicate submission protection at boundary
+    submissionId: varchar("submission_id", { length: 64 }),
+
     createdAt: instant("created_at").defaultNow().notNull(),
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },
@@ -98,6 +108,7 @@ export const transactions = financeSchema.table(
       ],
     }).onDelete("cascade"),
     check("transactions_amount_positive", sql`${table.amountMinor} > 0`),
+    check("transactions_version_positive", sql`${table.version} >= 1`),
     check("transactions_currency_format", currencyCheck(table.currency)),
     check(
       "transactions_transfer_distinct_accounts",
@@ -122,6 +133,14 @@ export const transactions = financeSchema.table(
     index("transactions_household_occurred_on_idx").on(
       table.householdId,
       table.occurredOn,
+    ),
+    index("transactions_household_voided_at_idx").on(
+      table.householdId,
+      table.voidedAt,
+    ),
+    uniqueIndex("transactions_household_submission_id_idx").on(
+      table.householdId,
+      table.submissionId,
     ),
   ],
 );

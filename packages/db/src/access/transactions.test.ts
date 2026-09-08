@@ -8,7 +8,13 @@ import {
   netMoneyEffect,
 } from "@nodvis/finance-domain";
 
-import { mapRowToTransaction } from "./transactions";
+import {
+  DuplicateSubmissionError,
+  TransactionAlreadyVoidedError,
+  TransactionNotFoundError,
+  TransactionVersionConflictError,
+  mapRowToTransaction,
+} from "./transactions";
 import type { TransactionRow } from "./transactions";
 
 const householdUuid = "018f47a0-7762-7b9c-8d17-27f2f79e59a1";
@@ -24,9 +30,18 @@ describe("mapRowToTransaction", () => {
   const occurredOn = new Date("2026-09-07T12:00:00Z");
   const createdAt = new Date("2026-09-07T12:00:01Z");
   const updatedAt = new Date("2026-09-07T12:00:01Z");
+  const baseRow = {
+    version: 1,
+    voidedAt: null,
+    voidReason: null,
+    submissionId: null,
+    createdAt,
+    updatedAt,
+  };
 
   it("hydrates an expense row into a frozen ExpenseTransaction domain entity", () => {
     const row: TransactionRow = {
+      ...baseRow,
       id: txUuid1,
       householdId: householdUuid,
       kind: "expense",
@@ -41,8 +56,6 @@ describe("mapRowToTransaction", () => {
       receivedByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
-      createdAt,
-      updatedAt,
     };
 
     const tx = mapRowToTransaction(row);
@@ -60,6 +73,9 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: personUuid1,
       occurredOn,
       categoryId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
     });
     expect(Object.isFrozen(tx)).toBe(true);
   });
@@ -81,6 +97,10 @@ describe("mapRowToTransaction", () => {
       receivedByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
       createdAt,
       updatedAt,
     };
@@ -108,6 +128,10 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
       createdAt,
       updatedAt,
     };
@@ -127,6 +151,9 @@ describe("mapRowToTransaction", () => {
       receivedByPersonId: personUuid2,
       occurredOn,
       categoryId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
     });
     expect(Object.isFrozen(tx)).toBe(true);
   });
@@ -147,6 +174,10 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       source: null,
       receivedByPersonId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
       createdAt,
       updatedAt,
     };
@@ -164,13 +195,49 @@ describe("mapRowToTransaction", () => {
       toAccountId: accountUuid2,
       amount: { amountMinor: 30000n, currency: "PLN" },
       occurredOn,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
     });
     expect(Object.isFrozen(tx)).toBe(true);
     expect(isZeroMoney(netMoneyEffect(tx))).toBe(true);
   });
 
+  it("hydrates a voided transaction row preserving voidedAt and voidReason", () => {
+    const voidedAt = new Date("2026-09-08T14:00:00Z");
+    const row: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 4500n,
+      currency: "PLN",
+      occurredOn,
+      accountId: accountUuid1,
+      categoryId: null,
+      payee: "Grocery Store",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      version: 2,
+      voidedAt,
+      voidReason: "Accidental double charge",
+      submissionId: null,
+      createdAt,
+      updatedAt,
+    };
+
+    const tx = mapRowToTransaction(row);
+    expect(tx.version).toBe(2);
+    expect(tx.voidedAt).toEqual(voidedAt);
+    expect(tx.voidReason).toBe("Accidental double charge");
+    expect(isZeroMoney(netMoneyEffect(tx))).toBe(true);
+  });
+
   it("throws on corrupted expense rows missing required fields", () => {
     const missingAccount: TransactionRow = {
+      ...baseRow,
       id: txUuid1,
       householdId: householdUuid,
       kind: "expense",
@@ -185,8 +252,6 @@ describe("mapRowToTransaction", () => {
       receivedByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
-      createdAt,
-      updatedAt,
     };
     expect(() => mapRowToTransaction(missingAccount)).toThrow(/Corrupted expense transaction row/);
 
@@ -207,6 +272,7 @@ describe("mapRowToTransaction", () => {
 
   it("throws on corrupted income rows missing required fields", () => {
     const missingSource: TransactionRow = {
+      ...baseRow,
       id: txUuid2,
       householdId: householdUuid,
       kind: "income",
@@ -221,14 +287,13 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
-      createdAt,
-      updatedAt,
     };
     expect(() => mapRowToTransaction(missingSource)).toThrow(/Corrupted income transaction row/);
   });
 
   it("throws on corrupted transfer rows missing required fields", () => {
     const missingTo: TransactionRow = {
+      ...baseRow,
       id: txUuid3,
       householdId: householdUuid,
       kind: "transfer",
@@ -243,14 +308,13 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       source: null,
       receivedByPersonId: null,
-      createdAt,
-      updatedAt,
     };
     expect(() => mapRowToTransaction(missingTo)).toThrow(/Corrupted transfer transaction row/);
   });
 
   it("enforces domain invariants during hydration (rejection of non-positive amount and self-transfer)", () => {
     const nonPositiveExpense: TransactionRow = {
+      ...baseRow,
       id: txUuid1,
       householdId: householdUuid,
       kind: "expense",
@@ -265,12 +329,11 @@ describe("mapRowToTransaction", () => {
       receivedByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
-      createdAt,
-      updatedAt,
     };
     expect(() => mapRowToTransaction(nonPositiveExpense)).toThrow(/strictly positive/);
 
     const selfTransfer: TransactionRow = {
+      ...baseRow,
       id: txUuid3,
       householdId: householdUuid,
       kind: "transfer",
@@ -285,9 +348,29 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       source: null,
       receivedByPersonId: null,
-      createdAt,
-      updatedAt,
     };
     expect(() => mapRowToTransaction(selfTransfer)).toThrow(/self-transfer rejected/);
+  });
+
+  it("provides specific error classes for missing transaction, already voided, version conflict, and duplicate submission", () => {
+    const notFound = new TransactionNotFoundError("tx not found");
+    expect(notFound).toBeInstanceOf(Error);
+    expect(notFound.name).toBe("TransactionNotFoundError");
+    expect(notFound.message).toBe("tx not found");
+
+    const alreadyVoided = new TransactionAlreadyVoidedError("already voided");
+    expect(alreadyVoided).toBeInstanceOf(Error);
+    expect(alreadyVoided.name).toBe("TransactionAlreadyVoidedError");
+    expect(alreadyVoided.message).toBe("already voided");
+
+    const conflict = new TransactionVersionConflictError("conflict");
+    expect(conflict).toBeInstanceOf(Error);
+    expect(conflict.name).toBe("TransactionVersionConflictError");
+    expect(conflict.message).toBe("conflict");
+
+    const dup = new DuplicateSubmissionError("duplicate");
+    expect(dup).toBeInstanceOf(Error);
+    expect(dup.name).toBe("DuplicateSubmissionError");
+    expect(dup.message).toBe("duplicate");
   });
 });

@@ -38,3 +38,26 @@ Weryfikacja:
 - Niezależny przegląd i checkpoint kategorii przed push.
 - Następnie korekty/voidowanie transakcji, prawdziwy overview, a potem filtrowanie/paginacja/CSV.
 - Prywatna migracja wymaga osobnego backupu przed zastosowaniem i deploymentu po zakończeniu bezpiecznego checkpointu.
+
+## Checkpoint: korekta i voidowanie transakcji — lokalnie zweryfikowane
+
+AGY pozostawił implementację Phase 2 w worktree, ale zakończył się timeoutem oczekiwania na odpowiedź. Manager poprawił wyłącznie fixture’y testowe i zweryfikował kod niezależnie.
+
+- migracja `0004_normal_onslaught.sql` dodaje `version`, `voided_at`, `void_reason` i `submission_id`;
+- expense, income i transfer można odczytać oraz korygować; transfer pozostaje jednym logicznym rekordem z dwoma kontami;
+- void jest niedestrukcyjny, a domyślna historia wyklucza voided records;
+- optimistic concurrency używa warunku household + id + expected version;
+- duplikaty `submissionId` są odrzucane przez unikalny indeks per household;
+- snapshoty kont nie są modyfikowane przez korektę ani void;
+- API i responsywne UI mają szczegóły, korektę i potwierdzenie voidowania w PL/EN.
+
+Weryfikacja Phase 2:
+
+- `pnpm test`: 301 testów passed (domain 66, db 29, web 206);
+- `pnpm typecheck`: passed;
+- `pnpm lint`: passed;
+- `pnpm build`: passed;
+- `git diff --check`: passed;
+- migracje na izolowanej bazie `nodvis_finance_phase2_test`: pierwsze i drugie `pnpm db:migrate` passed; baza usunięta po teście.
+
+Ograniczenie do dalszego przeglądu: korekty są kontrolowanymi edycjami z wersją, `updatedAt`, `voidedAt` i `voidReason`; nie ma jeszcze osobnej immutable tabeli pełnych rewizji ani identyfikatora osoby wykonującej zmianę.

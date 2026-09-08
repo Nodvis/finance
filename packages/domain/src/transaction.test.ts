@@ -22,15 +22,20 @@ import type {
 import { isZeroMoney, money } from "./money";
 import {
   TRANSACTION_KINDS,
+  correctExpense,
+  correctIncome,
+  correctTransfer,
   createExpense,
   createIncome,
   createTransfer,
   isExpense,
   isIncome,
   isTransfer,
+  isVoided,
   ledgerEntries,
   netMoneyEffect,
   transactionKind,
+  voidTransaction,
 } from "./transaction";
 import type {
   ExpenseTransaction,
@@ -89,6 +94,9 @@ describe("Manual transactions happy paths and immutability", () => {
       paidByPersonId: personUuid1,
       occurredOn,
       categoryId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
     });
 
     expect(Object.isFrozen(expense)).toBe(true);
@@ -118,6 +126,9 @@ describe("Manual transactions happy paths and immutability", () => {
       receivedByPersonId: personUuid2,
       occurredOn,
       categoryId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
     });
 
     expect(Object.isFrozen(income)).toBe(true);
@@ -144,6 +155,9 @@ describe("Manual transactions happy paths and immutability", () => {
       toAccountId: accountUuid2,
       amount: { amountMinor: 50000n, currency: "PLN" },
       occurredOn,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
     });
 
     expect(Object.isFrozen(transfer)).toBe(true);
@@ -712,5 +726,291 @@ describe("Transaction category assignment", () => {
         categoryId: catId,
       }),
     ).toThrow(/Transfer transactions cannot have a category/);
+  });
+});
+
+describe("Transaction correction", () => {
+  const occurredOn = new Date("2026-09-07T10:00:00Z");
+  const updatedDate = new Date("2026-09-08T15:30:00Z");
+
+  it("corrects an existing expense transaction and increments version", () => {
+    const original = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(5000n, "PLN"),
+      payee: "Grocery Store",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    const corrected = correctExpense(original, {
+      accountId: accountId(accountUuid2),
+      amount: money(6500n, "PLN"),
+      payee: "Supermarket Express",
+      paidByPersonId: personId(personUuid2),
+      occurredOn: updatedDate,
+      categoryId: categoryId("018f47a0-7762-7b9c-8d17-27f2f79e59b9"),
+    });
+
+    expect(corrected.id).toBe(original.id);
+    expect(corrected.householdId).toBe(original.householdId);
+    expect(corrected.kind).toBe("expense");
+    expect(corrected.accountId).toBe(accountUuid2);
+    expect(corrected.amount).toEqual(money(6500n, "PLN"));
+    expect(corrected.payee).toBe("Supermarket Express");
+    expect(corrected.paidByPersonId).toBe(personUuid2);
+    expect(corrected.occurredOn).toEqual(updatedDate);
+    expect(corrected.categoryId).toBe("018f47a0-7762-7b9c-8d17-27f2f79e59b9");
+    expect(corrected.version).toBe(2);
+    expect(corrected.voidedAt).toBeNull();
+    expect(corrected.voidReason).toBeNull();
+    expect(Object.isFrozen(corrected)).toBe(true);
+  });
+
+  it("corrects an existing income transaction and increments version", () => {
+    const original = createIncome({
+      id: transactionId(txUuid2),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(200000n, "PLN"),
+      source: "Client A",
+      receivedByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    const corrected = correctIncome(original, {
+      accountId: accountId(accountUuid2),
+      amount: money(250000n, "PLN"),
+      source: "Client B",
+      receivedByPersonId: personId(personUuid2),
+      occurredOn: updatedDate,
+      categoryId: null,
+    });
+
+    expect(corrected.id).toBe(original.id);
+    expect(corrected.accountId).toBe(accountUuid2);
+    expect(corrected.amount).toEqual(money(250000n, "PLN"));
+    expect(corrected.source).toBe("Client B");
+    expect(corrected.receivedByPersonId).toBe(personUuid2);
+    expect(corrected.version).toBe(2);
+    expect(corrected.voidedAt).toBeNull();
+    expect(Object.isFrozen(corrected)).toBe(true);
+  });
+
+  it("corrects an existing transfer transaction and increments version while validating distinct accounts", () => {
+    const original = createTransfer({
+      id: transactionId(txUuid3),
+      householdId: householdId(householdUuid),
+      fromAccountId: accountId(accountUuid1),
+      toAccountId: accountId(accountUuid2),
+      amount: money(10000n, "PLN"),
+      occurredOn,
+    });
+
+    const accountUuid3 = "018f47a0-7762-7b9c-8d17-27f2f79e59a9";
+    const corrected = correctTransfer(original, {
+      fromAccountId: accountId(accountUuid1),
+      toAccountId: accountId(accountUuid3),
+      amount: money(15000n, "PLN"),
+      occurredOn: updatedDate,
+    });
+
+    expect(corrected.id).toBe(original.id);
+    expect(corrected.fromAccountId).toBe(accountUuid1);
+    expect(corrected.toAccountId).toBe(accountUuid3);
+    expect(corrected.amount).toEqual(money(15000n, "PLN"));
+    expect(corrected.version).toBe(2);
+    expect(corrected.voidedAt).toBeNull();
+    expect(Object.isFrozen(corrected)).toBe(true);
+  });
+
+  it("rejects correcting a transfer into a self-transfer", () => {
+    const original = createTransfer({
+      id: transactionId(txUuid3),
+      householdId: householdId(householdUuid),
+      fromAccountId: accountId(accountUuid1),
+      toAccountId: accountId(accountUuid2),
+      amount: money(10000n, "PLN"),
+      occurredOn,
+    });
+
+    expect(() =>
+      correctTransfer(original, {
+        fromAccountId: accountId(accountUuid1),
+        toAccountId: accountId(accountUuid1),
+        amount: money(15000n, "PLN"),
+        occurredOn,
+      }),
+    ).toThrow(/self-transfer rejected/);
+  });
+
+  it("rejects correcting a transfer with a category", () => {
+    const original = createTransfer({
+      id: transactionId(txUuid3),
+      householdId: householdId(householdUuid),
+      fromAccountId: accountId(accountUuid1),
+      toAccountId: accountId(accountUuid2),
+      amount: money(10000n, "PLN"),
+      occurredOn,
+    });
+
+    expect(() =>
+      correctTransfer(original, {
+        fromAccountId: accountId(accountUuid1),
+        toAccountId: accountId(accountUuid2),
+        amount: money(15000n, "PLN"),
+        occurredOn,
+        categoryId: "018f47a0-7762-7b9c-8d17-27f2f79e59b9",
+      }),
+    ).toThrow(/cannot have a category/);
+  });
+
+  it("rejects correcting an expense with non-positive amount or invalid date", () => {
+    const original = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(5000n, "PLN"),
+      payee: "Grocery Store",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    expect(() =>
+      correctExpense(original, {
+        accountId: accountId(accountUuid1),
+        amount: money(0n, "PLN"),
+        payee: "Shop",
+        occurredOn,
+      }),
+    ).toThrow(/strictly positive/);
+
+    expect(() =>
+      correctExpense(original, {
+        accountId: accountId(accountUuid1),
+        amount: money(-100n, "PLN"),
+        payee: "Shop",
+        occurredOn,
+      }),
+    ).toThrow(/strictly positive/);
+
+    expect(() =>
+      correctExpense(original, {
+        accountId: accountId(accountUuid1),
+        amount: money(1000n, "PLN"),
+        payee: "Shop",
+        occurredOn: new Date("invalid"),
+      }),
+    ).toThrow(/valid Date/);
+
+    expect(() =>
+      correctExpense(original, {
+        accountId: accountId(accountUuid1),
+        amount: money(1000n, "PLN"),
+        payee: "   ",
+        occurredOn,
+      }),
+    ).toThrow(/non-blank/);
+  });
+});
+
+describe("Transaction voiding and audit meaning", () => {
+  const occurredOn = new Date("2026-09-07T10:00:00Z");
+
+  it("voids an active expense transaction and records voidedAt, reason, and increments version", () => {
+    const expense = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(4500n, "PLN"),
+      payee: "Biedronka",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    expect(isVoided(expense)).toBe(false);
+
+    const voidTimestamp = new Date("2026-09-08T12:00:00Z");
+    const voided = voidTransaction(expense, "Accidental duplicate entry", voidTimestamp);
+
+    expect(isVoided(voided)).toBe(true);
+    expect(voided.voidedAt).toEqual(voidTimestamp);
+    expect(voided.voidReason).toBe("Accidental duplicate entry");
+    expect(voided.version).toBe(2);
+    expect(Object.isFrozen(voided)).toBe(true);
+  });
+
+  it("rejects correcting an already voided transaction", () => {
+    const expense = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(4500n, "PLN"),
+      payee: "Biedronka",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    const voided = voidTransaction(expense, "Mistake");
+
+    expect(() =>
+      correctExpense(voided, {
+        accountId: accountId(accountUuid1),
+        amount: money(5000n, "PLN"),
+        payee: "Biedronka",
+        occurredOn,
+      }),
+    ).toThrow(/Cannot correct a voided transaction/);
+  });
+
+  it("rejects voiding an already voided transaction", () => {
+    const expense = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(4500n, "PLN"),
+      payee: "Biedronka",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    const voided = voidTransaction(expense, "First void");
+    expect(() => voidTransaction(voided, "Second void")).toThrow(
+      /Transaction is already voided/,
+    );
+  });
+
+  it("produces empty ledgerEntries and zero netMoneyEffect for voided transactions", () => {
+    const expense = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(4500n, "PLN"),
+      payee: "Biedronka",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    expect(ledgerEntries(expense)).toHaveLength(1);
+    expect(netMoneyEffect(expense).amountMinor).toBe(-4500n);
+
+    const voidedExpense = voidTransaction(expense, "Refunded/Voided");
+    expect(ledgerEntries(voidedExpense)).toHaveLength(0);
+    expect(isZeroMoney(netMoneyEffect(voidedExpense))).toBe(true);
+
+    const transfer = createTransfer({
+      id: transactionId(txUuid3),
+      householdId: householdId(householdUuid),
+      fromAccountId: accountId(accountUuid1),
+      toAccountId: accountId(accountUuid2),
+      amount: money(10000n, "PLN"),
+      occurredOn,
+    });
+
+    expect(ledgerEntries(transfer)).toHaveLength(2);
+    const voidedTransfer = voidTransaction(transfer, "Cancelled transfer");
+    expect(ledgerEntries(voidedTransfer)).toHaveLength(0);
+    expect(isZeroMoney(netMoneyEffect(voidedTransfer))).toBe(true);
   });
 });

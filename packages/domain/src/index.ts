@@ -71,15 +71,20 @@ export type {
 
 export {
   TRANSACTION_KINDS,
+  correctExpense,
+  correctIncome,
+  correctTransfer,
   createExpense,
   createIncome,
   createTransfer,
   isExpense,
   isIncome,
   isTransfer,
+  isVoided,
   ledgerEntries,
   netMoneyEffect,
   transactionKind,
+  voidTransaction,
 } from "./transaction";
 export type {
   ExpenseTransaction,

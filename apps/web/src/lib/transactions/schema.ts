@@ -34,6 +34,7 @@ export const createExpenseSchema = z.object({
   paidByPersonId: z.string().uuid("Invalid paidByPersonId UUID").optional(),
   occurredOn: z.coerce.date(),
   categoryId: z.string().uuid("Invalid categoryId UUID").optional().nullable(),
+  submissionId: z.string().trim().max(64).optional(),
 });
 
 export const createIncomeSchema = z.object({
@@ -51,6 +52,7 @@ export const createIncomeSchema = z.object({
     .optional(),
   occurredOn: z.coerce.date(),
   categoryId: z.string().uuid("Invalid categoryId UUID").optional().nullable(),
+  submissionId: z.string().trim().max(64).optional(),
 });
 
 export const createTransferSchema = z
@@ -61,6 +63,7 @@ export const createTransferSchema = z
     amount: moneySchema,
     occurredOn: z.coerce.date(),
     categoryId: z.union([z.string(), z.null(), z.undefined()]).optional(),
+    submissionId: z.string().trim().max(64).optional(),
   })
   .refine((data) => data.fromAccountId !== data.toAccountId, {
     message:
@@ -103,52 +106,137 @@ export const createTransactionSchema = z.preprocess(
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
+export const correctExpenseSchema = z.object({
+  kind: z.literal("expense"),
+  expectedVersion: z.number().int().min(1, "expectedVersion must be at least 1"),
+  accountId: z.string().uuid("Invalid accountId UUID"),
+  amount: moneySchema,
+  payee: z
+    .string()
+    .trim()
+    .min(1, "Payee is required")
+    .max(160, "Payee must be at most 160 characters"),
+  paidByPersonId: z.string().uuid("Invalid paidByPersonId UUID").optional(),
+  occurredOn: z.coerce.date(),
+  categoryId: z.string().uuid("Invalid categoryId UUID").optional().nullable(),
+});
+
+export const correctIncomeSchema = z.object({
+  kind: z.literal("income"),
+  expectedVersion: z.number().int().min(1, "expectedVersion must be at least 1"),
+  accountId: z.string().uuid("Invalid accountId UUID"),
+  amount: moneySchema,
+  source: z
+    .string()
+    .trim()
+    .min(1, "Source is required")
+    .max(160, "Source must be at most 160 characters"),
+  receivedByPersonId: z
+    .string()
+    .uuid("Invalid receivedByPersonId UUID")
+    .optional(),
+  occurredOn: z.coerce.date(),
+  categoryId: z.string().uuid("Invalid categoryId UUID").optional().nullable(),
+});
+
+export const correctTransferSchema = z
+  .object({
+    kind: z.literal("transfer"),
+    expectedVersion: z.number().int().min(1, "expectedVersion must be at least 1"),
+    fromAccountId: z.string().uuid("Invalid fromAccountId UUID"),
+    toAccountId: z.string().uuid("Invalid toAccountId UUID"),
+    amount: moneySchema,
+    occurredOn: z.coerce.date(),
+    categoryId: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  })
+  .refine((data) => data.fromAccountId !== data.toAccountId, {
+    message:
+      "Self-transfer rejected: fromAccountId and toAccountId must be different",
+    path: ["toAccountId"],
+  })
+  .refine((data) => !data.categoryId, {
+    message: "Transfer transactions cannot have a category",
+    path: ["categoryId"],
+  });
+
+const correctTransactionDiscriminatedUnion = z.discriminatedUnion("kind", [
+  correctExpenseSchema,
+  correctIncomeSchema,
+  correctTransferSchema,
+]);
+
+export const correctTransactionSchema = z.preprocess(
+  normalizeAmountPreprocessor,
+  correctTransactionDiscriminatedUnion,
+);
+
+export type CorrectTransactionInput = z.infer<typeof correctTransactionSchema>;
+
+export const voidTransactionSchema = z.object({
+  expectedVersion: z.number().int().min(1, "expectedVersion must be at least 1"),
+  voidReason: z
+    .string()
+    .trim()
+    .max(280, "Void reason must be at most 280 characters")
+    .optional()
+    .nullable(),
+});
+
+export type VoidTransactionInput = z.infer<typeof voidTransactionSchema>;
+
 export const listTransactionsQuerySchema = z.object({
   accountId: z.string().uuid("Invalid accountId UUID").optional(),
   categoryId: z.string().uuid("Invalid categoryId UUID").optional(),
+  includeVoided: z
+    .preprocess((val) => val === "true" || val === true, z.boolean())
+    .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
+export type ListTransactionsQuery = {
+  accountId?: string | undefined;
+  categoryId?: string | undefined;
+  includeVoided?: boolean | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+};
 
 export type SerializedMoney = {
   amountMinor: string;
   currency: string;
 };
 
-export type SerializedExpenseTransaction = {
+export type SerializedBaseTransaction = {
   id: string;
   householdId: string;
+  amount: SerializedMoney;
+  occurredOn: string;
+  version: number;
+  voidedAt: string | null;
+  voidReason: string | null;
+};
+
+export type SerializedExpenseTransaction = SerializedBaseTransaction & {
   kind: "expense";
   accountId: string;
-  amount: SerializedMoney;
   payee: string;
   paidByPersonId: string;
-  occurredOn: string;
   categoryId: string | null;
 };
 
-export type SerializedIncomeTransaction = {
-  id: string;
-  householdId: string;
+export type SerializedIncomeTransaction = SerializedBaseTransaction & {
   kind: "income";
   accountId: string;
-  amount: SerializedMoney;
   source: string;
   receivedByPersonId: string;
-  occurredOn: string;
   categoryId: string | null;
 };
 
-export type SerializedTransferTransaction = {
-  id: string;
-  householdId: string;
+export type SerializedTransferTransaction = SerializedBaseTransaction & {
   kind: "transfer";
   fromAccountId: string;
   toAccountId: string;
-  amount: SerializedMoney;
-  occurredOn: string;
 };
 
 export type SerializedTransaction =

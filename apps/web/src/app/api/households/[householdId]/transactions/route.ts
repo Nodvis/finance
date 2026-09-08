@@ -12,22 +12,27 @@ import {
 } from "../../../../../lib/transactions/schema";
 import { serializeTransaction } from "../../../../../lib/transactions/serialization";
 import {
-  createManualTransaction,
-  listManualTransactions,
+  DuplicateSubmissionError,
   TransactionAccountNotFoundError,
+  TransactionAlreadyVoidedError,
   TransactionCategoryApplicabilityError,
   TransactionCategoryArchivedError,
   TransactionCategoryNotAllowedError,
   TransactionCategoryNotFoundError,
   TransactionCurrencyMismatchError,
   TransactionInvalidPersonError,
+  TransactionKindMismatchError,
+  TransactionNotFoundError,
+  TransactionVersionConflictError,
+  createManualTransaction,
+  listManualTransactions,
 } from "../../../../../lib/transactions/service";
 
 type RouteContext = {
   params: Promise<{ householdId: string }>;
 };
 
-function handleRouteError(error: unknown): NextResponse {
+export function handleRouteError(error: unknown): NextResponse {
   if (error instanceof AuthenticationRequiredError) {
     return NextResponse.json(
       { error: "Authentication is required" },
@@ -39,6 +44,23 @@ function handleRouteError(error: unknown): NextResponse {
     return NextResponse.json(
       { error: "Household access denied" },
       { status: 403 },
+    );
+  }
+
+  if (error instanceof TransactionNotFoundError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 404 },
+    );
+  }
+
+  if (
+    error instanceof TransactionVersionConflictError ||
+    error instanceof DuplicateSubmissionError
+  ) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 409 },
     );
   }
 
@@ -60,6 +82,8 @@ function handleRouteError(error: unknown): NextResponse {
     error instanceof TransactionCategoryNotAllowedError ||
     error instanceof TransactionCurrencyMismatchError ||
     error instanceof TransactionInvalidPersonError ||
+    error instanceof TransactionAlreadyVoidedError ||
+    error instanceof TransactionKindMismatchError ||
     error instanceof SyntaxError
   ) {
     return NextResponse.json(
@@ -68,8 +92,8 @@ function handleRouteError(error: unknown): NextResponse {
     );
   }
 
-  // Also catch any domain invariant Error thrown during transaction creation
-  if (error instanceof Error && error.message.includes("Transaction")) {
+  // Also catch any domain invariant Error thrown during transaction creation/correction
+  if (error instanceof Error && (error.message.includes("Transaction") || error.message.includes("Transfer"))) {
     return NextResponse.json(
       { error: error.message },
       { status: 400 },
@@ -128,6 +152,9 @@ export async function GET(
 
     const categoryId = url.searchParams.get("categoryId");
     if (categoryId) queryParams.categoryId = categoryId;
+
+    const includeVoided = url.searchParams.get("includeVoided");
+    if (includeVoided) queryParams.includeVoided = includeVoided;
 
     const limit = url.searchParams.get("limit");
     if (limit) queryParams.limit = limit;

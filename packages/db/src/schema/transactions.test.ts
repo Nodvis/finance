@@ -130,5 +130,27 @@ describe("transactions schema", () => {
     expect(indexNames).toContain("transactions_to_account_id_idx");
     expect(indexNames).toContain("transactions_occurred_on_idx");
     expect(indexNames).toContain("transactions_household_occurred_on_idx");
+    expect(indexNames).toContain("transactions_household_voided_at_idx");
+    expect(indexNames).toContain("transactions_household_submission_id_idx");
+  });
+
+  it("defines optimistic versioning and void/audit columns with check constraints", () => {
+    const config = getTableConfig(transactions);
+    const checks = config.checks.map((c) => c.name);
+
+    expect(checks).toContain("transactions_version_positive");
+
+    expect(transactions.version.getSQLType()).toBe("integer");
+    expect(transactions.version.notNull).toBe(true);
+    expect(transactions.version.default).toBe(1);
+
+    expect(transactions.voidedAt.getSQLType()).toBe("timestamp with time zone");
+    expect(transactions.voidedAt.notNull).toBe(false);
+
+    expect(transactions.voidReason.getSQLType()).toBe("varchar(280)");
+    expect(transactions.voidReason.notNull).toBe(false);
+
+    expect(transactions.submissionId.getSQLType()).toBe("varchar(64)");
+    expect(transactions.submissionId.notNull).toBe(false);
   });
 });
