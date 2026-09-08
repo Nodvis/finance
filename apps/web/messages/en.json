@@ -331,6 +331,69 @@
     "onboarding": "Household onboarding",
     "authentication": "Authentication",
     "household": "Household",
-    "householdTransactions": "Household transactions"
+    "householdTransactions": "Household transactions",
+    "overviewMetrics": "Household overview metrics",
+    "periodNavigation": "Period navigation",
+    "categoryBreakdown": "Category spending breakdown",
+    "cashFlowSummary": "Period cash flow summary",
+    "accountObservations": "Account observations status"
+  },
+  "Overview": {
+    "periodLabel": "Selected period",
+    "thisMonth": "This month",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "monthInputLabel": "Change month",
+    "addTransactionAction": "Add transaction",
+    "availableCash": {
+      "title": "Observed available cash",
+      "creditCardsExcluded": "Credit cards & debt excluded",
+      "allFresh": "Observed from all {count} active asset accounts",
+      "singleFresh": "Observed from 1 active asset account",
+      "noSnapshots": "No balance snapshots recorded yet",
+      "partialWarning": "Partial data: {count} account(s) have unrecorded or stale balance",
+      "staleWarning": "{count} account(s) excluded due to stale snapshot (>30 days)",
+      "missingWarning": "{count} account(s) missing balance snapshot",
+      "updateAccountsPrompt": "Update balances in Accounts"
+    },
+    "upcoming": {
+      "title": "Upcoming obligations",
+      "notModeled": "Upcoming obligations are not yet modeled",
+      "note": "Scheduled bills and future commitments will appear here when modeled."
+    },
+    "debt": {
+      "title": "Debt & liabilities",
+      "notModeled": "Debt obligations are not yet modeled",
+      "note": "Loans and liability schedules are kept strictly separate from available cash."
+    },
+    "cashFlow": {
+      "title": "Cash flow for {period}",
+      "description": "Actual executed movements in the selected period (transfers excluded).",
+      "actualIncome": "Actual income",
+      "actualSpending": "Actual spending",
+      "netCashFlow": "Net cash flow",
+      "incomeNote": "Non-voided household receipts",
+      "spendingNote": "Non-voided expenses (transfers excluded)",
+      "netPositive": "Positive net flow",
+      "netNegative": "Negative net flow",
+      "emptyTitle": "No cash flow in this period",
+      "emptyDescription": "No income or spending transactions have been recorded for {period}."
+    },
+    "categorySpending": {
+      "title": "Spending by category",
+      "description": "Breakdown of expenses recorded in this period.",
+      "colCategory": "Category",
+      "colAmount": "Amount",
+      "colShare": "Share",
+      "colCount": "Transactions",
+      "uncategorized": "Uncategorized",
+      "emptyTitle": "No expenses in this period",
+      "emptyDescription": "No category spending has been recorded for {period}."
+    },
+    "observations": {
+      "title": "Account observations status",
+      "missingAccount": "Account “{name}” ({currency}) has no balance snapshot.",
+      "staleAccount": "Account “{name}” ({currency}) snapshot was taken on {date} (stale, >30 days)."
+    }
   }
 }

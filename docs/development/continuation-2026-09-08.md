@@ -61,3 +61,25 @@ Weryfikacja Phase 2:
 - migracje na izolowanej bazie `nodvis_finance_phase2_test`: pierwsze i drugie `pnpm db:migrate` passed; baza usunięta po teście.
 
 Ograniczenie do dalszego przeglądu: korekty są kontrolowanymi edycjami z wersją, `updatedAt`, `voidedAt` i `voidReason`; nie ma jeszcze osobnej immutable tabeli pełnych rewizji ani identyfikatora osoby wykonującej zmianę.
+
+## Checkpoint: truthful household overview — lokalnie zweryfikowane
+
+Dodano `/api/households/:householdId/overview` i przebudowano stronę główną tak, aby pokazywała rzeczywiste dane wybranego gospodarstwa i okresu:
+
+- income, spending, net cash flow i liczba transakcji per waluta;
+- spending by category, w tym uncategorized;
+- dostępna gotówka tylko dla aktywów `checking`/`savings`/`cash`, z dokładnym bigint i osobnym wynikiem dla każdej waluty;
+- brakujące lub przeterminowane snapshoty są oznaczone jako unknown/partial;
+- karty kredytowe, transfery i voided transactions nie zawyżają metryk;
+- zakres miesiąca używa jawnych granic UTC i może być sterowany przez `?month=YYYY-MM`;
+- dodano lokalizowane, responsywne sekcje overview, ostrzeżenia obserwacji i akcję dodania transakcji.
+
+Weryfikacja Phase 3:
+
+- `pnpm test`: 322 testy passed (domain 78, db 32, web 212);
+- `pnpm typecheck`: passed;
+- `pnpm lint`: passed;
+- `pnpm build`: passed, w tym endpoint overview;
+- `git diff --check`: passed.
+
+Overview nie tworzy migracji — używa istniejącego modelu transakcji, kategorii, kont i snapshotów.

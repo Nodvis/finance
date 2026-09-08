@@ -331,6 +331,69 @@
     "onboarding": "Konfiguracja gospodarstwa domowego",
     "authentication": "Logowanie",
     "household": "Gospodarstwo domowe",
-    "householdTransactions": "Transakcje gospodarstwa domowego"
+    "householdTransactions": "Transakcje gospodarstwa domowego",
+    "overviewMetrics": "Metryki przeglądu gospodarstwa",
+    "periodNavigation": "Nawigacja po okresach",
+    "categoryBreakdown": "Zestawienie wydatków według kategorii",
+    "cashFlowSummary": "Podsumowanie przepływów pieniężnych w okresie",
+    "accountObservations": "Status obserwacji kont"
+  },
+  "Overview": {
+    "periodLabel": "Wybrany okres",
+    "thisMonth": "Bieżący miesiąc",
+    "previousMonth": "Poprzedni miesiąc",
+    "nextMonth": "Następny miesiąc",
+    "monthInputLabel": "Zmień miesiąc",
+    "addTransactionAction": "Dodaj transakcję",
+    "availableCash": {
+      "title": "Zaobserwowane dostępne środki",
+      "creditCardsExcluded": "Karty kredytowe i zadłużenie wykluczone",
+      "allFresh": "Zaobserwowano ze wszystkich {count} aktywnych kont majątkowych",
+      "singleFresh": "Zaobserwowano z 1 aktywnego konta majątkowego",
+      "noSnapshots": "Brak zarejestrowanych sald",
+      "partialWarning": "Dane częściowe: {count} kont bez zarejestrowanego lub aktualnego salda",
+      "staleWarning": "Wykluczono {count} kont z nieaktualnym saldem (>30 dni)",
+      "missingWarning": "Brak zarejestrowanego salda dla {count} kont",
+      "updateAccountsPrompt": "Zaktualizuj salda w zakładce Konta"
+    },
+    "upcoming": {
+      "title": "Nadchodzące zobowiązania",
+      "notModeled": "Nadchodzące zobowiązania nie są jeszcze modelowane",
+      "note": "Zaplanowane rachunki i przyszłe zobowiązania pojawią się tutaj po ich zamodelowaniu."
+    },
+    "debt": {
+      "title": "Zadłużenie i zobowiązania",
+      "notModeled": "Zobowiązania dłużne nie są jeszcze modelowane",
+      "note": "Kredyty i harmonogramy spłat są ściśle oddzielone od dostępnych środków."
+    },
+    "cashFlow": {
+      "title": "Przepływy pieniężne za {period}",
+      "description": "Rzeczywiste operacje w wybranym okresie (transfery wykluczone).",
+      "actualIncome": "Przychody rzeczywiste",
+      "actualSpending": "Wydatki rzeczywiste",
+      "netCashFlow": "Przepływ netto",
+      "incomeNote": "Niewycofane wpływy gospodarstwa",
+      "spendingNote": "Niewycofane wydatki (bez transferów)",
+      "netPositive": "Dodatni przepływ netto",
+      "netNegative": "Ujemny przepływ netto",
+      "emptyTitle": "Brak przepływów w tym okresie",
+      "emptyDescription": "Nie zarejestrowano żadnych przychodów ani wydatków w okresie {period}."
+    },
+    "categorySpending": {
+      "title": "Wydatki według kategorii",
+      "description": "Zestawienie wydatków zarejestrowanych w tym okresie.",
+      "colCategory": "Kategoria",
+      "colAmount": "Kwota",
+      "colShare": "Udział",
+      "colCount": "Liczba operacji",
+      "uncategorized": "Bez kategorii",
+      "emptyTitle": "Brak wydatków w tym okresie",
+      "emptyDescription": "Nie zarejestrowano wydatków w żadnej kategorii w okresie {period}."
+    },
+    "observations": {
+      "title": "Stan obserwacji kont",
+      "missingAccount": "Konto „{name}” ({currency}) nie ma zarejestrowanego salda.",
+      "staleAccount": "Saldo konta „{name}” ({currency}) z dnia {date} jest nieaktualne (>30 dni)."
+    }
   }
 }

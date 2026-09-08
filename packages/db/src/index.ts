@@ -60,4 +60,14 @@ export type {
   HouseholdCategorySummary,
   ListCategoriesOptions,
 } from "./access/categories";
+export {
+  getHouseholdEligibleAccounts,
+  getHouseholdPeriodCashFlow,
+  getHouseholdPeriodCategorySpending,
+} from "./access/overview";
+export type {
+  DbAssetAccountRow,
+  DbCategorySpendingRow,
+  DbPeriodCashFlowRow,
+} from "./access/overview";
 export * from "./schema/index";
