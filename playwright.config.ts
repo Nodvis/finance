@@ -19,7 +19,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_SKIP_SERVER
     ? undefined
     : {
-        command: "pnpm dev",
+        command: process.env.CI ? "pnpm db:migrate && pnpm dev" : "pnpm dev",
         url: "http://127.0.0.1:3000/pl",
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
