@@ -30,13 +30,13 @@
   },
   "HomePage": {
     "eyebrow": "Centrum kontroli finansowej",
-    "title": "Twoja sytuacja finansowa bez księgowego chaosu.",
-    "description": "Zestawienie dostępnych środków, bieżących zobowiązań oraz długu gospodarstwa domowego w czasie rzeczywistym.",
+    "title": "Podsumowanie",
+    "description": "Sprawdź środki, przepływy i najważniejsze zmiany w gospodarstwie domowym.",
     "publicHeroTitle": "Twoje finanse domowe w pełnym porządku",
     "publicHeroSubtitle": "Wygodne zarządzanie kontami, wydatkami i oszczędnościami w jednym przejrzystym miejscu.",
     "quickActions": { "viewTransactions": "Zobacz transakcje", "addTransaction": "Dodaj transakcję" },
     "summaryLabel": "Podsumowanie finansowe",
-    "noData": "Brak danych — model finansowy jest dopiero wdrażany.",
+    "noData": "Brak danych dla wybranego okresu.",
     "cards": {
       "available": "Dostępne teraz",
       "upcoming": "Do zapłaty",
@@ -454,7 +454,7 @@
   },
   "Imports": {
     "title": "Importuj wyciąg CSV",
-    "description": "Podejrzyj i zweryfikuj wiersze przed utworzeniem transakcji. Obsługiwany jest generyczny CSV; transfery wymagają ręcznej weryfikacji.",
+    "description": "Dodaj wyciąg, sprawdź rozpoznane operacje i wyjaśnij tylko te, które wymagają Twojej uwagi.",
     "account": "Konto docelowe",
     "file": "Plik CSV",
     "inspect": "Sprawdź plik",

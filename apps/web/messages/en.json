@@ -30,13 +30,13 @@
   },
   "HomePage": {
     "eyebrow": "Household financial control",
-    "title": "Your financial situation without the accounting clutter.",
-    "description": "A clear, real-time snapshot of available funds, upcoming obligations, and household debt.",
+    "title": "Overview",
+    "description": "See your available funds, cash flow, and the most important household changes.",
     "publicHeroTitle": "Your household finances in clear order",
     "publicHeroSubtitle": "Effortlessly manage accounts, spending, and savings in one clear place.",
     "quickActions": { "viewTransactions": "View transactions", "addTransaction": "Add a transaction" },
     "summaryLabel": "Financial summary",
-    "noData": "No data yet — the financial model is being implemented.",
+    "noData": "No data for the selected period.",
     "cards": {
       "available": "Available now",
       "upcoming": "Upcoming",
@@ -454,7 +454,7 @@
   },
   "Imports": {
     "title": "Import a CSV statement",
-    "description": "Preview and review rows before creating transactions. Generic CSV only; transfers require manual review.",
+    "description": "Add a statement, review recognized operations, and resolve only the items that need your attention.",
     "account": "Target account",
     "file": "CSV file",
     "inspect": "Inspect file",

@@ -569,15 +569,15 @@ export function TransactionList({
   return (
     <section
       aria-label={t("list.title")}
-      className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs"
+      className="rounded-2xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs"
     >
       {/* Header with Title and Export CSV action */}
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-stone-100">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
             {t("list.title")}
           </h2>
-          <p className="mt-1 text-sm text-stone-400">
+          <p className="mt-1 text-sm text-slate-600 dark:text-stone-400">
             {t("list.description")}
           </p>
         </div>
@@ -592,7 +592,7 @@ export function TransactionList({
               className="inline-flex items-center gap-2 rounded-xl border border-stone-700 bg-stone-800/90 px-3.5 py-2 text-xs font-medium text-stone-200 shadow-xs transition-colors hover:border-stone-600 hover:bg-stone-700/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-stone-500"
             >
               <svg
-                className="h-4 w-4 text-stone-400"
+                className="h-4 w-4 text-slate-600 dark:text-stone-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.75}
@@ -614,7 +614,7 @@ export function TransactionList({
       {/* Filter toolbar */}
       <div
         aria-label={tAccess("transactionFilters")}
-        className="mb-6 rounded-xl border border-stone-800/80 bg-stone-950/60 p-4"
+        className="mb-6 rounded-xl border border-slate-200 dark:border-stone-800/80 bg-slate-50 dark:bg-stone-950/60 p-4"
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {/* Text Search */}
@@ -636,7 +636,7 @@ export function TransactionList({
                 scheduleFetch({ search: val, page: 1 });
               }}
               placeholder={tFilters("searchPlaceholder")}
-              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 placeholder-stone-500 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+              className="w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900/90 px-3 py-2 text-xs text-slate-900 dark:text-stone-100 placeholder-stone-500 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
             />
             {search && (
               <button
@@ -646,7 +646,7 @@ export function TransactionList({
                   setPage(1);
                   fetchFilteredTransactions({ search: "", page: 1 });
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 text-xs"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 dark:text-stone-400 hover:text-stone-200 text-xs"
                 aria-label={tActions("close")}
               >
                 ✕
@@ -669,7 +669,7 @@ export function TransactionList({
                 fetchFilteredTransactions({ type: val, page: 1 });
               }}
               aria-label={tFilters("typeLabel")}
-              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+              className="w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900/90 px-3 py-2 text-xs text-slate-900 dark:text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
             >
               <option value="">{tFilters("typeAll")}</option>
               <option value="expense">{tFilters("typeExpense")}</option>
@@ -693,7 +693,7 @@ export function TransactionList({
                 fetchFilteredTransactions({ accountId: val, page: 1 });
               }}
               aria-label={tFilters("accountLabel")}
-              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+              className="w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900/90 px-3 py-2 text-xs text-slate-900 dark:text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
             >
               <option value="">{tFilters("accountAll")}</option>
               {accounts.map((acc) => (
@@ -719,7 +719,7 @@ export function TransactionList({
                 fetchFilteredTransactions({ categoryId: val, page: 1 });
               }}
               aria-label={tFilters("categoryLabel")}
-              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+              className="w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900/90 px-3 py-2 text-xs text-slate-900 dark:text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
             >
               <option value="">{tFilters("categoryAll")}</option>
               <option value="uncategorized">{tFilters("uncategorized")}</option>
@@ -733,14 +733,14 @@ export function TransactionList({
         </div>
 
         {/* Second row of filters: Status & Date Ranges & Reset */}
-        <div className="mt-3 flex flex-wrap items-center gap-3 pt-3 border-t border-stone-800/60">
+        <div className="mt-3 flex flex-wrap items-center gap-3 pt-3 border-t border-slate-200 dark:border-stone-800/60">
           {/* Status selector */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-stone-400">{tFilters("statusLabel")}:</span>
+            <span className="text-xs text-slate-600 dark:text-stone-400">{tFilters("statusLabel")}:</span>
             <div
               role="radiogroup"
               aria-label={tFilters("statusLabel")}
-              className="inline-flex rounded-lg border border-stone-800 bg-stone-900 p-0.5 text-xs"
+              className="inline-flex rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-0.5 text-xs"
             >
               <button
                 type="button"
@@ -753,8 +753,8 @@ export function TransactionList({
                 }}
                 className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
                   status === "active"
-                    ? "bg-stone-800 text-stone-100 shadow-xs"
-                    : "text-stone-400 hover:text-stone-200"
+                    ? "bg-slate-200 dark:bg-stone-800 text-slate-900 dark:text-stone-100 shadow-xs"
+                    : "text-slate-600 dark:text-stone-400 hover:text-stone-200"
                 }`}
               >
                 {tFilters("statusActive")}
@@ -771,7 +771,7 @@ export function TransactionList({
                 className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
                   status === "voided"
                     ? "bg-rose-950/80 text-rose-200 border border-rose-800/60 shadow-xs"
-                    : "text-stone-400 hover:text-stone-200"
+                    : "text-slate-600 dark:text-stone-400 hover:text-stone-200"
                 }`}
               >
                 {tFilters("statusVoided")}
@@ -787,8 +787,8 @@ export function TransactionList({
                 }}
                 className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
                   status === "all"
-                    ? "bg-stone-800 text-stone-100 shadow-xs"
-                    : "text-stone-400 hover:text-stone-200"
+                    ? "bg-slate-200 dark:bg-stone-800 text-slate-900 dark:text-stone-100 shadow-xs"
+                    : "text-slate-600 dark:text-stone-400 hover:text-stone-200"
                 }`}
               >
                 {tFilters("statusAll")}
@@ -799,7 +799,7 @@ export function TransactionList({
           {/* Month shortcut or Date Range */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5">
-              <label htmlFor="tx-filter-month" className="text-xs text-stone-400">
+              <label htmlFor="tx-filter-month" className="text-xs text-slate-600 dark:text-stone-400">
                 {tFilters("monthLabel")}:
               </label>
               <input
@@ -821,14 +821,14 @@ export function TransactionList({
                     page: 1,
                   });
                 }}
-                className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1 text-xs text-stone-100 focus:border-stone-600 focus:outline-none"
+                className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1 text-xs text-slate-900 dark:text-stone-100 focus:border-stone-600 focus:outline-none"
               />
             </div>
 
             <span className="text-xs text-stone-500">|</span>
 
             <div className="flex items-center gap-1.5">
-              <label htmlFor="tx-filter-from" className="text-xs text-stone-400">
+              <label htmlFor="tx-filter-from" className="text-xs text-slate-600 dark:text-stone-400">
                 {tFilters("dateFromLabel")}:
               </label>
               <input
@@ -846,12 +846,12 @@ export function TransactionList({
                     page: 1,
                   });
                 }}
-                className="rounded-lg border border-stone-800 bg-stone-900 px-2 py-1 text-xs text-stone-100 focus:border-stone-600 focus:outline-none"
+                className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2 py-1 text-xs text-slate-900 dark:text-stone-100 focus:border-stone-600 focus:outline-none"
               />
             </div>
 
             <div className="flex items-center gap-1.5">
-              <label htmlFor="tx-filter-to" className="text-xs text-stone-400">
+              <label htmlFor="tx-filter-to" className="text-xs text-slate-600 dark:text-stone-400">
                 {tFilters("dateToLabel")}:
               </label>
               <input
@@ -869,7 +869,7 @@ export function TransactionList({
                     page: 1,
                   });
                 }}
-                className="rounded-lg border border-stone-800 bg-stone-900 px-2 py-1 text-xs text-stone-100 focus:border-stone-600 focus:outline-none"
+                className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2 py-1 text-xs text-slate-900 dark:text-stone-100 focus:border-stone-600 focus:outline-none"
               />
             </div>
           </div>
@@ -885,7 +885,7 @@ export function TransactionList({
               <button
                 type="button"
                 onClick={handleReset}
-                className="rounded-lg border border-stone-700/80 bg-stone-800/60 px-2.5 py-1 text-xs font-medium text-stone-300 hover:bg-stone-800 hover:text-stone-100 transition-colors"
+                className="rounded-lg border border-stone-700/80 bg-stone-800/60 px-2.5 py-1 text-xs font-medium text-stone-300 hover:bg-stone-800 hover:text-slate-900 dark:text-stone-100 transition-colors"
               >
                 {tFilters("reset")}
               </button>
@@ -896,8 +896,8 @@ export function TransactionList({
 
       {/* Transaction Content */}
       {displayedTransactions.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-stone-800 bg-stone-950/40 py-12 px-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-800 bg-stone-900 text-stone-400">
+        <div className="rounded-xl border border-dashed border-slate-200 dark:border-stone-800 bg-slate-50 dark:bg-stone-950/40 py-12 px-6 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-slate-600 dark:text-stone-400">
             <svg
               className="h-6 w-6"
               fill="none"
@@ -918,7 +918,7 @@ export function TransactionList({
               ? tFilters("noResultsTitle")
               : t("list.emptyTitle")}
           </h3>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-stone-400">
+          <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600 dark:text-stone-400">
             {hasActiveFilters
               ? tFilters("noResultsDescription")
               : t("list.emptyDescription")}
@@ -941,7 +941,7 @@ export function TransactionList({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-stone-800 text-xs font-medium uppercase tracking-wider text-stone-400">
+                <tr className="border-b border-slate-200 dark:border-stone-800 text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-stone-400">
                   <th scope="col" className="pb-3 pr-4">
                     {t("list.colDate")}
                   </th>
@@ -977,7 +977,7 @@ export function TransactionList({
 
                   if (tx.kind === "expense") {
                     badgeClass = isVoid
-                      ? "bg-stone-900 text-stone-500 border border-stone-800"
+                      ? "bg-white dark:bg-stone-900 text-stone-500 border border-slate-200 dark:border-stone-800"
                       : "bg-rose-950/70 text-rose-300 border border-rose-800/50";
                     typeLabel = t("list.kindExpense");
                     description = tx.payee;
@@ -989,7 +989,7 @@ export function TransactionList({
                       : "text-rose-400 font-mono";
                   } else if (tx.kind === "income") {
                     badgeClass = isVoid
-                      ? "bg-stone-900 text-stone-500 border border-stone-800"
+                      ? "bg-white dark:bg-stone-900 text-stone-500 border border-slate-200 dark:border-stone-800"
                       : "bg-emerald-950/70 text-emerald-300 border border-emerald-800/50";
                     typeLabel = t("list.kindIncome");
                     description = tx.source;
@@ -1001,7 +1001,7 @@ export function TransactionList({
                       : "text-emerald-400 font-mono";
                   } else {
                     badgeClass = isVoid
-                      ? "bg-stone-900 text-stone-500 border border-stone-800"
+                      ? "bg-white dark:bg-stone-900 text-stone-500 border border-slate-200 dark:border-stone-800"
                       : "bg-sky-950/70 text-sky-300 border border-sky-800/50";
                     typeLabel = t("list.kindTransfer");
                     const fromAcc = accountMap.get(tx.fromAccountId);
@@ -1013,7 +1013,7 @@ export function TransactionList({
                     amountSign = "";
                     amountClass = isVoid
                       ? "text-stone-500 line-through font-mono"
-                      : "text-stone-100 font-mono";
+                      : "text-slate-900 dark:text-stone-100 font-mono";
                   }
 
                   return (
@@ -1025,7 +1025,7 @@ export function TransactionList({
                           : "hover:bg-stone-800/30 text-stone-200"
                       }`}
                     >
-                      <td className="py-3 pr-4 whitespace-nowrap text-stone-400">
+                      <td className="py-3 pr-4 whitespace-nowrap text-slate-600 dark:text-stone-400">
                         {formatDate(tx.occurredOn)}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
@@ -1051,10 +1051,10 @@ export function TransactionList({
                           <span className="text-stone-500">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 font-medium text-stone-100">
+                      <td className="py-3 px-4 font-medium text-slate-900 dark:text-stone-100">
                         {description}
                       </td>
-                      <td className="py-3 px-4 text-stone-400 whitespace-nowrap">
+                      <td className="py-3 px-4 text-slate-600 dark:text-stone-400 whitespace-nowrap">
                         {accountLabel}
                       </td>
                       <td className="py-3 px-4 text-right whitespace-nowrap">
@@ -1068,7 +1068,7 @@ export function TransactionList({
                           <button
                             type="button"
                             onClick={() => setInspectTx(tx)}
-                            className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-stone-100"
+                            className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-slate-900 dark:text-stone-100"
                             aria-label={`${tActions("details")} ${description}`}
                           >
                             {tActions("details")}
@@ -1078,7 +1078,7 @@ export function TransactionList({
                               <button
                                 type="button"
                                 onClick={() => openEditModal(tx)}
-                                className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-stone-100"
+                                className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-slate-900 dark:text-stone-100"
                                 aria-label={`${tActions("edit")} ${description}`}
                               >
                                 {tActions("edit")}
@@ -1086,7 +1086,7 @@ export function TransactionList({
                               <button
                                 type="button"
                                 onClick={() => openVoidModal(tx)}
-                                className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1 text-xs font-medium text-rose-400 transition-colors hover:border-rose-900/80 hover:bg-rose-950/40"
+                                className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1 text-xs font-medium text-rose-400 transition-colors hover:border-rose-900/80 hover:bg-rose-950/40"
                                 aria-label={`${tActions("void")} ${description}`}
                               >
                                 {tActions("void")}
@@ -1115,7 +1115,7 @@ export function TransactionList({
 
               if (tx.kind === "expense") {
                 badgeClass = isVoid
-                  ? "bg-stone-900 text-stone-500 border border-stone-800"
+                  ? "bg-white dark:bg-stone-900 text-stone-500 border border-slate-200 dark:border-stone-800"
                   : "bg-rose-950/70 text-rose-300 border border-rose-800/50";
                 typeLabel = t("list.kindExpense");
                 description = tx.payee;
@@ -1127,7 +1127,7 @@ export function TransactionList({
                   : "text-rose-400 font-mono";
               } else if (tx.kind === "income") {
                 badgeClass = isVoid
-                  ? "bg-stone-900 text-stone-500 border border-stone-800"
+                  ? "bg-white dark:bg-stone-900 text-stone-500 border border-slate-200 dark:border-stone-800"
                   : "bg-emerald-950/70 text-emerald-300 border border-emerald-800/50";
                 typeLabel = t("list.kindIncome");
                 description = tx.source;
@@ -1139,7 +1139,7 @@ export function TransactionList({
                   : "text-emerald-400 font-mono";
               } else {
                 badgeClass = isVoid
-                  ? "bg-stone-900 text-stone-500 border border-stone-800"
+                  ? "bg-white dark:bg-stone-900 text-stone-500 border border-slate-200 dark:border-stone-800"
                   : "bg-sky-950/70 text-sky-300 border border-sky-800/50";
                 typeLabel = t("list.kindTransfer");
                 const fromAcc = accountMap.get(tx.fromAccountId);
@@ -1151,7 +1151,7 @@ export function TransactionList({
                 amountSign = "";
                 amountClass = isVoid
                   ? "text-stone-500 line-through font-mono"
-                  : "text-stone-100 font-mono";
+                  : "text-slate-900 dark:text-stone-100 font-mono";
               }
 
               return (
@@ -1159,8 +1159,8 @@ export function TransactionList({
                   key={tx.id}
                   className={`rounded-xl border p-4 transition-colors ${
                     isVoid
-                      ? "border-stone-800 bg-stone-950/40 opacity-75"
-                      : "border-stone-800 bg-stone-950/60"
+                      ? "border-slate-200 dark:border-stone-800 bg-slate-50 dark:bg-stone-950/40 opacity-75"
+                      : "border-slate-200 dark:border-stone-800 bg-slate-50 dark:bg-stone-950/60"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -1177,10 +1177,10 @@ export function TransactionList({
                           </span>
                         )}
                       </div>
-                      <h3 className="mt-2 font-medium text-stone-100">
+                      <h3 className="mt-2 font-medium text-slate-900 dark:text-stone-100">
                         {description}
                       </h3>
-                      <p className="mt-0.5 text-xs text-stone-400">
+                      <p className="mt-0.5 text-xs text-slate-600 dark:text-stone-400">
                         {accountLabel} • {formatDate(tx.occurredOn)}
                       </p>
                     </div>
@@ -1190,18 +1190,18 @@ export function TransactionList({
                         {formatAmount(tx.amount.amountMinor, tx.amount.currency)}
                       </p>
                       {tx.kind !== "transfer" && "categoryId" in tx && tx.categoryId && (
-                        <span className="mt-1 inline-block rounded-md border border-stone-800 bg-stone-900 px-2 py-0.5 text-[11px] text-stone-300">
+                        <span className="mt-1 inline-block rounded-md border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2 py-0.5 text-[11px] text-stone-300">
                           {categoryMap.get(tx.categoryId)?.name ?? tx.categoryId}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-end gap-2 border-t border-stone-800/80 pt-3">
+                  <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-200 dark:border-stone-800/80 pt-3">
                     <button
                       type="button"
                       onClick={() => setInspectTx(tx)}
-                      className="rounded-lg border border-stone-800 bg-stone-900 px-3 py-1.5 text-xs font-medium text-stone-300 hover:border-stone-700 hover:text-stone-100"
+                      className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-medium text-stone-300 hover:border-stone-700 hover:text-slate-900 dark:text-stone-100"
                     >
                       {tActions("details")}
                     </button>
@@ -1210,14 +1210,14 @@ export function TransactionList({
                         <button
                           type="button"
                           onClick={() => openEditModal(tx)}
-                          className="rounded-lg border border-stone-800 bg-stone-900 px-3 py-1.5 text-xs font-medium text-stone-300 hover:border-stone-700 hover:text-stone-100"
+                          className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-medium text-stone-300 hover:border-stone-700 hover:text-slate-900 dark:text-stone-100"
                         >
                           {tActions("edit")}
                         </button>
                         <button
                           type="button"
                           onClick={() => openVoidModal(tx)}
-                          className="rounded-lg border border-stone-800 bg-stone-900 px-3 py-1.5 text-xs font-medium text-rose-400 hover:border-rose-900/80 hover:bg-rose-950/40"
+                          className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-medium text-rose-400 hover:border-rose-900/80 hover:bg-rose-950/40"
                         >
                           {tActions("void")}
                         </button>
@@ -1232,7 +1232,7 @@ export function TransactionList({
           {/* Pagination Controls */}
           <nav
             aria-label={tAccess("transactionPagination")}
-            className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-stone-800/80 pt-4 sm:flex-row text-xs text-stone-400"
+            className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-200 dark:border-stone-800/80 pt-4 sm:flex-row text-xs text-slate-600 dark:text-stone-400"
           >
             <div className="flex items-center gap-4">
               <span>
@@ -1244,7 +1244,7 @@ export function TransactionList({
               </span>
 
               <div className="flex items-center gap-1.5">
-                <label htmlFor="tx-page-size" className="text-stone-400">
+                <label htmlFor="tx-page-size" className="text-slate-600 dark:text-stone-400">
                   {tFilters("pageSize")}:
                 </label>
                 <select
@@ -1256,7 +1256,7 @@ export function TransactionList({
                     setPage(1);
                     fetchFilteredTransactions({ limit: newLimit, page: 1 });
                   }}
-                  className="rounded-md border border-stone-800 bg-stone-900 px-2 py-1 text-xs text-stone-200 focus:border-stone-600 focus:outline-none"
+                  className="rounded-md border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2 py-1 text-xs text-stone-200 focus:border-stone-600 focus:outline-none"
                 >
                   <option value="10">10</option>
                   <option value="20">20</option>
@@ -1282,7 +1282,7 @@ export function TransactionList({
                     setPage(prevPage);
                     fetchFilteredTransactions({ page: prevPage });
                   }}
-                  className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-slate-900 dark:text-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {tFilters("prevPage")}
                 </button>
@@ -1294,7 +1294,7 @@ export function TransactionList({
                     setPage(nextPage);
                     fetchFilteredTransactions({ page: nextPage });
                   }}
-                  className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-slate-900 dark:text-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {tFilters("nextPage")}
                 </button>
@@ -1312,18 +1312,18 @@ export function TransactionList({
           aria-labelledby="details-dialog-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs"
         >
-          <div className="w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl border border-stone-800 bg-stone-900 shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-stone-800 p-6 pb-4">
+          <div className="w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 p-6 pb-4">
               <div>
                 <h3
                   id="details-dialog-title"
-                  className="text-lg font-semibold text-stone-100"
+                  className="text-lg font-semibold text-slate-900 dark:text-stone-100"
                 >
                   {activeInspectTab === "details"
                     ? tDetails("title")
                     : tHistory("title")}
                 </h3>
-                <p className="text-xs text-stone-400">
+                <p className="text-xs text-slate-600 dark:text-stone-400">
                   {t("list.versionLabel", { version: inspectTx.version })}
                 </p>
               </div>
@@ -1333,7 +1333,7 @@ export function TransactionList({
                   setInspectTx(null);
                   setActiveInspectTab("details");
                 }}
-                className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                className="rounded-lg p-1 text-slate-600 dark:text-stone-400 hover:bg-stone-800 hover:text-stone-200"
                 aria-label={tActions("close")}
               >
                 ✕
@@ -1341,14 +1341,14 @@ export function TransactionList({
             </div>
 
             {/* Tab navigation */}
-            <div className="flex border-b border-stone-800 px-6 gap-6 bg-stone-950/40">
+            <div className="flex border-b border-slate-200 dark:border-stone-800 px-6 gap-6 bg-slate-50 dark:bg-stone-950/40">
               <button
                 type="button"
                 onClick={() => setActiveInspectTab("details")}
                 className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeInspectTab === "details"
                     ? "border-emerald-500 text-emerald-400 font-semibold"
-                    : "border-transparent text-stone-400 hover:text-stone-200"
+                    : "border-transparent text-slate-600 dark:text-stone-400 hover:text-stone-200"
                 }`}
               >
                 {tHistory("tabDetails")}
@@ -1359,7 +1359,7 @@ export function TransactionList({
                 className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                   activeInspectTab === "history"
                     ? "border-emerald-500 text-emerald-400 font-semibold"
-                    : "border-transparent text-stone-400 hover:text-stone-200"
+                    : "border-transparent text-slate-600 dark:text-stone-400 hover:text-stone-200"
                 }`}
               >
                 <span>{tHistory("tabHistory")}</span>
@@ -1377,8 +1377,8 @@ export function TransactionList({
                 <>
                   <dl className="divide-y divide-stone-800 text-sm">
                     <div className="flex justify-between py-2.5">
-                      <dt className="text-stone-400">{tDetails("status")}</dt>
-                      <dd className="font-medium text-stone-100">
+                      <dt className="text-slate-600 dark:text-stone-400">{tDetails("status")}</dt>
+                      <dd className="font-medium text-slate-900 dark:text-stone-100">
                         {inspectTx.voidedAt ? (
                           <span className="rounded-md border border-rose-900/80 bg-rose-950 px-2 py-0.5 text-xs text-rose-300 font-semibold">
                             {tDetails("statusVoided")}
@@ -1392,15 +1392,15 @@ export function TransactionList({
                     </div>
 
                     <div className="flex justify-between py-2.5">
-                      <dt className="text-stone-400">{tDetails("type")}</dt>
+                      <dt className="text-slate-600 dark:text-stone-400">{tDetails("type")}</dt>
                       <dd className="font-medium text-stone-200 uppercase text-xs tracking-wider">
                         {inspectTx.kind}
                       </dd>
                     </div>
 
                     <div className="flex justify-between py-2.5">
-                      <dt className="text-stone-400">{tDetails("amount")}</dt>
-                      <dd className="font-mono font-semibold text-stone-100">
+                      <dt className="text-slate-600 dark:text-stone-400">{tDetails("amount")}</dt>
+                      <dd className="font-mono font-semibold text-slate-900 dark:text-stone-100">
                         {formatAmount(
                           inspectTx.amount.amountMinor,
                           inspectTx.amount.currency,
@@ -1409,7 +1409,7 @@ export function TransactionList({
                     </div>
 
                     <div className="flex justify-between py-2.5">
-                      <dt className="text-stone-400">{tDetails("date")}</dt>
+                      <dt className="text-slate-600 dark:text-stone-400">{tDetails("date")}</dt>
                       <dd className="text-stone-200">
                         {formatDate(inspectTx.occurredOn)}
                       </dd>
@@ -1418,20 +1418,20 @@ export function TransactionList({
                     {inspectTx.kind === "expense" && (
                       <>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("payee")}</dt>
-                          <dd className="font-medium text-stone-100">
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("payee")}</dt>
+                          <dd className="font-medium text-slate-900 dark:text-stone-100">
                             {inspectTx.payee}
                           </dd>
                         </div>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("account")}</dt>
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("account")}</dt>
                           <dd className="text-stone-200">
                             {accountMap.get(inspectTx.accountId)?.name ??
                               inspectTx.accountId}
                           </dd>
                         </div>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("category")}</dt>
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("category")}</dt>
                           <dd className="text-stone-200">
                             {inspectTx.categoryId
                               ? categoryMap.get(inspectTx.categoryId)?.name ??
@@ -1445,20 +1445,20 @@ export function TransactionList({
                     {inspectTx.kind === "income" && (
                       <>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("source")}</dt>
-                          <dd className="font-medium text-stone-100">
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("source")}</dt>
+                          <dd className="font-medium text-slate-900 dark:text-stone-100">
                             {inspectTx.source}
                           </dd>
                         </div>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("account")}</dt>
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("account")}</dt>
                           <dd className="text-stone-200">
                             {accountMap.get(inspectTx.accountId)?.name ??
                               inspectTx.accountId}
                           </dd>
                         </div>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("category")}</dt>
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("category")}</dt>
                           <dd className="text-stone-200">
                             {inspectTx.categoryId
                               ? categoryMap.get(inspectTx.categoryId)?.name ??
@@ -1472,14 +1472,14 @@ export function TransactionList({
                     {inspectTx.kind === "transfer" && (
                       <>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("fromAccount")}</dt>
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("fromAccount")}</dt>
                           <dd className="text-stone-200">
                             {accountMap.get(inspectTx.fromAccountId)?.name ??
                               inspectTx.fromAccountId}
                           </dd>
                         </div>
                         <div className="flex justify-between py-2.5">
-                          <dt className="text-stone-400">{tDetails("toAccount")}</dt>
+                          <dt className="text-slate-600 dark:text-stone-400">{tDetails("toAccount")}</dt>
                           <dd className="text-stone-200">
                             {accountMap.get(inspectTx.toAccountId)?.name ??
                               inspectTx.toAccountId}
@@ -1500,10 +1500,10 @@ export function TransactionList({
                         </div>
                         {inspectTx.voidReason && (
                           <div className="flex flex-col py-2.5 gap-1">
-                            <dt className="text-stone-400">
+                            <dt className="text-slate-600 dark:text-stone-400">
                               {tDetails("voidReason")}
                             </dt>
-                            <dd className="rounded-lg border border-stone-800 bg-stone-950 p-2.5 text-stone-300 italic">
+                            <dd className="rounded-lg border border-slate-200 dark:border-stone-800 bg-stone-950 p-2.5 text-stone-300 italic">
                               "{inspectTx.voidReason}"
                             </dd>
                           </div>
@@ -1515,13 +1515,13 @@ export function TransactionList({
                       <dt className="text-xs text-stone-500">
                         {tDetails("transactionId")}
                       </dt>
-                      <dd className="font-mono text-xs text-stone-400 select-all">
+                      <dd className="font-mono text-xs text-slate-600 dark:text-stone-400 select-all">
                         {inspectTx.id}
                       </dd>
                     </div>
                   </dl>
 
-                  <div className="mt-4 rounded-xl border border-stone-800 bg-stone-950/60 p-3 text-xs text-stone-400 leading-relaxed">
+                  <div className="mt-4 rounded-xl border border-slate-200 dark:border-stone-800 bg-slate-50 dark:bg-stone-950/60 p-3 text-xs text-slate-600 dark:text-stone-400 leading-relaxed">
                     {tDetails("auditTrailNotice")}
                   </div>
                 </>
@@ -1530,12 +1530,12 @@ export function TransactionList({
                   className="space-y-4"
                   aria-label={tAccess("transactionHistoryTimeline")}
                 >
-                  <p className="text-xs text-stone-400 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-stone-400 leading-relaxed">
                     {tHistory("description")}
                   </p>
 
                   {historyLoading && (
-                    <div className="py-12 text-center text-sm text-stone-400 flex flex-col items-center gap-2">
+                    <div className="py-12 text-center text-sm text-slate-600 dark:text-stone-400 flex flex-col items-center gap-2">
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-stone-600 border-t-emerald-500" />
                       <span>{tHistory("loading")}</span>
                     </div>
@@ -1560,7 +1560,7 @@ export function TransactionList({
                     !historyError &&
                     historyData &&
                     historyData.length > 0 && (
-                      <ol className="relative border-l border-stone-800 ml-3 space-y-6">
+                      <ol className="relative border-l border-slate-200 dark:border-stone-800 ml-3 space-y-6">
                         {historyData.map((entry) => {
                           const isCreate = entry.operation === "create";
                           const isCorrection = entry.operation === "correction";
@@ -1589,8 +1589,8 @@ export function TransactionList({
                                 className={`absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full ring-4 ${dotColor}`}
                               />
 
-                              <div className="rounded-xl border border-stone-800 bg-stone-950/60 p-4 shadow-xs">
-                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800/60 pb-2.5">
+                              <div className="rounded-xl border border-slate-200 dark:border-stone-800 bg-slate-50 dark:bg-stone-950/60 p-4 shadow-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-stone-800/60 pb-2.5">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs font-semibold text-stone-200">
                                       {tHistory("revisionLabel", {
@@ -1602,16 +1602,16 @@ export function TransactionList({
                                     >
                                       {tHistory(`operations.${entry.operation}`)}
                                     </span>
-                                    <span className="rounded-md border border-stone-800 bg-stone-900 px-2 py-0.5 text-xs text-stone-400">
+                                    <span className="rounded-md border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-2 py-0.5 text-xs text-slate-600 dark:text-stone-400">
                                       {tHistory(`sources.${entry.source}`)}
                                     </span>
                                   </div>
-                                  <time className="text-xs text-stone-400">
+                                  <time className="text-xs text-slate-600 dark:text-stone-400">
                                     {formatDateTime(entry.recordedAt)}
                                   </time>
                                 </div>
 
-                                <div className="mt-2 text-xs text-stone-400 flex items-center justify-between">
+                                <div className="mt-2 text-xs text-slate-600 dark:text-stone-400 flex items-center justify-between">
                                   {entry.actor?.displayName ? (
                                     <span>
                                       {tHistory("actor.by", {
@@ -1643,18 +1643,18 @@ export function TransactionList({
                                 )}
 
                                 {entry.changes.length > 0 ? (
-                                  <ul className="mt-3 divide-y divide-stone-800/60 border-t border-stone-800/60 pt-2 text-xs">
+                                  <ul className="mt-3 divide-y divide-stone-800/60 border-t border-slate-200 dark:border-stone-800/60 pt-2 text-xs">
                                     {entry.changes.map((c) => (
                                       <li
                                         key={c.field}
                                         className="flex flex-wrap items-baseline justify-between gap-2 py-1"
                                       >
-                                        <span className="text-stone-400 font-medium">
+                                        <span className="text-slate-600 dark:text-stone-400 font-medium">
                                           {tHistory(`fields.${c.fieldLabelKey}`)}:
                                         </span>
                                         <div className="flex items-center gap-1.5 font-mono text-xs">
                                           {c.before !== null && (
-                                            <span className="text-stone-400 line-through">
+                                            <span className="text-slate-600 dark:text-stone-400 line-through">
                                               {c.before}
                                             </span>
                                           )}
@@ -1663,7 +1663,7 @@ export function TransactionList({
                                               →
                                             </span>
                                           )}
-                                          <span className="font-semibold text-stone-100">
+                                          <span className="font-semibold text-slate-900 dark:text-stone-100">
                                             {c.after ?? "—"}
                                           </span>
                                         </div>
@@ -1687,14 +1687,14 @@ export function TransactionList({
               )}
             </div>
 
-            <div className="border-t border-stone-800 p-4 px-6 flex justify-end bg-stone-900">
+            <div className="border-t border-slate-200 dark:border-stone-800 p-4 px-6 flex justify-end bg-white dark:bg-stone-900">
               <button
                 type="button"
                 onClick={() => {
                   setInspectTx(null);
                   setActiveInspectTab("details");
                 }}
-                className="rounded-xl border border-stone-700 bg-stone-800 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-stone-700 hover:text-stone-100"
+                className="rounded-xl border border-stone-700 bg-stone-800 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-stone-700 hover:text-slate-900 dark:text-stone-100"
               >
                 {tActions("close")}
               </button>
@@ -1711,12 +1711,12 @@ export function TransactionList({
           aria-labelledby="edit-dialog-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs"
         >
-          <div className="w-full max-w-lg rounded-2xl border border-stone-800 bg-stone-900 p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-4">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-4">
               <div>
                 <h3
                   id="edit-dialog-title"
-                  className="text-lg font-semibold text-stone-100"
+                  className="text-lg font-semibold text-slate-900 dark:text-stone-100"
                 >
                   {editTx.kind === "expense"
                     ? tEdit("titleExpense")
@@ -1724,7 +1724,7 @@ export function TransactionList({
                       ? tEdit("titleIncome")
                       : tEdit("titleTransfer")}
                 </h3>
-                <p className="mt-1 text-xs text-stone-400">
+                <p className="mt-1 text-xs text-slate-600 dark:text-stone-400">
                   {tEdit("description")}
                 </p>
               </div>
@@ -1734,7 +1734,7 @@ export function TransactionList({
                   setEditTx(null);
                   setFormError(null);
                 }}
-                className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                className="rounded-lg p-1 text-slate-600 dark:text-stone-400 hover:bg-stone-800 hover:text-stone-200"
                 aria-label={tActions("cancel")}
               >
                 ✕
@@ -1767,7 +1767,7 @@ export function TransactionList({
                     value={editAmount}
                     onChange={(e) => setEditAmount(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder-stone-600 focus:border-emerald-500 focus:outline-hidden"
+                    className="w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 placeholder-stone-600 focus:border-emerald-500 focus:outline-hidden"
                   />
                 </div>
                 {editParseResult && editParseResult.success && editParseResult.amountMinor && (
@@ -1800,7 +1800,7 @@ export function TransactionList({
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
                   required
-                  className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                 />
               </div>
 
@@ -1820,7 +1820,7 @@ export function TransactionList({
                       value={editPayee}
                       onChange={(e) => setEditPayee(e.target.value)}
                       required
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder-stone-600 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 placeholder-stone-600 focus:border-emerald-500 focus:outline-hidden"
                     />
                   </div>
                   <div>
@@ -1834,7 +1834,7 @@ export function TransactionList({
                       id="edit-account"
                       value={editAccountId}
                       onChange={(e) => setEditAccountId(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                     >
                       {accounts.map((acc) => (
                         <option key={acc.id} value={acc.id}>
@@ -1854,7 +1854,7 @@ export function TransactionList({
                       id="edit-category"
                       value={editCategoryId}
                       onChange={(e) => setEditCategoryId(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                     >
                       <option value="">{t("form.selectCategory")}</option>
                       {categories
@@ -1890,7 +1890,7 @@ export function TransactionList({
                       value={editSource}
                       onChange={(e) => setEditSource(e.target.value)}
                       required
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder-stone-600 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 placeholder-stone-600 focus:border-emerald-500 focus:outline-hidden"
                     />
                   </div>
                   <div>
@@ -1904,7 +1904,7 @@ export function TransactionList({
                       id="edit-income-account"
                       value={editAccountId}
                       onChange={(e) => setEditAccountId(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                     >
                       {accounts.map((acc) => (
                         <option key={acc.id} value={acc.id}>
@@ -1924,7 +1924,7 @@ export function TransactionList({
                       id="edit-income-category"
                       value={editCategoryId}
                       onChange={(e) => setEditCategoryId(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                     >
                       <option value="">{t("form.selectCategory")}</option>
                       {categories
@@ -1958,7 +1958,7 @@ export function TransactionList({
                       id="edit-from-account"
                       value={editFromAccountId}
                       onChange={(e) => setEditFromAccountId(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                     >
                       {accounts.map((acc) => (
                         <option key={acc.id} value={acc.id}>
@@ -1978,7 +1978,7 @@ export function TransactionList({
                       id="edit-to-account"
                       value={editToAccountId}
                       onChange={(e) => setEditToAccountId(e.target.value)}
-                      className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 focus:border-emerald-500 focus:outline-hidden"
+                      className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 focus:border-emerald-500 focus:outline-hidden"
                     >
                       {accounts
                         .filter((acc) => acc.id !== editFromAccountId)
@@ -1992,14 +1992,14 @@ export function TransactionList({
                 </>
               )}
 
-              <div className="mt-4 flex items-center justify-end gap-3 border-t border-stone-800 pt-4">
+              <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-stone-800 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setEditTx(null);
                     setFormError(null);
                   }}
-                  className="rounded-xl border border-stone-800 bg-stone-900 px-4 py-2 text-sm font-medium text-stone-300 hover:bg-stone-800 hover:text-stone-100"
+                  className="rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-4 py-2 text-sm font-medium text-stone-300 hover:bg-stone-800 hover:text-slate-900 dark:text-stone-100"
                 >
                   {tActions("cancel")}
                 </button>
@@ -2024,8 +2024,8 @@ export function TransactionList({
           aria-labelledby="void-dialog-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs"
         >
-          <div className="w-full max-w-lg rounded-2xl border border-rose-900/60 bg-stone-900 p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-4">
+          <div className="w-full max-w-lg rounded-2xl border border-rose-900/60 bg-white dark:bg-stone-900 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-stone-800 pb-4">
               <div>
                 <h3
                   id="void-dialog-title"
@@ -2033,7 +2033,7 @@ export function TransactionList({
                 >
                   {tVoid("title")}
                 </h3>
-                <p className="mt-1 text-xs text-stone-400">
+                <p className="mt-1 text-xs text-slate-600 dark:text-stone-400">
                   {tVoid("description")}
                 </p>
               </div>
@@ -2043,7 +2043,7 @@ export function TransactionList({
                   setVoidTx(null);
                   setFormError(null);
                 }}
-                className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                className="rounded-lg p-1 text-slate-600 dark:text-stone-400 hover:bg-stone-800 hover:text-stone-200"
                 aria-label={tActions("cancel")}
               >
                 ✕
@@ -2061,12 +2061,12 @@ export function TransactionList({
               )}
 
               {/* Summary of transaction being voided */}
-              <div className="rounded-xl border border-stone-800 bg-stone-950 p-4 text-xs text-stone-300 flex justify-between items-center">
+              <div className="rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 p-4 text-xs text-stone-300 flex justify-between items-center">
                 <div>
-                  <span className="font-semibold text-stone-100 uppercase text-[11px] tracking-wider">
+                  <span className="font-semibold text-slate-900 dark:text-stone-100 uppercase text-[11px] tracking-wider">
                     {voidTx.kind}
                   </span>
-                  <p className="mt-1 text-stone-400">
+                  <p className="mt-1 text-slate-600 dark:text-stone-400">
                     {voidTx.kind === "expense"
                       ? voidTx.payee
                       : voidTx.kind === "income"
@@ -2075,7 +2075,7 @@ export function TransactionList({
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="font-mono font-bold text-stone-100 text-sm">
+                  <span className="font-mono font-bold text-slate-900 dark:text-stone-100 text-sm">
                     {formatAmount(
                       voidTx.amount.amountMinor,
                       voidTx.amount.currency,
@@ -2101,21 +2101,21 @@ export function TransactionList({
                   value={voidReason}
                   onChange={(e) => setVoidReason(e.target.value)}
                   placeholder={tVoid("reasonPlaceholder")}
-                  className="mt-1.5 w-full rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder-stone-600 focus:border-rose-500 focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-stone-800 bg-stone-950 px-3 py-2 text-sm text-slate-900 dark:text-stone-100 placeholder-stone-600 focus:border-rose-500 focus:outline-hidden"
                 />
                 <p className="mt-1 text-[11px] text-stone-500">
                   {tVoid("reasonHelp")} ({voidReason.length}/280)
                 </p>
               </div>
 
-              <div className="mt-4 flex items-center justify-end gap-3 border-t border-stone-800 pt-4">
+              <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-stone-800 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setVoidTx(null);
                     setFormError(null);
                   }}
-                  className="rounded-xl border border-stone-800 bg-stone-900 px-4 py-2 text-sm font-medium text-stone-300 hover:bg-stone-800 hover:text-stone-100"
+                  className="rounded-xl border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-4 py-2 text-sm font-medium text-stone-300 hover:bg-stone-800 hover:text-slate-900 dark:text-stone-100"
                 >
                   {tActions("cancel")}
                 </button>
