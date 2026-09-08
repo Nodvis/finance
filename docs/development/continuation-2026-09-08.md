@@ -111,3 +111,14 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - web odtworzony przez `up -d --force-recreate web`, bez usuwania volume;
 - PostgreSQL i web healthy; LAN `http://192.168.1.119:3000/pl` zwrócił HTTP 200;
 - E2E z prawdziwym loginem nie wykonano w tej sesji.
+
+## Quality gate: authenticated browser E2E
+
+- Zaktualizowano `e2e/smoke.spec.ts`, aby sprawdzał aktualną nawigację aplikacji PL/EN zamiast usuniętych tekstów marketingowych.
+- Dodano `e2e/finance.spec.ts` z syntetycznym signup/onboardingiem i izolacją per locale.
+- Playwright Chromium uruchomiony na jednorazowym projekcie `nodvis-finance-e2e`, osobnym volume PostgreSQL i aplikacji na `127.0.0.1:3100`; prywatny projekt `nodvis-finance-private` nie był modyfikowany.
+- PL: 1/1 authenticated flow passed; EN: 1/1 authenticated flow passed.
+- Scenariusze sprawdziły w przeglądarce: kategorię, expense/income/transfer, korekty każdego typu, niedestrukcyjne void, overview, filtr tekstowy, paginację oraz link/parametry CSV; odczyt API po reloadzie potwierdził trwałość i zakres household.
+- Smoke: 3/3 passed. Łącznie śledzone E2E: 5/5 passed.
+- `pnpm test`: 356/356 passed; `pnpm typecheck`, `pnpm lint`, `git diff --check`: passed.
+- `pnpm build` pozostaje wymaganym końcowym checkiem przed push.
