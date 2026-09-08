@@ -55,6 +55,17 @@ export {
   TransactionVersionConflictError,
 };
 
+export { getTransactionHistory } from "./history";
+export type {
+  TransactionHistoryEntry,
+  TransactionHistoryResult,
+  TransactionFieldChangeItem,
+  TransactionHistoryActor,
+  TransactionHistorySummary,
+  HistoryOperation,
+  HistorySource,
+} from "./history";
+
 export class TransactionAccountNotFoundError extends Error {
   constructor(message: string) {
     super(message);
@@ -185,9 +196,14 @@ export async function createManualTransaction(
       categoryId: input.categoryId ? toCategoryId(input.categoryId) : null,
     });
 
-    return input.submissionId
-      ? await insertTransaction(expense, { submissionId: input.submissionId })
-      : await insertTransaction(expense);
+    return await insertTransaction(expense, {
+      submissionId: input.submissionId,
+      audit: {
+        authUserId: context.authUserId,
+        personId: context.personId,
+        source: "manual",
+      },
+    });
   }
 
   if (input.kind === "income") {
@@ -252,9 +268,14 @@ export async function createManualTransaction(
       categoryId: input.categoryId ? toCategoryId(input.categoryId) : null,
     });
 
-    return input.submissionId
-      ? await insertTransaction(income, { submissionId: input.submissionId })
-      : await insertTransaction(income);
+    return await insertTransaction(income, {
+      submissionId: input.submissionId,
+      audit: {
+        authUserId: context.authUserId,
+        personId: context.personId,
+        source: "manual",
+      },
+    });
   }
 
   if (input.kind === "transfer") {
@@ -303,9 +324,14 @@ export async function createManualTransaction(
       occurredOn: input.occurredOn,
     });
 
-    return input.submissionId
-      ? await insertTransaction(transfer, { submissionId: input.submissionId })
-      : await insertTransaction(transfer);
+    return await insertTransaction(transfer, {
+      submissionId: input.submissionId,
+      audit: {
+        authUserId: context.authUserId,
+        personId: context.personId,
+        source: "manual",
+      },
+    });
   }
 
   throw new Error("Unsupported transaction kind");
@@ -412,6 +438,11 @@ export async function correctManualTransaction(
       id: transactionId,
       expectedVersion: input.expectedVersion,
       transaction: corrected,
+      audit: {
+        authUserId: context.authUserId,
+        personId: context.personId,
+        source: "manual",
+      },
     });
   }
 
@@ -481,6 +512,11 @@ export async function correctManualTransaction(
       id: transactionId,
       expectedVersion: input.expectedVersion,
       transaction: corrected,
+      audit: {
+        authUserId: context.authUserId,
+        personId: context.personId,
+        source: "manual",
+      },
     });
   }
 
@@ -533,6 +569,11 @@ export async function correctManualTransaction(
       id: transactionId,
       expectedVersion: input.expectedVersion,
       transaction: corrected,
+      audit: {
+        authUserId: context.authUserId,
+        personId: context.personId,
+        source: "manual",
+      },
     });
   }
 
@@ -549,6 +590,11 @@ export async function voidManualTransaction(
     id: transactionId,
     expectedVersion: input.expectedVersion,
     voidReason: input.voidReason ?? null,
+    audit: {
+      authUserId: context.authUserId,
+      personId: context.personId,
+      source: "manual",
+    },
   });
 }
 

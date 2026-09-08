@@ -118,3 +118,16 @@ export type {
   Period,
   PeriodCashFlowSummary,
 } from "./overview";
+
+export {
+  TRANSACTION_AUDIT_OPERATIONS,
+  TRANSACTION_AUDIT_SOURCES,
+  createTransactionAuditSnapshot,
+  diffTransactionAuditSnapshots,
+} from "./audit";
+export type {
+  TransactionAuditFieldDiff,
+  TransactionAuditOperation,
+  TransactionAuditSnapshot,
+  TransactionAuditSource,
+} from "./audit";

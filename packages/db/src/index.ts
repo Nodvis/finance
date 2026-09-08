@@ -37,6 +37,7 @@ export {
   countTransactionsByHousehold,
   findTransactionById,
   insertTransaction,
+  listTransactionAuditEntries,
   listTransactionsByHousehold,
   mapRowToTransaction,
   queryTransactionsByHousehold,
@@ -45,9 +46,13 @@ export {
 } from "./access/transactions";
 export type {
   ListTransactionsParams,
+  NewTransactionAuditRow,
   NewTransactionRow,
+  TransactionAuditActor,
+  TransactionAuditRow,
   TransactionRow,
 } from "./access/transactions";
+
 export {
   CategoryNotFoundError,
   archiveHouseholdCategory,

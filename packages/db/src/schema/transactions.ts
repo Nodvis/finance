@@ -5,19 +5,27 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { TRANSACTION_KINDS } from "@nodvis/finance-domain";
+import {
+  TRANSACTION_AUDIT_OPERATIONS,
+  TRANSACTION_AUDIT_SOURCES,
+  TRANSACTION_KINDS,
+} from "@nodvis/finance-domain";
+import type { TransactionAuditSnapshot } from "@nodvis/finance-domain";
 
+import { authUsers } from "./auth";
 import {
   accounts,
   currencyCheck,
   householdMemberships,
   households,
   instant,
+  persons,
 } from "./foundation";
 import { categories } from "./categories";
 import { financeSchema } from "./namespace";
@@ -26,6 +34,17 @@ export const transactionKindEnum = financeSchema.enum(
   "transaction_kind",
   TRANSACTION_KINDS,
 );
+
+export const transactionAuditOperationEnum = financeSchema.enum(
+  "transaction_audit_operation",
+  TRANSACTION_AUDIT_OPERATIONS,
+);
+
+export const transactionAuditSourceEnum = financeSchema.enum(
+  "transaction_audit_source",
+  TRANSACTION_AUDIT_SOURCES,
+);
+
 
 export const transactions = financeSchema.table(
   "transactions",
@@ -141,6 +160,53 @@ export const transactions = financeSchema.table(
     uniqueIndex("transactions_household_submission_id_idx").on(
       table.householdId,
       table.submissionId,
+    ),
+  ],
+);
+
+export const transactionAuditEntries = financeSchema.table(
+  "transaction_audit_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    transactionId: uuid("transaction_id").notNull(),
+    householdId: uuid("household_id").notNull(),
+    revision: integer("revision").notNull(),
+
+    operation: transactionAuditOperationEnum("operation").notNull(),
+    source: transactionAuditSourceEnum("source").default("manual").notNull(),
+    authUserId: uuid("auth_user_id").references(() => authUsers.id, {
+      onDelete: "set null",
+    }),
+    personId: uuid("person_id").references(() => persons.id, {
+      onDelete: "set null",
+    }),
+    recordedAt: instant("recorded_at").defaultNow().notNull(),
+    beforeState: jsonb("before_state").$type<TransactionAuditSnapshot | null>(),
+    afterState: jsonb("after_state").$type<TransactionAuditSnapshot>().notNull(),
+    voidReason: varchar("void_reason", { length: 280 }),
+  },
+  (table) => [
+    foreignKey({
+      name: "transaction_audit_household_fk",
+      columns: [table.householdId],
+      foreignColumns: [households.id],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "transaction_audit_transaction_fk",
+      columns: [table.transactionId],
+      foreignColumns: [transactions.id],
+    }).onDelete("restrict"),
+    check("transaction_audit_revision_positive", sql`${table.revision} >= 1`),
+    uniqueIndex("transaction_audit_tx_revision_unique").on(
+      table.transactionId,
+      table.revision,
+    ),
+    index("transaction_audit_tx_id_idx").on(table.transactionId),
+    index("transaction_audit_household_id_idx").on(table.householdId),
+    index("transaction_audit_recorded_at_idx").on(table.recordedAt),
+    index("transaction_audit_household_recorded_at_idx").on(
+      table.householdId,
+      table.recordedAt,
     ),
   ],
 );

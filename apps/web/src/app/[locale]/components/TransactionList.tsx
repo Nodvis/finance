@@ -14,13 +14,17 @@ import {
   minorUnitsToDecimalString,
 } from "@/lib/transactions/presentation";
 import type { SerializedTransaction } from "@/lib/transactions/schema";
+import type { TransactionHistoryEntry } from "@/lib/transactions/history-types";
 
 type TransactionListProps = {
   transactions: SerializedTransaction[];
   accounts: HouseholdAccountSummary[];
-  categories?: HouseholdCategorySummary[];
+  categories?: HouseholdCategorySummary[] | undefined;
   locale: string;
-  householdId?: string;
+  householdId?: string | undefined;
+  initialInspectTx?: SerializedTransaction | null | undefined;
+  initialActiveInspectTab?: "details" | "history" | undefined;
+  initialHistoryData?: TransactionHistoryEntry[] | null | undefined;
 };
 
 type FilterOverrides = {
@@ -42,11 +46,15 @@ export function TransactionList({
   categories = [],
   locale,
   householdId,
+  initialInspectTx = null,
+  initialActiveInspectTab = "details",
+  initialHistoryData = null,
 }: TransactionListProps) {
   const t = useTranslations("Transactions");
   const tFilters = useTranslations("Transactions.filters");
   const tActions = useTranslations("Transactions.actions");
   const tDetails = useTranslations("Transactions.details");
+  const tHistory = useTranslations("Transactions.history");
   const tEdit = useTranslations("Transactions.edit");
   const tVoid = useTranslations("Transactions.void");
   const tAccess = useTranslations("Accessibility");
@@ -71,7 +79,11 @@ export function TransactionList({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [inspectTx, setInspectTx] = useState<SerializedTransaction | null>(null);
+  const [inspectTx, setInspectTx] = useState<SerializedTransaction | null>(initialInspectTx);
+  const [activeInspectTab, setActiveInspectTab] = useState<"details" | "history">(initialActiveInspectTab);
+  const [historyData, setHistoryData] = useState<TransactionHistoryEntry[] | null>(initialHistoryData);
+  const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [editTx, setEditTx] = useState<SerializedTransaction | null>(null);
   const [voidTx, setVoidTx] = useState<SerializedTransaction | null>(null);
 
@@ -315,6 +327,46 @@ export function TransactionList({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (!inspectTx) {
+      setHistoryData(null);
+      setHistoryError(null);
+      setActiveInspectTab("details");
+      return;
+    }
+
+    const effectiveHouseholdId = householdId ?? inspectTx.householdId;
+    if (!effectiveHouseholdId) return;
+
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(null);
+
+    fetch(`/api/households/${effectiveHouseholdId}/transactions/${inspectTx.id}/history`)
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load history");
+        }
+        return res.json();
+      })
+      .then((json) => {
+        if (!cancelled) {
+          setHistoryData(json.data?.history ?? []);
+          setHistoryLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setHistoryError(err.message || "Failed to load");
+          setHistoryLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inspectTx, householdId]);
 
   const formatDate = (isoString: string) => {
     try {
@@ -1260,14 +1312,16 @@ export function TransactionList({
           aria-labelledby="details-dialog-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs"
         >
-          <div className="w-full max-w-lg rounded-2xl border border-stone-800 bg-stone-900 p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-4">
+          <div className="w-full max-w-xl max-h-[85vh] flex flex-col rounded-2xl border border-stone-800 bg-stone-900 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-stone-800 p-6 pb-4">
               <div>
                 <h3
                   id="details-dialog-title"
                   className="text-lg font-semibold text-stone-100"
                 >
-                  {tDetails("title")}
+                  {activeInspectTab === "details"
+                    ? tDetails("title")
+                    : tHistory("title")}
                 </h3>
                 <p className="text-xs text-stone-400">
                   {t("list.versionLabel", { version: inspectTx.version })}
@@ -1275,7 +1329,10 @@ export function TransactionList({
               </div>
               <button
                 type="button"
-                onClick={() => setInspectTx(null)}
+                onClick={() => {
+                  setInspectTx(null);
+                  setActiveInspectTab("details");
+                }}
                 className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
                 aria-label={tActions("close")}
               >
@@ -1283,160 +1340,360 @@ export function TransactionList({
               </button>
             </div>
 
-            <dl className="mt-4 divide-y divide-stone-800 text-sm">
-              <div className="flex justify-between py-2.5">
-                <dt className="text-stone-400">{tDetails("status")}</dt>
-                <dd className="font-medium text-stone-100">
-                  {inspectTx.voidedAt ? (
-                    <span className="rounded-md border border-rose-900/80 bg-rose-950 px-2 py-0.5 text-xs text-rose-300 font-semibold">
-                      {tDetails("statusVoided")}
-                    </span>
-                  ) : (
-                    <span className="rounded-md border border-emerald-900/80 bg-emerald-950 px-2 py-0.5 text-xs text-emerald-300 font-semibold">
-                      {tDetails("statusActive")}
-                    </span>
-                  )}
-                </dd>
-              </div>
-
-              <div className="flex justify-between py-2.5">
-                <dt className="text-stone-400">{tDetails("type")}</dt>
-                <dd className="font-medium text-stone-200 uppercase text-xs tracking-wider">
-                  {inspectTx.kind}
-                </dd>
-              </div>
-
-              <div className="flex justify-between py-2.5">
-                <dt className="text-stone-400">{tDetails("amount")}</dt>
-                <dd className="font-mono font-semibold text-stone-100">
-                  {formatAmount(
-                    inspectTx.amount.amountMinor,
-                    inspectTx.amount.currency,
-                  )}
-                </dd>
-              </div>
-
-              <div className="flex justify-between py-2.5">
-                <dt className="text-stone-400">{tDetails("date")}</dt>
-                <dd className="text-stone-200">
-                  {formatDate(inspectTx.occurredOn)}
-                </dd>
-              </div>
-
-              {inspectTx.kind === "expense" && (
-                <>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("payee")}</dt>
-                    <dd className="font-medium text-stone-100">
-                      {inspectTx.payee}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("account")}</dt>
-                    <dd className="text-stone-200">
-                      {accountMap.get(inspectTx.accountId)?.name ??
-                        inspectTx.accountId}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("category")}</dt>
-                    <dd className="text-stone-200">
-                      {inspectTx.categoryId
-                        ? categoryMap.get(inspectTx.categoryId)?.name ??
-                          inspectTx.categoryId
-                        : t("list.uncategorized")}
-                    </dd>
-                  </div>
-                </>
-              )}
-
-              {inspectTx.kind === "income" && (
-                <>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("source")}</dt>
-                    <dd className="font-medium text-stone-100">
-                      {inspectTx.source}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("account")}</dt>
-                    <dd className="text-stone-200">
-                      {accountMap.get(inspectTx.accountId)?.name ??
-                        inspectTx.accountId}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("category")}</dt>
-                    <dd className="text-stone-200">
-                      {inspectTx.categoryId
-                        ? categoryMap.get(inspectTx.categoryId)?.name ??
-                          inspectTx.categoryId
-                        : t("list.uncategorized")}
-                    </dd>
-                  </div>
-                </>
-              )}
-
-              {inspectTx.kind === "transfer" && (
-                <>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("fromAccount")}</dt>
-                    <dd className="text-stone-200">
-                      {accountMap.get(inspectTx.fromAccountId)?.name ??
-                        inspectTx.fromAccountId}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-stone-400">{tDetails("toAccount")}</dt>
-                    <dd className="text-stone-200">
-                      {accountMap.get(inspectTx.toAccountId)?.name ??
-                        inspectTx.toAccountId}
-                    </dd>
-                  </div>
-                </>
-              )}
-
-              {inspectTx.voidedAt && (
-                <>
-                  <div className="flex justify-between py-2.5">
-                    <dt className="text-rose-400 font-medium">
-                      {tDetails("voidedAt")}
-                    </dt>
-                    <dd className="text-rose-300">
-                      {formatDateTime(inspectTx.voidedAt)}
-                    </dd>
-                  </div>
-                  {inspectTx.voidReason && (
-                    <div className="flex flex-col py-2.5 gap-1">
-                      <dt className="text-stone-400">
-                        {tDetails("voidReason")}
-                      </dt>
-                      <dd className="rounded-lg border border-stone-800 bg-stone-950 p-2.5 text-stone-300 italic">
-                        "{inspectTx.voidReason}"
-                      </dd>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <div className="flex flex-col py-2.5 gap-1">
-                <dt className="text-xs text-stone-500">
-                  {tDetails("transactionId")}
-                </dt>
-                <dd className="font-mono text-xs text-stone-400 select-all">
-                  {inspectTx.id}
-                </dd>
-              </div>
-            </dl>
-
-            <div className="mt-4 rounded-xl border border-stone-800 bg-stone-950/60 p-3 text-xs text-stone-400 leading-relaxed">
-              {tDetails("auditTrailNotice")}
-            </div>
-
-            <div className="mt-6 flex justify-end">
+            {/* Tab navigation */}
+            <div className="flex border-b border-stone-800 px-6 gap-6 bg-stone-950/40">
               <button
                 type="button"
-                onClick={() => setInspectTx(null)}
+                onClick={() => setActiveInspectTab("details")}
+                className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeInspectTab === "details"
+                    ? "border-emerald-500 text-emerald-400 font-semibold"
+                    : "border-transparent text-stone-400 hover:text-stone-200"
+                }`}
+              >
+                {tHistory("tabDetails")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveInspectTab("history")}
+                className={`py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                  activeInspectTab === "history"
+                    ? "border-emerald-500 text-emerald-400 font-semibold"
+                    : "border-transparent text-stone-400 hover:text-stone-200"
+                }`}
+              >
+                <span>{tHistory("tabHistory")}</span>
+                {historyData && historyData.length > 0 && (
+                  <span className="rounded-full bg-stone-800 px-2 py-0.5 text-xs text-stone-300 font-mono">
+                    {historyData.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1">
+              {activeInspectTab === "details" ? (
+                <>
+                  <dl className="divide-y divide-stone-800 text-sm">
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-400">{tDetails("status")}</dt>
+                      <dd className="font-medium text-stone-100">
+                        {inspectTx.voidedAt ? (
+                          <span className="rounded-md border border-rose-900/80 bg-rose-950 px-2 py-0.5 text-xs text-rose-300 font-semibold">
+                            {tDetails("statusVoided")}
+                          </span>
+                        ) : (
+                          <span className="rounded-md border border-emerald-900/80 bg-emerald-950 px-2 py-0.5 text-xs text-emerald-300 font-semibold">
+                            {tDetails("statusActive")}
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-400">{tDetails("type")}</dt>
+                      <dd className="font-medium text-stone-200 uppercase text-xs tracking-wider">
+                        {inspectTx.kind}
+                      </dd>
+                    </div>
+
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-400">{tDetails("amount")}</dt>
+                      <dd className="font-mono font-semibold text-stone-100">
+                        {formatAmount(
+                          inspectTx.amount.amountMinor,
+                          inspectTx.amount.currency,
+                        )}
+                      </dd>
+                    </div>
+
+                    <div className="flex justify-between py-2.5">
+                      <dt className="text-stone-400">{tDetails("date")}</dt>
+                      <dd className="text-stone-200">
+                        {formatDate(inspectTx.occurredOn)}
+                      </dd>
+                    </div>
+
+                    {inspectTx.kind === "expense" && (
+                      <>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("payee")}</dt>
+                          <dd className="font-medium text-stone-100">
+                            {inspectTx.payee}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("account")}</dt>
+                          <dd className="text-stone-200">
+                            {accountMap.get(inspectTx.accountId)?.name ??
+                              inspectTx.accountId}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("category")}</dt>
+                          <dd className="text-stone-200">
+                            {inspectTx.categoryId
+                              ? categoryMap.get(inspectTx.categoryId)?.name ??
+                                inspectTx.categoryId
+                              : t("list.uncategorized")}
+                          </dd>
+                        </div>
+                      </>
+                    )}
+
+                    {inspectTx.kind === "income" && (
+                      <>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("source")}</dt>
+                          <dd className="font-medium text-stone-100">
+                            {inspectTx.source}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("account")}</dt>
+                          <dd className="text-stone-200">
+                            {accountMap.get(inspectTx.accountId)?.name ??
+                              inspectTx.accountId}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("category")}</dt>
+                          <dd className="text-stone-200">
+                            {inspectTx.categoryId
+                              ? categoryMap.get(inspectTx.categoryId)?.name ??
+                                inspectTx.categoryId
+                              : t("list.uncategorized")}
+                          </dd>
+                        </div>
+                      </>
+                    )}
+
+                    {inspectTx.kind === "transfer" && (
+                      <>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("fromAccount")}</dt>
+                          <dd className="text-stone-200">
+                            {accountMap.get(inspectTx.fromAccountId)?.name ??
+                              inspectTx.fromAccountId}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-stone-400">{tDetails("toAccount")}</dt>
+                          <dd className="text-stone-200">
+                            {accountMap.get(inspectTx.toAccountId)?.name ??
+                              inspectTx.toAccountId}
+                          </dd>
+                        </div>
+                      </>
+                    )}
+
+                    {inspectTx.voidedAt && (
+                      <>
+                        <div className="flex justify-between py-2.5">
+                          <dt className="text-rose-400 font-medium">
+                            {tDetails("voidedAt")}
+                          </dt>
+                          <dd className="text-rose-300">
+                            {formatDateTime(inspectTx.voidedAt)}
+                          </dd>
+                        </div>
+                        {inspectTx.voidReason && (
+                          <div className="flex flex-col py-2.5 gap-1">
+                            <dt className="text-stone-400">
+                              {tDetails("voidReason")}
+                            </dt>
+                            <dd className="rounded-lg border border-stone-800 bg-stone-950 p-2.5 text-stone-300 italic">
+                              "{inspectTx.voidReason}"
+                            </dd>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div className="flex flex-col py-2.5 gap-1">
+                      <dt className="text-xs text-stone-500">
+                        {tDetails("transactionId")}
+                      </dt>
+                      <dd className="font-mono text-xs text-stone-400 select-all">
+                        {inspectTx.id}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-4 rounded-xl border border-stone-800 bg-stone-950/60 p-3 text-xs text-stone-400 leading-relaxed">
+                    {tDetails("auditTrailNotice")}
+                  </div>
+                </>
+              ) : (
+                <div
+                  className="space-y-4"
+                  aria-label={tAccess("transactionHistoryTimeline")}
+                >
+                  <p className="text-xs text-stone-400 leading-relaxed">
+                    {tHistory("description")}
+                  </p>
+
+                  {historyLoading && (
+                    <div className="py-12 text-center text-sm text-stone-400 flex flex-col items-center gap-2">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-stone-600 border-t-emerald-500" />
+                      <span>{tHistory("loading")}</span>
+                    </div>
+                  )}
+
+                  {historyError && (
+                    <div className="rounded-xl border border-rose-900/60 bg-rose-950/40 p-4 text-xs text-rose-300">
+                      {tHistory("loadError")}
+                    </div>
+                  )}
+
+                  {!historyLoading &&
+                    !historyError &&
+                    historyData &&
+                    historyData.length === 0 && (
+                      <div className="py-8 text-center text-sm text-stone-500">
+                        {tHistory("empty")}
+                      </div>
+                    )}
+
+                  {!historyLoading &&
+                    !historyError &&
+                    historyData &&
+                    historyData.length > 0 && (
+                      <ol className="relative border-l border-stone-800 ml-3 space-y-6">
+                        {historyData.map((entry) => {
+                          const isCreate = entry.operation === "create";
+                          const isCorrection = entry.operation === "correction";
+                          const isVoid = entry.operation === "void";
+                          const isBaseline = entry.isBaseline;
+
+                          const badgeColor = isCreate
+                            ? "border-emerald-800/80 bg-emerald-950 text-emerald-300"
+                            : isCorrection
+                              ? "border-sky-800/80 bg-sky-950 text-sky-300"
+                              : isVoid
+                                ? "border-rose-800/80 bg-rose-950 text-rose-300"
+                                : "border-stone-700 bg-stone-800 text-stone-300";
+
+                          const dotColor = isCreate
+                            ? "bg-emerald-500 ring-emerald-950"
+                            : isCorrection
+                              ? "bg-sky-500 ring-sky-950"
+                              : isVoid
+                                ? "bg-rose-500 ring-rose-950"
+                                : "bg-stone-500 ring-stone-950";
+
+                          return (
+                            <li key={entry.id} className="ml-6">
+                              <span
+                                className={`absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full ring-4 ${dotColor}`}
+                              />
+
+                              <div className="rounded-xl border border-stone-800 bg-stone-950/60 p-4 shadow-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800/60 pb-2.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-stone-200">
+                                      {tHistory("revisionLabel", {
+                                        revision: entry.revision,
+                                      })}
+                                    </span>
+                                    <span
+                                      className={`rounded-md border px-2 py-0.5 text-xs font-medium ${badgeColor}`}
+                                    >
+                                      {tHistory(`operations.${entry.operation}`)}
+                                    </span>
+                                    <span className="rounded-md border border-stone-800 bg-stone-900 px-2 py-0.5 text-xs text-stone-400">
+                                      {tHistory(`sources.${entry.source}`)}
+                                    </span>
+                                  </div>
+                                  <time className="text-xs text-stone-400">
+                                    {formatDateTime(entry.recordedAt)}
+                                  </time>
+                                </div>
+
+                                <div className="mt-2 text-xs text-stone-400 flex items-center justify-between">
+                                  {entry.actor?.displayName ? (
+                                    <span>
+                                      {tHistory("actor.by", {
+                                        name: entry.actor.displayName,
+                                      })}
+                                    </span>
+                                  ) : (
+                                    <span className="italic text-stone-500">
+                                      {tHistory("actor.unknown")}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {isBaseline && (
+                                  <p className="mt-2 text-xs text-amber-400/90 italic bg-amber-950/20 border border-amber-900/30 rounded-lg p-2">
+                                    {tHistory("baselineNotice")}
+                                  </p>
+                                )}
+
+                                {entry.voidReason && (
+                                  <div className="mt-2 rounded-lg border border-rose-900/40 bg-rose-950/30 p-2 text-xs text-rose-300">
+                                    <span className="font-medium text-rose-400">
+                                      {tHistory("fields.fieldVoidReason")}:{" "}
+                                    </span>
+                                    <span className="italic">
+                                      "{entry.voidReason}"
+                                    </span>
+                                  </div>
+                                )}
+
+                                {entry.changes.length > 0 ? (
+                                  <ul className="mt-3 divide-y divide-stone-800/60 border-t border-stone-800/60 pt-2 text-xs">
+                                    {entry.changes.map((c) => (
+                                      <li
+                                        key={c.field}
+                                        className="flex flex-wrap items-baseline justify-between gap-2 py-1"
+                                      >
+                                        <span className="text-stone-400 font-medium">
+                                          {tHistory(`fields.${c.fieldLabelKey}`)}:
+                                        </span>
+                                        <div className="flex items-center gap-1.5 font-mono text-xs">
+                                          {c.before !== null && (
+                                            <span className="text-stone-400 line-through">
+                                              {c.before}
+                                            </span>
+                                          )}
+                                          {c.before !== null && (
+                                            <span className="text-stone-600">
+                                              →
+                                            </span>
+                                          )}
+                                          <span className="font-semibold text-stone-100">
+                                            {c.after ?? "—"}
+                                          </span>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  !isBaseline && (
+                                    <p className="mt-2 text-xs text-stone-500 italic">
+                                      {tHistory("noChanges")}
+                                    </p>
+                                  )
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-stone-800 p-4 px-6 flex justify-end bg-stone-900">
+              <button
+                type="button"
+                onClick={() => {
+                  setInspectTx(null);
+                  setActiveInspectTab("details");
+                }}
                 className="rounded-xl border border-stone-700 bg-stone-800 px-4 py-2 text-sm font-medium text-stone-200 hover:bg-stone-700 hover:text-stone-100"
               >
                 {tActions("close")}

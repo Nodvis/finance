@@ -560,3 +560,528 @@ describe("queryTransactionsByHousehold and tie-breaker sorting", () => {
     expect((queryOrderByArgs as unknown[]).length).toBe(3);
   });
 });
+
+describe("audit and transaction mutations", () => {
+  const occurredOn = new Date("2026-09-08T10:00:00Z");
+  const createdAt = new Date("2026-09-08T10:00:01Z");
+  const updatedAt = new Date("2026-09-08T10:00:01Z");
+
+  it("insertTransaction inserts transaction and audit entry atomically in one DB transaction", async () => {
+    const { createExpense, money } = await import("@nodvis/finance-domain");
+    const { insertTransaction } = await import("./transactions");
+
+    const tx = createExpense({
+      id: txUuid1 as any,
+      householdId: householdUuid as any,
+      accountId: accountUuid1 as any,
+      amount: money(5000n, "PLN"),
+      payee: "Bookstore",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+    });
+
+    const insertedTxRow: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 5000n,
+      currency: "PLN",
+      occurredOn,
+      accountId: accountUuid1,
+      categoryId: null,
+      payee: "Bookstore",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: "sub-123",
+      createdAt,
+      updatedAt,
+    };
+
+    const insertedAuditValues: any[] = [];
+    const insertedTxValues: any[] = [];
+
+    const mockDbTx = {
+      insert: (table: any) => ({
+        values: (val: any) => {
+          if (table._?.name === "transaction_audit_entries" || val.revision !== undefined && val.operation !== undefined) {
+            insertedAuditValues.push(val);
+            return {
+              then: (resolve: (v: any) => any) => resolve([]),
+            };
+          }
+          insertedTxValues.push(val);
+          return {
+            returning: () => ({
+              then: (resolve: (v: any) => any) => resolve([insertedTxRow]),
+            }),
+          };
+        },
+      }),
+    };
+
+    const mockDb = {
+      transaction: async (cb: (tx: any) => Promise<any>) => cb(mockDbTx),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    const result = await insertTransaction(tx, {
+      submissionId: "sub-123",
+      audit: {
+        authUserId: "user-123",
+        personId: personUuid1,
+        source: "manual",
+      },
+    });
+
+    expect(result.id).toBe(txUuid1);
+    expect(result.version).toBe(1);
+    expect(insertedTxValues).toHaveLength(1);
+    expect(insertedTxValues[0].submissionId).toBe("sub-123");
+
+    expect(insertedAuditValues).toHaveLength(1);
+    const auditEntry = insertedAuditValues[0];
+    expect(auditEntry.transactionId).toBe(txUuid1);
+    expect(auditEntry.householdId).toBe(householdUuid);
+    expect(auditEntry.revision).toBe(1);
+    expect(auditEntry.operation).toBe("create");
+    expect(auditEntry.source).toBe("manual");
+    expect(auditEntry.authUserId).toBe("user-123");
+    expect(auditEntry.personId).toBe(personUuid1);
+    expect(auditEntry.beforeState).toBeNull();
+    expect(auditEntry.afterState).toBeDefined();
+    expect(auditEntry.afterState.amountMinor).toBe("5000");
+    expect(auditEntry.afterState.currency).toBe("PLN");
+  });
+
+  it("insertTransaction throws DuplicateSubmissionError and rolls back on duplicate submission_id", async () => {
+    const { createExpense, money } = await import("@nodvis/finance-domain");
+    const { insertTransaction, DuplicateSubmissionError } = await import("./transactions");
+
+    const tx = createExpense({
+      id: txUuid1 as any,
+      householdId: householdUuid as any,
+      accountId: accountUuid1 as any,
+      amount: money(5000n, "PLN"),
+      payee: "Bookstore",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+    });
+
+    const mockDbTx = {
+      insert: () => ({
+        values: () => ({
+          returning: () => {
+            const err = new Error("duplicate key value violates unique constraint") as any;
+            err.code = "23505";
+            err.detail = "Key (household_id, submission_id) already exists";
+            throw err;
+          },
+        }),
+      }),
+    };
+
+    const mockDb = {
+      transaction: async (cb: (tx: any) => Promise<any>) => cb(mockDbTx),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    await expect(
+      insertTransaction(tx, { submissionId: "dup-1" }),
+    ).rejects.toThrow(DuplicateSubmissionError);
+  });
+
+  it("insertTransaction fails and rolls back without creating audit when mutation fails", async () => {
+    const { createExpense, money } = await import("@nodvis/finance-domain");
+    const { insertTransaction } = await import("./transactions");
+
+    const tx = createExpense({
+      id: txUuid1 as any,
+      householdId: householdUuid as any,
+      accountId: accountUuid1 as any,
+      amount: money(5000n, "PLN"),
+      payee: "Bookstore",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+    });
+
+    let auditInserted = false;
+    const mockDbTx = {
+      insert: () => {
+        throw new Error("DB connection terminated unexpectedly");
+      },
+    };
+
+    const mockDb = {
+      transaction: async (cb: (tx: any) => Promise<any>) => cb(mockDbTx),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    await expect(insertTransaction(tx)).rejects.toThrow(
+      "DB connection terminated unexpectedly",
+    );
+    expect(auditInserted).toBe(false);
+  });
+
+  it("updateTransactionInDb records correction audit entry with exact before/after state", async () => {
+    const { correctExpense, createExpense, money } = await import(
+      "@nodvis/finance-domain"
+    );
+    const { updateTransactionInDb } = await import("./transactions");
+
+    const existingTx = createExpense({
+      id: txUuid1 as any,
+      householdId: householdUuid as any,
+      accountId: accountUuid1 as any,
+      amount: money(5000n, "PLN"),
+      payee: "Old Store",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+      version: 1,
+    });
+
+    const correctedTx = correctExpense(existingTx, {
+      accountId: accountUuid1 as any,
+      amount: money(7500n, "PLN"),
+      payee: "New Store",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+    });
+
+    const existingRow: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 5000n,
+      currency: "PLN",
+      occurredOn,
+      accountId: accountUuid1,
+      categoryId: null,
+      payee: "Old Store",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
+      createdAt,
+      updatedAt,
+    };
+
+    const updatedRow: TransactionRow = {
+      ...existingRow,
+      amountMinor: 7500n,
+      payee: "New Store",
+      version: 2,
+      updatedAt: new Date("2026-09-08T11:00:00Z"),
+    };
+
+    const insertedAuditValues: any[] = [];
+
+    const mockDbTx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({
+              then: (resolve: (v: any) => any) => resolve([existingRow]),
+            }),
+          }),
+        }),
+      }),
+      update: () => ({
+        set: () => ({
+          where: () => ({
+            returning: () => ({
+              then: (resolve: (v: any) => any) => resolve([updatedRow]),
+            }),
+          }),
+        }),
+      }),
+      insert: () => ({
+        values: (val: any) => {
+          insertedAuditValues.push(val);
+          return {
+            then: (resolve: (v: any) => any) => resolve([]),
+          };
+        },
+      }),
+    };
+
+    const mockDb = {
+      transaction: async (cb: (tx: any) => Promise<any>) => cb(mockDbTx),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    const result = await updateTransactionInDb({
+      householdId: householdUuid,
+      id: txUuid1,
+      expectedVersion: 1,
+      transaction: correctedTx,
+      audit: {
+        authUserId: "user-456",
+        personId: personUuid2,
+        source: "manual",
+      },
+    });
+
+    expect(result.version).toBe(2);
+    expect(insertedAuditValues).toHaveLength(1);
+    const auditEntry = insertedAuditValues[0];
+    expect(auditEntry.operation).toBe("correction");
+    expect(auditEntry.revision).toBe(2);
+    expect(auditEntry.beforeState.amountMinor).toBe("5000");
+    expect(auditEntry.beforeState.payee).toBe("Old Store");
+    expect(auditEntry.afterState.amountMinor).toBe("7500");
+    expect(auditEntry.afterState.payee).toBe("New Store");
+    expect(auditEntry.authUserId).toBe("user-456");
+    expect(auditEntry.personId).toBe(personUuid2);
+  });
+
+  it("updateTransactionInDb detects optimistic concurrency conflict and throws without audit", async () => {
+    const { correctExpense, createExpense, money } = await import(
+      "@nodvis/finance-domain"
+    );
+    const { updateTransactionInDb, TransactionVersionConflictError } =
+      await import("./transactions");
+
+    const existingTx = createExpense({
+      id: txUuid1 as any,
+      householdId: householdUuid as any,
+      accountId: accountUuid1 as any,
+      amount: money(5000n, "PLN"),
+      payee: "Old Store",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+      version: 1,
+    });
+
+    const correctedTx = correctExpense(existingTx, {
+      accountId: accountUuid1 as any,
+      amount: money(7500n, "PLN"),
+      payee: "New Store",
+      paidByPersonId: personUuid1 as any,
+      occurredOn,
+    });
+
+    const staleRow: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 6000n,
+      currency: "PLN",
+      occurredOn,
+      accountId: accountUuid1,
+      categoryId: null,
+      payee: "Intervening Store",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      version: 2, // version already bumped to 2 by someone else
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
+      createdAt,
+      updatedAt,
+    };
+
+    const mockDbTx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({
+              then: (resolve: (v: any) => any) => resolve([staleRow]),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    const mockDb = {
+      transaction: async (cb: (tx: any) => Promise<any>) => cb(mockDbTx),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    await expect(
+      updateTransactionInDb({
+        householdId: householdUuid,
+        id: txUuid1,
+        expectedVersion: 1, // expecting 1, but DB has 2
+        transaction: correctedTx,
+      }),
+    ).rejects.toThrow(TransactionVersionConflictError);
+  });
+
+  it("voidTransactionInDb records void audit entry with voidReason", async () => {
+    const { voidTransactionInDb } = await import("./transactions");
+
+    const existingRow: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 5000n,
+      currency: "PLN",
+      occurredOn,
+      accountId: accountUuid1,
+      categoryId: null,
+      payee: "Store",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
+      createdAt,
+      updatedAt,
+    };
+
+    const voidedAt = new Date("2026-09-08T12:00:00Z");
+    const voidedRow: TransactionRow = {
+      ...existingRow,
+      version: 2,
+      voidedAt,
+      voidReason: "Accidental double entry",
+      updatedAt: voidedAt,
+    };
+
+    const insertedAuditValues: any[] = [];
+
+    const mockDbTx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({
+              then: (resolve: (v: any) => any) => resolve([existingRow]),
+            }),
+          }),
+        }),
+      }),
+      update: () => ({
+        set: () => ({
+          where: () => ({
+            returning: () => ({
+              then: (resolve: (v: any) => any) => resolve([voidedRow]),
+            }),
+          }),
+        }),
+      }),
+      insert: () => ({
+        values: (val: any) => {
+          insertedAuditValues.push(val);
+          return {
+            then: (resolve: (v: any) => any) => resolve([]),
+          };
+        },
+      }),
+    };
+
+    const mockDb = {
+      transaction: async (cb: (tx: any) => Promise<any>) => cb(mockDbTx),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    const result = await voidTransactionInDb({
+      householdId: householdUuid,
+      id: txUuid1,
+      expectedVersion: 1,
+      voidReason: "Accidental double entry",
+      voidedAt,
+      audit: {
+        authUserId: "user-789",
+        personId: personUuid1,
+        source: "manual",
+      },
+    });
+
+    expect(result.version).toBe(2);
+    expect(result.voidedAt).toEqual(voidedAt);
+    expect(result.voidReason).toBe("Accidental double entry");
+
+    expect(insertedAuditValues).toHaveLength(1);
+    const auditEntry = insertedAuditValues[0];
+    expect(auditEntry.operation).toBe("void");
+    expect(auditEntry.revision).toBe(2);
+    expect(auditEntry.voidReason).toBe("Accidental double entry");
+    expect(auditEntry.afterState.voidedAt).toBe(voidedAt.toISOString());
+    expect(auditEntry.afterState.voidReason).toBe("Accidental double entry");
+  });
+
+  it("listTransactionAuditEntries queries entries ordered by revision", async () => {
+    const { listTransactionAuditEntries } = await import("./transactions");
+
+    const mockAuditRows = [
+      {
+        id: "audit-1",
+        transactionId: txUuid1,
+        householdId: householdUuid,
+        revision: 1,
+        operation: "create",
+        source: "manual",
+        authUserId: "user-1",
+        personId: personUuid1,
+        recordedAt: new Date("2026-09-08T10:00:00Z"),
+        beforeState: null,
+        afterState: { kind: "expense" },
+        voidReason: null,
+      },
+      {
+        id: "audit-2",
+        transactionId: txUuid1,
+        householdId: householdUuid,
+        revision: 2,
+        operation: "correction",
+        source: "manual",
+        authUserId: "user-1",
+        personId: personUuid1,
+        recordedAt: new Date("2026-09-08T11:00:00Z"),
+        beforeState: { kind: "expense" },
+        afterState: { kind: "expense", amountMinor: "6000" },
+        voidReason: null,
+      },
+    ];
+
+    const mockDb = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            orderBy: () => ({
+              then: (resolve: (v: any) => any) => resolve(mockAuditRows),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    const entries = await listTransactionAuditEntries(householdUuid, txUuid1);
+    expect(entries).toHaveLength(2);
+    expect(entries[0]!.revision).toBe(1);
+    expect(entries[1]!.revision).toBe(2);
+  });
+});

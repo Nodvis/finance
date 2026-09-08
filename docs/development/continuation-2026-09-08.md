@@ -122,3 +122,12 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - Smoke: 3/3 passed. Łącznie śledzone E2E: 5/5 passed.
 - `pnpm test`: 356/356 passed; `pnpm typecheck`, `pnpm lint`, `git diff --check`: passed.
 - `pnpm build` pozostaje wymaganym końcowym checkiem przed push.
+
+## Checkpoint: immutable transaction history — review in progress
+
+- Dodano append-only `transaction_audit_entries` z operacją, źródłem manual/system/import, aktorem auth user/person, rewizją i dokładnymi snapshotami before/after.
+- Create, correction i void zapisują mutację oraz audyt atomowo; optimistic concurrency i `submissionId` pozostały aktywne.
+- Dodano bazowy stan `legacy` bez fabrykowania starych rewizji oraz autoryzowany endpoint/UI historii zmian w PL/EN.
+- Migracja additive: `packages/db/drizzle/0005_careless_richard_fisk.sql`; trigger blokuje UPDATE/DELETE audytu, a FK historii używają `RESTRICT`.
+- Świeży PostgreSQL: migracja uruchomiona dwukrotnie; po migracji DB integration audit: 54 testy passed.
+- Focused tests: domain 85, db 54, web 248 passed; typecheck i build passed. Pełny quality gate oraz authenticated Chromium E2E historii są jeszcze przed commitem checkpointu.

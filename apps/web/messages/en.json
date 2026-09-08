@@ -262,6 +262,58 @@
       "voidReason": "Reason for voiding",
       "auditTrailNotice": "This transaction record is permanently preserved for audit integrity."
     },
+    "history": {
+      "tabDetails": "Details",
+      "tabHistory": "Change history",
+      "title": "Change history",
+      "description": "Trustworthy immutable audit trail of all recorded modifications to this transaction.",
+      "loading": "Loading change history...",
+      "loadError": "Failed to load change history. Please try again.",
+      "empty": "No change history available.",
+      "revisionLabel": "Revision {revision}",
+      "baselineNotice": "Initial baseline prior to change tracking",
+      "initialStateNotice": "Initial creation record",
+      "noChanges": "No field values were changed.",
+      "fields": {
+        "fieldAmount": "Amount",
+        "fieldDate": "Date",
+        "fieldAccount": "Account",
+        "fieldFromAccount": "Source account",
+        "fieldToAccount": "Destination account",
+        "fieldCategory": "Category",
+        "fieldPayee": "Payee / Merchant",
+        "fieldSource": "Income source",
+        "fieldPayer": "Paid by",
+        "fieldBeneficiary": "Received by",
+        "fieldStatus": "Status",
+        "fieldVoidReason": "Void reason"
+      },
+      "operations": {
+        "create": "Created",
+        "correction": "Corrected",
+        "void": "Voided",
+        "baseline": "Baseline"
+      },
+      "sources": {
+        "manual": "Manual entry",
+        "system": "System",
+        "import": "CSV import",
+        "legacy": "Legacy"
+      },
+      "actor": {
+        "by": "by {name}",
+        "unknown": "System / Unknown actor"
+      },
+      "diff": {
+        "from": "from",
+        "to": "to",
+        "set": "set to"
+      },
+      "status": {
+        "active": "Active",
+        "voided": "Voided"
+      }
+    },
     "edit": {
       "titleExpense": "Correct expense",
       "titleIncome": "Correct income",
@@ -373,7 +425,8 @@
     "periodNavigation": "Period navigation",
     "categoryBreakdown": "Category spending breakdown",
     "cashFlowSummary": "Period cash flow summary",
-    "accountObservations": "Account observations status"
+    "accountObservations": "Account observations status",
+    "transactionHistoryTimeline": "Transaction change history timeline"
   },
   "Overview": {
     "periodLabel": "Selected period",

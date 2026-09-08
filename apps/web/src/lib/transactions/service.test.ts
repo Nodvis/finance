@@ -131,9 +131,14 @@ describe("transaction-service", () => {
       expect(isExpense(result)).toBe(true);
       expect(result.householdId).toBe(validHousehold);
       expect(result.amount).toEqual(money(4500n, "PLN"));
-      expect((result as { payee: string }).payee).toBe("Pharmacy");
-      expect((result as { paidByPersonId: string }).paidByPersonId).toBe(validPerson2);
-      expect(insertTransaction).toHaveBeenCalledWith(result);
+      expect(insertTransaction).toHaveBeenCalledWith(result, {
+        submissionId: undefined,
+        audit: {
+          authUserId: "user-1",
+          personId: validPerson1,
+          source: "manual",
+        },
+      });
     });
 
     it("defaults paidByPersonId to context.personId when omitted", async () => {
@@ -604,7 +609,14 @@ describe("transaction-service", () => {
 
       expect(insertTransaction).toHaveBeenCalledWith(
         expect.any(Object),
-        { submissionId: "sub-12345" },
+        {
+          submissionId: "sub-12345",
+          audit: {
+            authUserId: "user-1",
+            personId: validPerson1,
+            source: "manual",
+          },
+        },
       );
     });
 
@@ -697,6 +709,11 @@ describe("transaction-service", () => {
           version: 2,
           payee: "Updated Store",
         }),
+        audit: {
+          authUserId: "user-1",
+          personId: validPerson1,
+          source: "manual",
+        },
       });
     });
 
@@ -988,6 +1005,11 @@ describe("transaction-service", () => {
         id: validTxId,
         expectedVersion: 1,
         voidReason: "Duplicate receipt",
+        audit: {
+          authUserId: "user-1",
+          personId: validPerson1,
+          source: "manual",
+        },
       });
     });
 

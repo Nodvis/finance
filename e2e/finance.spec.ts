@@ -149,6 +149,25 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   expect(correctedIncome.source).toBe(`E2E corrected income ${locale}`);
   expect(correctedTransfer.amount).toEqual({ amountMinor: "666", currency: "PLN" });
 
+  const historyResponse = await page.request.get(
+    `/api/households/${household.householdId}/transactions/${expense.id}/history`,
+  );
+  expect(historyResponse.ok()).toBeTruthy();
+  const history = (await historyResponse.json()).data.history as Array<Record<string, unknown>>;
+  expect(history.map((entry) => entry.revision)).toEqual([1, 2, 3]);
+  expect(history.map((entry) => entry.operation)).toEqual(["create", "correction", "void"]);
+  expect((history[2]!.voidReason as string)).toBe("E2E correction test");
+
+  await page.goto(`/${locale}?status=all`);
+  await page.getByRole("button", {
+    name: new RegExp(`Details.*E2E corrected expense ${locale}|Szczegóły.*E2E corrected expense ${locale}`),
+  }).click();
+  await page.getByRole("dialog").getByRole("button", {
+    name: /Change history|Historia zmian/,
+  }).click();
+  await expect(page.getByText(/Revision 3|Rewizja 3/)).toBeVisible();
+  await expect(page.getByText("E2E correction test", { exact: true })).toBeVisible();
+
   const overview = await page.request.get(`/api/households/${household.householdId}/overview?month=${new Date().toISOString().slice(0, 7)}`);
   expect(overview.ok()).toBeTruthy();
   expect((await overview.json()).data.cashFlow.byCurrency).toBeTruthy();
