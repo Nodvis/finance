@@ -85,6 +85,30 @@ export function getCurrencyFractionDigits(currency: string): number {
   return 2;
 }
 
+export const STATEMENT_IMPORT_IDENTITY_TYPES = [
+  "authoritative",
+  "fallback",
+] as const;
+export type StatementImportIdentityType =
+  (typeof STATEMENT_IMPORT_IDENTITY_TYPES)[number];
+
+export const STATEMENT_IMPORT_AMBIGUITY_STATES = [
+  "unambiguous",
+  "ambiguous",
+  "resolved",
+] as const;
+export type StatementImportAmbiguityState =
+  (typeof STATEMENT_IMPORT_AMBIGUITY_STATES)[number];
+
+export type FallbackEvidence = Readonly<{
+  occurredOnDate: string;
+  amountMinor: string;
+  currency: string;
+  kind: StatementImportRowKind;
+  normalizedDescription: string;
+  rawRowContent: string;
+}>;
+
 export type StatementImportMappingConfig = Readonly<{
   dateColumn: string;
   dateFormat: SupportedDateFormat;
@@ -99,6 +123,10 @@ export type StatementImportMappingConfig = Readonly<{
   fixedCurrency?: string | undefined;
   descriptionColumn: string;
   sourceRowIdentityColumn?: string | undefined;
+  authoritativeIdColumn?: string | undefined;
+  sourceNamespace?: string | undefined;
+  sourceAccountId?: string | undefined;
+  sourceAccountIdColumn?: string | undefined;
   delimiter: CsvDelimiter;
   hasHeader: boolean;
   headerRowIndex: number;
@@ -107,6 +135,14 @@ export type StatementImportMappingConfig = Readonly<{
 
 export type NormalizedImportRow = Readonly<{
   rowIndex: number;
+  sourceNamespace: string;
+  sourceAccountId: string | null;
+  authoritativeId: string | null;
+  identityType: StatementImportIdentityType;
+  fallbackIdentifier: string;
+  fallbackEvidence: Record<string, unknown>;
+  occurrenceIndex: number;
+  ambiguityState: StatementImportAmbiguityState;
   sourceRowIdentity: string;
   dedupeHash: string;
   occurredOn: Date;
@@ -155,6 +191,15 @@ export type RowPreviewItem = Readonly<{
   rawRowContent: string;
   dedupeHash: string;
   sourceRowIdentity: string;
+  sourceNamespace?: string | undefined;
+  sourceAccountId?: string | null | undefined;
+  authoritativeId?: string | null | undefined;
+  identityType?: StatementImportIdentityType | undefined;
+  fallbackIdentifier?: string | undefined;
+  occurrenceIndex?: number | undefined;
+  ambiguityState?: StatementImportAmbiguityState | undefined;
+  canonicalTransactionId?: string | null | undefined;
+  matchedImportRowId?: string | null | undefined;
   possibleMatch: PossibleManualMatch | null;
   selected: boolean;
 }>;
@@ -770,31 +815,78 @@ export function parseImportAmount(
 }
 
 /**
- * Computes deterministic deduplication hash for an import row.
+ * Computes deterministic fallback identity hash for an import row based on immutable facts.
  */
-export function computeRowDedupeHash(params: {
-  accountId: string;
-  sourceRowIdentity?: string | null;
+export function computeFallbackIdentifier(params: {
   occurredOnDate: string;
   amountMinor: bigint;
   currency: string;
   kind: StatementImportRowKind;
   normalizedDescription: string;
-  occurrenceIndex: number;
 }): string {
   const hash = createHash("sha256");
-  const normalizedDesc = params.normalizedDescription.trim().toLowerCase();
+  const normalizedDesc = params.normalizedDescription
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  hash.update(
+    `${params.occurredOnDate}:${params.amountMinor.toString()}:${params.currency}:${params.kind}:${normalizedDesc}`,
+  );
+  return hash.digest("hex");
+}
+
+/**
+ * Computes deterministic deduplication hash for an import row.
+ * Supports authoritative source transaction ID as well as deterministic fallback identity.
+ */
+export function computeRowDedupeHash(params: {
+  accountId: string;
+  sourceNamespace?: string | null | undefined;
+  sourceAccountId?: string | null | undefined;
+  authoritativeId?: string | null | undefined;
+  fallbackIdentifier?: string | null | undefined;
+  occurrenceIndex?: number | undefined;
+  // Legacy / fallback parameters for backward compatibility:
+  sourceRowIdentity?: string | null | undefined;
+  occurredOnDate?: string | undefined;
+  amountMinor?: bigint | undefined;
+  currency?: string | undefined;
+  kind?: StatementImportRowKind | undefined;
+  normalizedDescription?: string | undefined;
+}): string {
+  const hash = createHash("sha256");
+
+  if (params.authoritativeId && params.authoritativeId.trim().length > 0) {
+    const ns = params.sourceNamespace?.trim() || "generic_csv";
+    const srcAcc = params.sourceAccountId?.trim() || "";
+    hash.update(
+      `auth:${params.accountId}:${ns}:${srcAcc}:${params.authoritativeId.trim()}`,
+    );
+    return hash.digest("hex");
+  }
+
+  if (params.fallbackIdentifier && params.fallbackIdentifier.trim().length > 0) {
+    const occ = params.occurrenceIndex ?? 0;
+    hash.update(
+      `fallback:${params.accountId}:${params.fallbackIdentifier.trim()}:${occ}`,
+    );
+    return hash.digest("hex");
+  }
 
   if (params.sourceRowIdentity && params.sourceRowIdentity.trim().length > 0) {
     hash.update(
-      `id:${params.accountId}:${params.sourceRowIdentity.trim()}:${params.amountMinor}:${params.currency}`,
+      `id:${params.accountId}:${params.sourceRowIdentity.trim()}:${params.amountMinor ?? 0n}:${params.currency ?? ""}`,
     );
-  } else {
-    hash.update(
-      `row:${params.accountId}:${params.occurredOnDate}:${params.amountMinor}:${params.currency}:${params.kind}:${normalizedDesc}:${params.occurrenceIndex}`,
-    );
+    return hash.digest("hex");
   }
 
+  const normalizedDesc = (params.normalizedDescription ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  hash.update(
+    `row:${params.accountId}:${params.occurredOnDate ?? ""}:${params.amountMinor ?? 0n}:${params.currency ?? ""}:${params.kind ?? "expense"}:${normalizedDesc}:${params.occurrenceIndex ?? 0}`,
+  );
   return hash.digest("hex");
 }
 
@@ -1051,28 +1143,67 @@ export function normalizeImportRow(params: {
   const payee = kind === "expense" ? description : null;
   const source = kind === "income" ? description : null;
 
-  // 5. Source Row Identity
-  const rawSourceIdentity = getVal(mapping.sourceRowIdentityColumn);
-  const sourceRowIdentity =
-    rawSourceIdentity && rawSourceIdentity.trim().length > 0
-      ? rawSourceIdentity.trim().slice(0, 255)
-      : `${fileHash.slice(0, 16)}:${rowIndex}`;
+  // 5. Source Identity & Authoritative ID
+  const authCol = mapping.authoritativeIdColumn;
+  const rawAuthId = getVal(authCol);
+  const authoritativeId =
+    rawAuthId && rawAuthId.trim().length > 0
+      ? rawAuthId.trim().slice(0, 255)
+      : null;
 
-  // 6. Dedupe Hash calculation
+  const identityType: StatementImportIdentityType =
+    authoritativeId !== null ? "authoritative" : "fallback";
+  const sourceNamespace = mapping.sourceNamespace?.trim() || "generic_csv";
+  const rawSourceAcc = mapping.sourceAccountIdColumn
+    ? getVal(mapping.sourceAccountIdColumn)
+    : mapping.sourceAccountId;
+  const sourceAccountId =
+    rawSourceAcc && rawSourceAcc.trim().length > 0
+      ? rawSourceAcc.trim().slice(0, 128)
+      : null;
+
   const dateKey = occurredOn.toISOString().slice(0, 10);
-  const occurrenceKey = `${dateKey}:${amountMinor}:${kind}:${description.toLowerCase()}`;
-  const currentOccCount = occurrenceCounter.get(occurrenceKey) ?? 0;
-  occurrenceCounter.set(occurrenceKey, currentOccCount + 1);
-
-  const dedupeHash = computeRowDedupeHash({
-    accountId,
-    sourceRowIdentity: rawSourceIdentity ? sourceRowIdentity : null,
+  const fallbackIdentifier = computeFallbackIdentifier({
     occurredOnDate: dateKey,
     amountMinor,
     currency: rowCurrency,
     kind,
     normalizedDescription: description,
-    occurrenceIndex: currentOccCount,
+  });
+
+  const fallbackEvidence: Record<string, unknown> = {
+    occurredOnDate: dateKey,
+    amountMinor: amountMinor.toString(),
+    currency: rowCurrency,
+    kind,
+    normalizedDescription: description,
+    rawRowContent,
+  };
+
+  // Occurrence within this file stream
+  const occurrenceKey = fallbackIdentifier;
+  const currentOccCount = occurrenceCounter.get(occurrenceKey) ?? 0;
+  occurrenceCounter.set(occurrenceKey, currentOccCount + 1);
+  const occurrenceIndex = currentOccCount;
+
+  const sourceRowIdentity =
+    (getVal(mapping.sourceRowIdentityColumn)?.trim().slice(0, 255) || null) ??
+    authoritativeId ??
+    `${fileHash.slice(0, 16)}:${rowIndex}`;
+
+  // 6. Dedupe Hash calculation
+  const dedupeHash = computeRowDedupeHash({
+    accountId,
+    sourceNamespace,
+    sourceAccountId,
+    authoritativeId,
+    fallbackIdentifier,
+    occurrenceIndex,
+    occurredOnDate: dateKey,
+    amountMinor,
+    currency: rowCurrency,
+    kind,
+    normalizedDescription: description,
   });
 
   return {
@@ -1081,6 +1212,14 @@ export function normalizeImportRow(params: {
     status: "pending",
     normalized: {
       rowIndex,
+      sourceNamespace,
+      sourceAccountId,
+      authoritativeId,
+      identityType,
+      fallbackIdentifier,
+      fallbackEvidence,
+      occurrenceIndex,
+      ambiguityState: "unambiguous",
       sourceRowIdentity,
       dedupeHash,
       occurredOn,

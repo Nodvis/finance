@@ -54,6 +54,15 @@ export class DuplicateImportRowError extends Error {
   }
 }
 
+export class AmbiguousImportRowCommitError extends Error {
+  constructor(
+    message: string = "Cannot commit ambiguous import row without explicit resolution",
+  ) {
+    super(message);
+    this.name = "AmbiguousImportRowCommitError";
+  }
+}
+
 export async function createStatementImportBatchInDb(params: {
   batch: NewStatementImportBatchRow;
   rows: NewStatementImportRowRecord[];
@@ -167,6 +176,172 @@ export async function findExistingImportDedupeHashes(
   }
 
   return existing;
+}
+
+export type ExistingAuthoritativeRecord = {
+  authoritativeId: string;
+  transaction: {
+    id: string;
+    voidedAt: Date | null;
+    payee: string | null;
+    source: string | null;
+    amountMinor: bigint;
+    currency: string;
+    version: number;
+  };
+  importRow?: {
+    id: string;
+    batchId: string;
+  } | undefined;
+};
+
+export async function findExistingAuthoritativeRecordsInDb(params: {
+  householdId: string;
+  accountId: string;
+  sourceNamespace: string;
+  sourceAccountId?: string | null;
+  authoritativeIds: string[];
+}): Promise<Map<string, ExistingAuthoritativeRecord>> {
+  const result = new Map<string, ExistingAuthoritativeRecord>();
+  if (params.authoritativeIds.length === 0) return result;
+
+  const db = getDb();
+  const sourceAccountId = params.sourceAccountId ?? "";
+
+  // Query transactions matching authoritative ID within this household, account, namespace, sourceAccount
+  const txRows = await db
+    .select({
+      id: transactions.id,
+      authoritativeId: transactions.authoritativeId,
+      voidedAt: transactions.voidedAt,
+      payee: transactions.payee,
+      source: transactions.source,
+      amountMinor: transactions.amountMinor,
+      currency: transactions.currency,
+      version: transactions.version,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.householdId, params.householdId),
+        eq(transactions.accountId, params.accountId),
+        eq(transactions.sourceNamespace, params.sourceNamespace),
+        eq(transactions.sourceAccountId, sourceAccountId),
+        inArray(transactions.authoritativeId, params.authoritativeIds),
+      ),
+    );
+
+  for (const tx of txRows) {
+    if (tx.authoritativeId) {
+      result.set(tx.authoritativeId, {
+        authoritativeId: tx.authoritativeId,
+        transaction: {
+          id: tx.id,
+          voidedAt: tx.voidedAt,
+          payee: tx.payee,
+          source: tx.source,
+          amountMinor: tx.amountMinor,
+          currency: tx.currency,
+          version: tx.version,
+        },
+      });
+    }
+  }
+
+  // Also query statement_import_rows with status = 'imported' for this account
+  const importRows = await db
+    .select({
+      id: statementImportRows.id,
+      batchId: statementImportRows.batchId,
+      authoritativeId: statementImportRows.authoritativeId,
+      canonicalTransactionId: statementImportRows.canonicalTransactionId,
+      committedTransactionId: statementImportRows.committedTransactionId,
+    })
+    .from(statementImportRows)
+    .where(
+      and(
+        eq(statementImportRows.householdId, params.householdId),
+        eq(statementImportRows.accountId, params.accountId),
+        eq(statementImportRows.status, "imported"),
+        inArray(statementImportRows.authoritativeId, params.authoritativeIds),
+      ),
+    );
+
+  for (const ir of importRows) {
+    if (ir.authoritativeId) {
+      const existing = result.get(ir.authoritativeId);
+      if (existing) {
+        existing.importRow = { id: ir.id, batchId: ir.batchId };
+      }
+    }
+  }
+
+  return result;
+}
+
+export type ExistingFallbackRecord = {
+  importRowId: string;
+  batchId: string;
+  fallbackIdentifier: string;
+  occurrenceIndex: number;
+  canonicalTransactionId: string | null;
+  voidedAt: Date | null;
+};
+
+export async function findExistingFallbackRecordsInDb(params: {
+  householdId: string;
+  accountId: string;
+  fallbackIdentifiers: string[];
+}): Promise<Map<string, ExistingFallbackRecord[]>> {
+  const result = new Map<string, ExistingFallbackRecord[]>();
+  if (params.fallbackIdentifiers.length === 0) return result;
+
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: statementImportRows.id,
+      batchId: statementImportRows.batchId,
+      fallbackIdentifier: statementImportRows.fallbackIdentifier,
+      occurrenceIndex: statementImportRows.occurrenceIndex,
+      canonicalTransactionId: statementImportRows.canonicalTransactionId,
+      committedTransactionId: statementImportRows.committedTransactionId,
+      txVoidedAt: transactions.voidedAt,
+    })
+    .from(statementImportRows)
+    .leftJoin(
+      transactions,
+      eq(
+        transactions.id,
+        sql`COALESCE(${statementImportRows.canonicalTransactionId}, ${statementImportRows.committedTransactionId})`,
+      ),
+    )
+    .where(
+      and(
+        eq(statementImportRows.householdId, params.householdId),
+        eq(statementImportRows.accountId, params.accountId),
+        eq(statementImportRows.status, "imported"),
+        inArray(statementImportRows.fallbackIdentifier, params.fallbackIdentifiers),
+      ),
+    )
+    .orderBy(asc(statementImportRows.occurrenceIndex));
+
+  for (const r of rows) {
+    if (r.fallbackIdentifier) {
+      const list = result.get(r.fallbackIdentifier) ?? [];
+      list.push({
+        importRowId: r.id,
+        batchId: r.batchId,
+        fallbackIdentifier: r.fallbackIdentifier,
+        occurrenceIndex: r.occurrenceIndex,
+        canonicalTransactionId:
+          r.canonicalTransactionId ?? r.committedTransactionId ?? null,
+        voidedAt: r.txVoidedAt ?? null,
+      });
+      result.set(r.fallbackIdentifier, list);
+    }
+  }
+
+  return result;
 }
 
 export async function findPossibleManualMatchesInDb(params: {
@@ -314,8 +489,26 @@ export async function commitStatementImportBatchInDb(params: {
 
       for (const row of rows) {
         if (selectedSet.has(row.rowIndex)) {
-          if (row.status === "error" || !row.normalizedOccurredOn || !row.normalizedAmountMinor || !row.normalizedKind || !row.normalizedCurrency) {
+          if (
+            row.status === "error" ||
+            !row.normalizedOccurredOn ||
+            !row.normalizedAmountMinor ||
+            !row.normalizedKind ||
+            !row.normalizedCurrency
+          ) {
             throw new Error(`Cannot commit invalid row ${row.rowIndex}`);
+          }
+
+          if (row.ambiguityState === "ambiguous") {
+            throw new AmbiguousImportRowCommitError(
+              `Cannot commit ambiguous import row ${row.rowIndex} without explicit resolution`,
+            );
+          }
+
+          if (row.status === "duplicate") {
+            throw new DuplicateImportRowError(
+              `Cannot commit duplicate row ${row.rowIndex}`,
+            );
           }
 
           const newTxId = crypto.randomUUID();
@@ -331,6 +524,9 @@ export async function commitStatementImportBatchInDb(params: {
                   paidByPersonId: toPersonId(params.personId),
                   occurredOn: row.normalizedOccurredOn,
                   categoryId: null,
+                  sourceNamespace: row.sourceNamespace,
+                  sourceAccountId: row.sourceAccountId,
+                  authoritativeId: row.authoritativeId,
                 })
               : createIncome({
                   id: toTransactionId(newTxId),
@@ -341,6 +537,9 @@ export async function commitStatementImportBatchInDb(params: {
                   receivedByPersonId: toPersonId(params.personId),
                   occurredOn: row.normalizedOccurredOn,
                   categoryId: null,
+                  sourceNamespace: row.sourceNamespace,
+                  sourceAccountId: row.sourceAccountId,
+                  authoritativeId: row.authoritativeId,
                 });
 
           // Insert into transactions
@@ -356,6 +555,9 @@ export async function commitStatementImportBatchInDb(params: {
             paidByPersonId: domainTx.kind === "expense" ? domainTx.paidByPersonId : null,
             source: domainTx.kind === "income" ? domainTx.source : null,
             receivedByPersonId: domainTx.kind === "income" ? domainTx.receivedByPersonId : null,
+            sourceNamespace: row.sourceNamespace,
+            sourceAccountId: row.sourceAccountId ?? "",
+            authoritativeId: row.authoritativeId ?? null,
             version: 1,
             createdAt: now,
             updatedAt: now,
@@ -382,6 +584,7 @@ export async function commitStatementImportBatchInDb(params: {
             .set({
               status: "imported",
               committedTransactionId: domainTx.id,
+              canonicalTransactionId: domainTx.id,
               updatedAt: now,
             })
             .where(eq(statementImportRows.id, row.id));
@@ -389,14 +592,24 @@ export async function commitStatementImportBatchInDb(params: {
           committedTransactionIds.push(domainTx.id);
           importedCount++;
         } else {
-          // Unselected row -> skipped
-          await tx
-            .update(statementImportRows)
-            .set({
-              status: "skipped",
-              updatedAt: now,
-            })
-            .where(eq(statementImportRows.id, row.id));
+          // Unselected row -> if duplicate, keep duplicate status and linkages; else skipped
+          if (row.status === "duplicate") {
+            await tx
+              .update(statementImportRows)
+              .set({
+                status: "duplicate",
+                updatedAt: now,
+              })
+              .where(eq(statementImportRows.id, row.id));
+          } else {
+            await tx
+              .update(statementImportRows)
+              .set({
+                status: "skipped",
+                updatedAt: now,
+              })
+              .where(eq(statementImportRows.id, row.id));
+          }
 
           skippedCount++;
         }

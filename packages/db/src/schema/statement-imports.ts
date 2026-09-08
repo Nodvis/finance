@@ -54,6 +54,10 @@ export const statementImportBatches = financeSchema.table(
     parserVersion: varchar("parser_version", { length: 32 })
       .default("1.0.0")
       .notNull(),
+    sourceNamespace: varchar("source_namespace", { length: 64 })
+      .default("generic_csv")
+      .notNull(),
+    sourceAccountId: varchar("source_account_id", { length: 128 }),
     mappingConfig: jsonb("mapping_config")
       .$type<StatementImportMappingConfig>()
       .notNull(),
@@ -105,6 +109,20 @@ export const statementImportRows = financeSchema.table(
       .notNull()
       .references(() => accounts.id, { onDelete: "cascade" }),
     rowIndex: integer("row_index").notNull(),
+    sourceNamespace: varchar("source_namespace", { length: 64 })
+      .default("generic_csv")
+      .notNull(),
+    sourceAccountId: varchar("source_account_id", { length: 128 }),
+    authoritativeId: varchar("authoritative_id", { length: 255 }),
+    fallbackIdentifier: varchar("fallback_identifier", { length: 255 }),
+    fallbackEvidence: jsonb("fallback_evidence").$type<Record<string, unknown>>(),
+    occurrenceIndex: integer("occurrence_index").default(0).notNull(),
+    identityType: varchar("identity_type", { length: 32 })
+      .default("fallback")
+      .notNull(),
+    ambiguityState: varchar("ambiguity_state", { length: 32 })
+      .default("unambiguous")
+      .notNull(),
     sourceRowIdentity: varchar("source_row_identity", { length: 255 }),
     dedupeHash: varchar("dedupe_hash", { length: 64 }).notNull(),
     status: statementImportRowStatusEnum("status").default("pending").notNull(),
@@ -125,6 +143,11 @@ export const statementImportRows = financeSchema.table(
       () => transactions.id,
       { onDelete: "set null" },
     ),
+    canonicalTransactionId: uuid("canonical_transaction_id").references(
+      () => transactions.id,
+      { onDelete: "set null" },
+    ),
+    matchedImportRowId: uuid("matched_import_row_id"),
     createdAt: instant("created_at").defaultNow().notNull(),
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },
@@ -134,6 +157,11 @@ export const statementImportRows = financeSchema.table(
       columns: [table.householdId, table.accountId],
       foreignColumns: [accounts.householdId, accounts.id],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "statement_import_rows_matched_row_fk",
+      columns: [table.matchedImportRowId],
+      foreignColumns: [table.id],
+    }).onDelete("set null"),
     check(
       "statement_import_rows_currency_format",
       sql`${table.normalizedCurrency} is null or ${currencyCheck(table.normalizedCurrency)}`,
@@ -145,11 +173,33 @@ export const statementImportRows = financeSchema.table(
     uniqueIndex("statement_import_rows_account_dedupe_idx")
       .on(table.accountId, table.dedupeHash)
       .where(sql`${table.status} = 'imported'`),
+    uniqueIndex("statement_import_rows_account_auth_imported_idx")
+      .on(
+        table.householdId,
+        table.accountId,
+        table.sourceNamespace,
+        sql`coalesce(${table.sourceAccountId}, ${table.accountId}::text)`,
+        table.authoritativeId,
+      )
+      .where(
+        sql`${table.status} = 'imported' and ${table.authoritativeId} is not null`,
+      ),
     index("statement_import_rows_batch_id_idx").on(table.batchId),
     index("statement_import_rows_household_id_idx").on(table.householdId),
     index("statement_import_rows_account_id_idx").on(table.accountId),
     index("statement_import_rows_committed_tx_id_idx").on(
       table.committedTransactionId,
+    ),
+    index("statement_import_rows_canonical_tx_id_idx").on(
+      table.canonicalTransactionId,
+    ),
+    index("statement_import_rows_matched_row_id_idx").on(
+      table.matchedImportRowId,
+    ),
+    index("statement_import_rows_fallback_idx").on(
+      table.householdId,
+      table.accountId,
+      table.fallbackIdentifier,
     ),
   ],
 );
