@@ -24,6 +24,9 @@ export type ExpenseTransaction = Readonly<{
   version: number;
   voidedAt: Date | null;
   voidReason: string | null;
+  sourceNamespace?: string | null;
+  sourceAccountId?: string | null;
+  authoritativeId?: string | null;
 }>;
 
 export type IncomeTransaction = Readonly<{
@@ -39,6 +42,9 @@ export type IncomeTransaction = Readonly<{
   version: number;
   voidedAt: Date | null;
   voidReason: string | null;
+  sourceNamespace?: string | null;
+  sourceAccountId?: string | null;
+  authoritativeId?: string | null;
 }>;
 
 export type TransferTransaction = Readonly<{
@@ -52,6 +58,9 @@ export type TransferTransaction = Readonly<{
   version: number;
   voidedAt: Date | null;
   voidReason: string | null;
+  sourceNamespace?: string | null;
+  sourceAccountId?: string | null;
+  authoritativeId?: string | null;
 }>;
 
 export type Transaction =
@@ -122,6 +131,9 @@ export function createExpense(input: {
   version?: number;
   voidedAt?: Date | null;
   voidReason?: string | null;
+  sourceNamespace?: string | null;
+  sourceAccountId?: string | null;
+  authoritativeId?: string | null;
 }): ExpenseTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
@@ -142,6 +154,15 @@ export function createExpense(input: {
     version: input.version ?? 1,
     voidedAt,
     voidReason,
+    ...(input.sourceNamespace !== undefined && input.sourceNamespace !== null
+      ? { sourceNamespace: input.sourceNamespace }
+      : {}),
+    ...(input.sourceAccountId !== undefined && input.sourceAccountId !== null
+      ? { sourceAccountId: input.sourceAccountId }
+      : {}),
+    ...(input.authoritativeId !== undefined && input.authoritativeId !== null
+      ? { authoritativeId: input.authoritativeId }
+      : {}),
   });
 }
 
@@ -176,6 +197,15 @@ export function correctExpense(
     version: existing.version + 1,
     voidedAt: null,
     voidReason: null,
+    ...(existing.sourceNamespace !== undefined && existing.sourceNamespace !== null
+      ? { sourceNamespace: existing.sourceNamespace }
+      : {}),
+    ...(existing.sourceAccountId !== undefined && existing.sourceAccountId !== null
+      ? { sourceAccountId: existing.sourceAccountId }
+      : {}),
+    ...(existing.authoritativeId !== undefined && existing.authoritativeId !== null
+      ? { authoritativeId: existing.authoritativeId }
+      : {}),
   });
 }
 
@@ -191,6 +221,9 @@ export function createIncome(input: {
   version?: number;
   voidedAt?: Date | null;
   voidReason?: string | null;
+  sourceNamespace?: string | null;
+  sourceAccountId?: string | null;
+  authoritativeId?: string | null;
 }): IncomeTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
@@ -211,6 +244,15 @@ export function createIncome(input: {
     version: input.version ?? 1,
     voidedAt,
     voidReason,
+    ...(input.sourceNamespace !== undefined && input.sourceNamespace !== null
+      ? { sourceNamespace: input.sourceNamespace }
+      : {}),
+    ...(input.sourceAccountId !== undefined && input.sourceAccountId !== null
+      ? { sourceAccountId: input.sourceAccountId }
+      : {}),
+    ...(input.authoritativeId !== undefined && input.authoritativeId !== null
+      ? { authoritativeId: input.authoritativeId }
+      : {}),
   });
 }
 
@@ -245,6 +287,15 @@ export function correctIncome(
     version: existing.version + 1,
     voidedAt: null,
     voidReason: null,
+    ...(existing.sourceNamespace !== undefined && existing.sourceNamespace !== null
+      ? { sourceNamespace: existing.sourceNamespace }
+      : {}),
+    ...(existing.sourceAccountId !== undefined && existing.sourceAccountId !== null
+      ? { sourceAccountId: existing.sourceAccountId }
+      : {}),
+    ...(existing.authoritativeId !== undefined && existing.authoritativeId !== null
+      ? { authoritativeId: existing.authoritativeId }
+      : {}),
   });
 }
 
@@ -259,6 +310,9 @@ export function createTransfer(input: {
   version?: number;
   voidedAt?: Date | null;
   voidReason?: string | null;
+  sourceNamespace?: string | null;
+  sourceAccountId?: string | null;
+  authoritativeId?: string | null;
 }): TransferTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
@@ -287,6 +341,15 @@ export function createTransfer(input: {
     version: input.version ?? 1,
     voidedAt,
     voidReason,
+    ...(input.sourceNamespace !== undefined && input.sourceNamespace !== null
+      ? { sourceNamespace: input.sourceNamespace }
+      : {}),
+    ...(input.sourceAccountId !== undefined && input.sourceAccountId !== null
+      ? { sourceAccountId: input.sourceAccountId }
+      : {}),
+    ...(input.authoritativeId !== undefined && input.authoritativeId !== null
+      ? { authoritativeId: input.authoritativeId }
+      : {}),
   });
 }
 
@@ -327,6 +390,15 @@ export function correctTransfer(
     version: existing.version + 1,
     voidedAt: null,
     voidReason: null,
+    ...(existing.sourceNamespace !== undefined && existing.sourceNamespace !== null
+      ? { sourceNamespace: existing.sourceNamespace }
+      : {}),
+    ...(existing.sourceAccountId !== undefined && existing.sourceAccountId !== null
+      ? { sourceAccountId: existing.sourceAccountId }
+      : {}),
+    ...(existing.authoritativeId !== undefined && existing.authoritativeId !== null
+      ? { authoritativeId: existing.authoritativeId }
+      : {}),
   });
 }
 

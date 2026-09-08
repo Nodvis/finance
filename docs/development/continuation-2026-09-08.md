@@ -132,6 +132,14 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - Verification: fresh PostgreSQL migration 0001–0006 applied twice; focused domain/DB/web tests passed; Chromium authenticated PL/EN + smoke passed 5/5 against isolated Compose PostgreSQL; exact minor-unit read-back and same-file re-import dedupe verified.
 - Known limitation: generic CSV only; no bank-specific adapters, transfer auto-classification, OCR, bank sync or reconciliation engine.
 
+## Next mission plan: stable import identity first
+
+- Baseline: current import rows use account-scoped `dedupeHash` uniqueness for `status=imported`, source row identity is stored as text, and preview matching uses first same-kind/currency/amount transaction within ±24 hours. This is insufficient for overlapping exports and can collapse legitimate identical transactions.
+- P0 identity strategy: preserve canonical transaction UUIDs, add source namespace/provider + source-account identity + authoritative source transaction ID where supplied, keep every import observation/source row, and use conservative fallback candidates with occurrence/ambiguity states rather than global hash uniqueness. Authoritative links may auto-dedupe; ambiguous fallback matches remain reviewable.
+- Automatic processing policy: only authoritative or unambiguous deterministic matches auto-process; possible/manual matches, changed source records, voided records, one-sided transfers and unsupported currency cases remain explicit review states.
+- UI plan from accessible screenshots: separate public auth from private data; compact authenticated shell; first-class transactions/imports/accounts/analysis navigation; focused forms/drawers; dense but readable filterable transaction list; truthful empty states; responsive account/category workspaces. Screenshots 6–9 are not available as local media files and will be reviewed from the prompt requirements rather than claimed as visually inspected.
+- Migration/deployment: additive schema only, fresh disposable PostgreSQL and idempotent migration before private backup/migration; preserve existing provenance/audit and private volume.
+
 ## Checkpoint: immutable transaction history — review in progress
 
 - Dodano append-only `transaction_audit_entries` z operacją, źródłem manual/system/import, aktorem auth user/person, rewizją i dokładnymi snapshotami before/after.
@@ -140,3 +148,22 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - Migracja additive: `packages/db/drizzle/0005_careless_richard_fisk.sql`; trigger blokuje UPDATE/DELETE audytu, a FK historii używają `RESTRICT`.
 - Świeży PostgreSQL: migracja uruchomiona dwukrotnie; po migracji DB integration audit: 54 testy passed.
 - Focused tests: domain 85, db 54, web 248 passed; typecheck i build passed. Pełny quality gate oraz authenticated Chromium E2E historii są jeszcze przed commitem checkpointu.
+
+## Checkpoint: P0 stable source identity — locally verified
+
+- Wdrożono stabilną tożsamość źródłową i linkage obserwacji importowych:
+  - Additive schema w `transactions`, `statement_import_batches` i `statement_import_rows`: `sourceNamespace`, `sourceAccountId`, `authoritativeId`, `fallbackIdentifier`, `fallbackEvidence`, `occurrenceIndex`, `identityType`, `ambiguityState`, `canonicalTransactionId`, `matchedImportRowId`.
+  - Unikalne indeksy cząstkowe per household + account: `transactions_household_account_authoritative_idx` oraz `statement_import_rows_account_auth_imported_idx`.
+  - Wygenerowano i sprawdzono migrację Drizzle `packages/db/drizzle/0007_silent_the_call.sql` (bez używania drizzle-kit push).
+  - Deterministyczny hash tożsamości rezerwowej (`computeFallbackIdentifier`) bazujący na niezmiennych faktach operacji (data, exact bigint amount, waluta, rodzaj, znormalizowany opis).
+  - Obsługa wielu identycznych zakupów w ramach tego samego pliku lub strumienia: sekwencyjny `occurrenceIndex` (0, 1, 2...) zapobiega kolapsowi identycznych zakupów.
+  - Zakresowanie tego samego ID autorytatywnego (external reference) do konkretnego konta: dwa konta w tym samym gospodarstwie mogą posiadać identyczny identyfikator zewnętrzny bez kolizji unikalności.
+  - Reordered/overlapping files dedupe: autorytatywne ID dopasowują istniejące rekordy i wiążą nową obserwację z pierwotną transakcją kanoniczną (`canonicalTransactionId`) oraz wierszem importu (`matchedImportRowId`).
+  - Bezpieczeństwo i konserwatywna ochrona: wiersze dopasowujące transakcje voided lub posiadające niejednoznaczności otrzymują `ambiguityState = 'ambiguous'`, co blokuje ich automatyczny zapis i wymaga jawnego przeglądu (`AmbiguousImportRowCommitError`).
+  - Zachowano pełną zgodność z importerem generycznym CSV, audytem transakcji (`source = 'import'`) i nienaruszalnością snapshotów sald.
+- Focused test results:
+  - `packages/domain`: 114/114 passed (w tym 7 test suites).
+  - `packages/db` integration: `statement-imports.test.ts` (6/6 passed), `transactions.test.ts` (27/27 passed), `audit-immutability.test.ts` (3/3 passed).
+  - `apps/web`: `service.test.ts` (10/10 passed), `route.test.ts` (9/9 passed).
+  - Independent review correction: `sourceRowIdentityColumn` is never promoted to authoritative identity; source-row value remains provenance. Empty legacy source defaults are omitted from hydrated domain transactions.
+  - Independent verification: full `pnpm test` passed (domain 114, DB 60, web 267), `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, and PostgreSQL temporary expression-index syntax check passed.

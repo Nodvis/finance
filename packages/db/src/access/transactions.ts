@@ -98,6 +98,10 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       version: row.version,
       voidedAt: row.voidedAt,
       voidReason: row.voidReason,
+      sourceNamespace:
+        row.authoritativeId || row.sourceAccountId ? row.sourceNamespace : null,
+      sourceAccountId: row.sourceAccountId || null,
+      authoritativeId: row.authoritativeId,
     });
   }
 
@@ -117,6 +121,10 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       version: row.version,
       voidedAt: row.voidedAt,
       voidReason: row.voidReason,
+      sourceNamespace:
+        row.authoritativeId || row.sourceAccountId ? row.sourceNamespace : null,
+      sourceAccountId: row.sourceAccountId || null,
+      authoritativeId: row.authoritativeId,
     });
   }
 
@@ -134,6 +142,10 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       version: row.version,
       voidedAt: row.voidedAt,
       voidReason: row.voidReason,
+      sourceNamespace:
+        row.authoritativeId || row.sourceAccountId ? row.sourceNamespace : null,
+      sourceAccountId: row.sourceAccountId || null,
+      authoritativeId: row.authoritativeId,
     });
   }
 
@@ -158,6 +170,9 @@ export async function insertTransaction(
     voidedAt: tx.voidedAt ?? null,
     voidReason: tx.voidReason ?? null,
     submissionId: options?.submissionId?.trim() || null,
+    sourceNamespace: tx.sourceNamespace ?? "generic_csv",
+    sourceAccountId: tx.sourceAccountId ?? "",
+    authoritativeId: tx.authoritativeId ?? null,
   };
 
   let values: NewTransactionRow;

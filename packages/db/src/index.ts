@@ -79,11 +79,14 @@ export type {
   DbPeriodCashFlowRow,
 } from "./access/overview";
 export {
+  AmbiguousImportRowCommitError,
   DuplicateImportRowError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
   commitStatementImportBatchInDb,
   createStatementImportBatchInDb,
+  findExistingAuthoritativeRecordsInDb,
+  findExistingFallbackRecordsInDb,
   findExistingImportDedupeHashes,
   findPossibleManualMatchesInDb,
   findStatementImportBatchById,
@@ -91,6 +94,8 @@ export {
   listStatementImportRowsByBatch,
 } from "./access/statement-imports";
 export type {
+  ExistingAuthoritativeRecord,
+  ExistingFallbackRecord,
   NewStatementImportBatchRow,
   NewStatementImportRowRecord,
   StatementImportBatchRow,

@@ -128,7 +128,7 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   });
   await page.getByRole("button", { name: /Inspect file|Sprawdź plik/ }).click();
   await page.getByRole("button", { name: /Preview rows|Podgląd wierszy/ }).click();
-  await expect(page.getByText(/1 duplicates|1 duplikat/)).toBeVisible();
+  await expect(page.getByText(/Safe automatic processing|Bezpieczne automatyczne przetworzenie/).first()).toBeVisible();
 
   const importedList = await page.request.get(`/api/households/${household.householdId}/transactions?status=all`);
   expect(importedList.ok()).toBeTruthy();

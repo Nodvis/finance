@@ -86,6 +86,15 @@ export const transactions = financeSchema.table(
     // Idempotency / duplicate submission protection at boundary
     submissionId: varchar("submission_id", { length: 64 }),
 
+    // Additive source identity fields for imported transactions
+    sourceNamespace: varchar("source_namespace", { length: 64 })
+      .default("generic_csv")
+      .notNull(),
+    sourceAccountId: varchar("source_account_id", { length: 128 })
+      .default("")
+      .notNull(),
+    authoritativeId: varchar("authoritative_id", { length: 255 }),
+
     createdAt: instant("created_at").defaultNow().notNull(),
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },
@@ -161,6 +170,15 @@ export const transactions = financeSchema.table(
       table.householdId,
       table.submissionId,
     ),
+    uniqueIndex("transactions_household_account_authoritative_idx")
+      .on(
+        table.householdId,
+        table.accountId,
+        table.sourceNamespace,
+        sql`coalesce(${table.sourceAccountId}, ${table.accountId}::text)`,
+        table.authoritativeId,
+      )
+      .where(sql`${table.authoritativeId} is not null`),
   ],
 );
 

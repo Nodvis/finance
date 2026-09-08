@@ -1,17 +1,22 @@
 import "server-only";
 
 import {
+  AmbiguousImportRowCommitError,
   DuplicateImportRowError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
   commitStatementImportBatchInDb,
   createStatementImportBatchInDb,
   findAccountInHousehold,
+  findExistingAuthoritativeRecordsInDb,
+  findExistingFallbackRecordsInDb,
   findExistingImportDedupeHashes,
   findPossibleManualMatchesInDb,
   findStatementImportBatchById,
   listStatementImportBatchesByAccount,
   listStatementImportRowsByBatch,
+  type ExistingAuthoritativeRecord,
+  type ExistingFallbackRecord,
   type NewStatementImportRowRecord,
   type StatementImportBatchRow,
   type StatementImportRowRecord,
@@ -28,6 +33,7 @@ import {
   type CsvEncoding,
   type PossibleManualMatch,
   type RowPreviewItem,
+  type StatementImportAmbiguityState,
   type StatementImportMappingConfig,
 } from "@nodvis/finance-domain";
 
@@ -35,6 +41,7 @@ import type { AuthorizedHouseholdContext } from "@/lib/transactions/service";
 import { TransactionAccountNotFoundError } from "@/lib/transactions/service";
 
 export {
+  AmbiguousImportRowCommitError,
   DuplicateImportRowError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
@@ -71,6 +78,8 @@ export type StatementImportPreviewResult = Readonly<{
   validRowCount: number;
   invalidRowCount: number;
   duplicateRowCount: number;
+  safeToCommitCount: number;
+  attentionRowCount: number;
   rows: RowPreviewItem[];
 }>;
 
@@ -208,7 +217,40 @@ export async function parseAndPreviewStatementImport(params: {
     }),
   );
 
-  // Check DB for existing dedupe hashes for this account
+  const sourceNamespace = mapping.sourceNamespace?.trim() || "generic_csv";
+  const sourceAccountId = mapping.sourceAccountId?.trim() || null;
+
+  // 1. Authoritative IDs lookup
+  const authIds = parsedRows
+    .filter((r) => r.valid && r.normalized?.authoritativeId)
+    .map((r) => r.normalized!.authoritativeId!);
+
+  const authoritativeRecords: Map<string, ExistingAuthoritativeRecord> =
+    authIds.length > 0
+      ? await findExistingAuthoritativeRecordsInDb({
+          householdId: context.householdId,
+          accountId,
+          sourceNamespace,
+          sourceAccountId,
+          authoritativeIds: authIds,
+        })
+      : new Map();
+
+  // 2. Fallback Identifiers lookup
+  const fallbackIds = parsedRows
+    .filter((r) => r.valid && r.normalized?.fallbackIdentifier)
+    .map((r) => r.normalized!.fallbackIdentifier);
+
+  const fallbackRecords: Map<string, ExistingFallbackRecord[]> =
+    fallbackIds.length > 0
+      ? await findExistingFallbackRecordsInDb({
+          householdId: context.householdId,
+          accountId,
+          fallbackIdentifiers: fallbackIds,
+        })
+      : new Map();
+
+  // 3. Check DB for existing dedupe hashes for this account (backward compatibility & defense-in-depth)
   const validDedupeHashes = parsedRows
     .filter((r) => r.valid && r.normalized?.dedupeHash)
     .map((r) => r.normalized!.dedupeHash);
@@ -218,7 +260,7 @@ export async function parseAndPreviewStatementImport(params: {
     validDedupeHashes,
   );
 
-  // Query possible manual matches
+  // 4. Query possible manual matches
   const matchCandidates = parsedRows
     .filter((r) => r.valid && r.normalized)
     .map((r) => ({
@@ -239,30 +281,82 @@ export async function parseAndPreviewStatementImport(params: {
   let validRowCount = 0;
   let invalidRowCount = 0;
   let duplicateRowCount = 0;
+  let safeToCommitCount = 0;
+  let attentionRowCount = 0;
 
   const dbRowsToInsert: NewStatementImportRowRecord[] = [];
   const previewItems: RowPreviewItem[] = [];
+  const seenAuthoritativeInFile = new Set<string>();
 
   for (const pr of parsedRows) {
     const norm = pr.normalized;
-    const isDuplicate = norm ? existingHashes.has(norm.dedupeHash) : false;
-    const possibleMatch = possibleMatches.get(pr.rowIndex) ?? null;
-
     let status = pr.status;
     let errorCode = pr.errorCode;
     let errorMessage = pr.errorMessage;
+    let ambiguityState: StatementImportAmbiguityState = "unambiguous";
+    let canonicalTransactionId: string | null = null;
+    let matchedImportRowId: string | null = null;
+    const possibleMatch = possibleMatches.get(pr.rowIndex) ?? null;
 
-    if (isDuplicate) {
-      status = "duplicate";
-      errorCode = "DUPLICATE_ROW";
-      errorMessage = "Already imported for this account";
-      duplicateRowCount++;
-    } else if (pr.valid) {
-      validRowCount++;
+    if (pr.valid && norm) {
+      if (norm.identityType === "authoritative" && norm.authoritativeId) {
+        const existingAuth = authoritativeRecords.get(norm.authoritativeId);
+        if (existingAuth) {
+          canonicalTransactionId = existingAuth.transaction.id;
+          matchedImportRowId = existingAuth.importRow?.id ?? null;
+          if (existingAuth.transaction.voidedAt !== null) {
+            ambiguityState = "ambiguous";
+            errorCode = "MATCHES_VOIDED_TRANSACTION";
+            errorMessage = "Matches a voided transaction in this account";
+          } else {
+            status = "duplicate";
+            errorCode = "AUTHORITATIVE_DUPLICATE";
+            errorMessage = "Authoritative transaction already imported for this account";
+          }
+        } else if (seenAuthoritativeInFile.has(norm.authoritativeId)) {
+          status = "duplicate";
+          errorCode = "DUPLICATE_AUTHORITATIVE_ID_IN_FILE";
+          errorMessage = "Duplicate authoritative transaction ID within this file";
+        } else {
+          seenAuthoritativeInFile.add(norm.authoritativeId);
+        }
+      } else {
+        const existingFallbackList = fallbackRecords.get(norm.fallbackIdentifier) ?? [];
+        const activeDbOccurrences = existingFallbackList.filter((r) => !r.voidedAt);
+        const voidedDbOccurrences = existingFallbackList.filter((r) => r.voidedAt !== null);
+
+        if (norm.occurrenceIndex < activeDbOccurrences.length) {
+          const matched = activeDbOccurrences[norm.occurrenceIndex]!;
+          status = "duplicate";
+          errorCode = "FALLBACK_DUPLICATE";
+          errorMessage = "Already imported for this account (fallback match)";
+          canonicalTransactionId = matched.canonicalTransactionId;
+          matchedImportRowId = matched.importRowId;
+        } else if (existingHashes.has(norm.dedupeHash)) {
+          status = "duplicate";
+          errorCode = "DUPLICATE_ROW";
+          errorMessage = "Already imported for this account";
+        } else if (voidedDbOccurrences.length > 0) {
+          ambiguityState = "ambiguous";
+          errorCode = "MATCHES_VOIDED_TRANSACTION";
+          errorMessage = "Matches a voided transaction with identical details in this account";
+        }
+      }
+
+      if (status !== "duplicate" && possibleMatch) {
+        ambiguityState = "ambiguous";
+      }
+
+      if (status === "duplicate") {
+        duplicateRowCount++;
+      } else {
+        validRowCount++;
+      }
     } else {
       invalidRowCount++;
     }
 
+    const isDuplicate = status === "duplicate";
     const dedupeHash = norm?.dedupeHash ?? computeFileSha256(`${fileHash}:${pr.rowIndex}`);
     const sourceRowIdentity =
       norm?.sourceRowIdentity ?? `${fileHash.slice(0, 16)}:${pr.rowIndex}`;
@@ -272,6 +366,16 @@ export async function parseAndPreviewStatementImport(params: {
       householdId: context.householdId,
       accountId,
       rowIndex: pr.rowIndex,
+      sourceNamespace: norm?.sourceNamespace ?? sourceNamespace,
+      sourceAccountId: norm?.sourceAccountId ?? (sourceAccountId || null),
+      authoritativeId: norm?.authoritativeId ?? null,
+      fallbackIdentifier: norm?.fallbackIdentifier ?? null,
+      fallbackEvidence: norm?.fallbackEvidence ?? null,
+      occurrenceIndex: norm?.occurrenceIndex ?? 0,
+      identityType: norm?.identityType ?? "fallback",
+      ambiguityState,
+      canonicalTransactionId,
+      matchedImportRowId,
       sourceRowIdentity,
       dedupeHash,
       status,
@@ -288,7 +392,9 @@ export async function parseAndPreviewStatementImport(params: {
       normalizedDescription: norm?.description ?? null,
     });
 
-    const isSelected = pr.valid && !isDuplicate && !possibleMatch;
+    const isSelected = pr.valid && !isDuplicate && ambiguityState !== "ambiguous" && !possibleMatch;
+    if (isSelected) safeToCommitCount++;
+    if (pr.valid && !isSelected && !isDuplicate) attentionRowCount++;
 
     previewItems.push({
       rowIndex: pr.rowIndex,
@@ -307,6 +413,15 @@ export async function parseAndPreviewStatementImport(params: {
       rawRowContent: pr.rawRowContent,
       dedupeHash,
       sourceRowIdentity,
+      sourceNamespace: norm?.sourceNamespace ?? sourceNamespace,
+      sourceAccountId: norm?.sourceAccountId ?? (sourceAccountId || null),
+      authoritativeId: norm?.authoritativeId ?? null,
+      identityType: norm?.identityType ?? "fallback",
+      fallbackIdentifier: norm?.fallbackIdentifier ?? undefined,
+      occurrenceIndex: norm?.occurrenceIndex ?? undefined,
+      ambiguityState,
+      canonicalTransactionId,
+      matchedImportRowId,
       possibleMatch,
       selected: isSelected,
     });
@@ -321,6 +436,8 @@ export async function parseAndPreviewStatementImport(params: {
       fileHash,
       fileSizeBytes: fileBytes.length,
       parserVersion: "1.0.0",
+      sourceNamespace,
+      sourceAccountId: sourceAccountId || null,
       mappingConfig: mapping,
       status: "preview",
       totalRowCount: parsedRows.length,
@@ -341,6 +458,8 @@ export async function parseAndPreviewStatementImport(params: {
     validRowCount,
     invalidRowCount,
     duplicateRowCount,
+    safeToCommitCount,
+    attentionRowCount,
     rows: previewItems,
   };
 }

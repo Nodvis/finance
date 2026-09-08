@@ -37,6 +37,9 @@ describe("mapRowToTransaction", () => {
     voidedAt: null,
     voidReason: null,
     submissionId: null,
+    sourceNamespace: "generic_csv",
+    sourceAccountId: "",
+    authoritativeId: null,
     createdAt,
     updatedAt,
   };
@@ -85,6 +88,7 @@ describe("mapRowToTransaction", () => {
   it("hydrates an expense row with categoryId", () => {
     const categoryUuid = "018f47a0-7762-7b9c-8d17-27f2f79e59a9";
     const row: TransactionRow = {
+      ...baseRow,
       id: txUuid1,
       householdId: householdUuid,
       kind: "expense",
@@ -99,12 +103,6 @@ describe("mapRowToTransaction", () => {
       receivedByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
-      version: 1,
-      voidedAt: null,
-      voidReason: null,
-      submissionId: null,
-      createdAt,
-      updatedAt,
     };
 
     const tx = mapRowToTransaction(row);
@@ -116,6 +114,7 @@ describe("mapRowToTransaction", () => {
 
   it("hydrates an income row into a frozen IncomeTransaction domain entity", () => {
     const row: TransactionRow = {
+      ...baseRow,
       id: txUuid2,
       householdId: householdUuid,
       kind: "income",
@@ -130,12 +129,6 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
-      version: 1,
-      voidedAt: null,
-      voidReason: null,
-      submissionId: null,
-      createdAt,
-      updatedAt,
     };
 
     const tx = mapRowToTransaction(row);
@@ -162,6 +155,7 @@ describe("mapRowToTransaction", () => {
 
   it("hydrates a transfer row into a frozen TransferTransaction with netMoneyEffect zero (INV-001)", () => {
     const row: TransactionRow = {
+      ...baseRow,
       id: txUuid3,
       householdId: householdUuid,
       kind: "transfer",
@@ -176,12 +170,6 @@ describe("mapRowToTransaction", () => {
       paidByPersonId: null,
       source: null,
       receivedByPersonId: null,
-      version: 1,
-      voidedAt: null,
-      voidReason: null,
-      submissionId: null,
-      createdAt,
-      updatedAt,
     };
 
     const tx = mapRowToTransaction(row);
@@ -208,6 +196,7 @@ describe("mapRowToTransaction", () => {
   it("hydrates a voided transaction row preserving voidedAt and voidReason", () => {
     const voidedAt = new Date("2026-09-08T14:00:00Z");
     const row: TransactionRow = {
+      ...baseRow,
       id: txUuid1,
       householdId: householdUuid,
       kind: "expense",
@@ -225,9 +214,6 @@ describe("mapRowToTransaction", () => {
       version: 2,
       voidedAt,
       voidReason: "Accidental double charge",
-      submissionId: null,
-      createdAt,
-      updatedAt,
     };
 
     const tx = mapRowToTransaction(row);
@@ -500,6 +486,9 @@ describe("queryTransactionsByHousehold and tie-breaker sorting", () => {
       voidedAt: null,
       voidReason: null,
       submissionId: null,
+      sourceNamespace: "generic_csv",
+      sourceAccountId: "",
+      authoritativeId: null,
       createdAt: new Date("2026-09-07T10:00:01Z"),
       updatedAt: new Date("2026-09-07T10:00:01Z"),
     };
@@ -599,6 +588,9 @@ describe("audit and transaction mutations", () => {
       voidedAt: null,
       voidReason: null,
       submissionId: "sub-123",
+      sourceNamespace: "generic_csv",
+      sourceAccountId: "",
+      authoritativeId: null,
       createdAt,
       updatedAt,
     };
@@ -778,6 +770,9 @@ describe("audit and transaction mutations", () => {
       voidedAt: null,
       voidReason: null,
       submissionId: null,
+      sourceNamespace: "generic_csv",
+      sourceAccountId: "",
+      authoritativeId: null,
       createdAt,
       updatedAt,
     };
@@ -898,6 +893,9 @@ describe("audit and transaction mutations", () => {
       voidedAt: null,
       voidReason: null,
       submissionId: null,
+      sourceNamespace: "generic_csv",
+      sourceAccountId: "",
+      authoritativeId: null,
       createdAt,
       updatedAt,
     };
@@ -953,6 +951,9 @@ describe("audit and transaction mutations", () => {
       voidedAt: null,
       voidReason: null,
       submissionId: null,
+      sourceNamespace: "generic_csv",
+      sourceAccountId: "",
+      authoritativeId: null,
       createdAt,
       updatedAt,
     };

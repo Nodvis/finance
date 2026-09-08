@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  computeFallbackIdentifier,
   computeFileSha256,
   computeRowDedupeHash,
   decodeCsvBuffer,
@@ -355,5 +356,175 @@ describe("Row normalization and deduplication", () => {
     });
     expect(resMissingAmount.valid).toBe(false);
     expect(resMissingAmount.errorCode).toBe("MISSING_AMOUNT");
+  });
+});
+
+describe("Stable source identity and authoritative deduplication", () => {
+  const baseMapping: StatementImportMappingConfig = {
+    dateColumn: "Data",
+    dateFormat: "YYYY-MM-DD",
+    timezone: "UTC",
+    amountMode: "signed",
+    amountColumn: "Kwota",
+    invertAmount: false,
+    currencyMode: "account",
+    descriptionColumn: "Opis",
+    delimiter: ",",
+    hasHeader: true,
+    headerRowIndex: 0,
+    skipLeadingRows: 0,
+  };
+
+  it("computes deterministic fallback identifier ignoring whitespace and case variations in description", () => {
+    const id1 = computeFallbackIdentifier({
+      occurredOnDate: "2026-03-01",
+      amountMinor: 4999n,
+      currency: "PLN",
+      kind: "expense",
+      normalizedDescription: "  Grocery   Store  ",
+    });
+
+    const id2 = computeFallbackIdentifier({
+      occurredOnDate: "2026-03-01",
+      amountMinor: 4999n,
+      currency: "PLN",
+      kind: "expense",
+      normalizedDescription: "grocery store",
+    });
+
+    expect(id1).toBe(id2);
+
+    // Different amount or date produces distinct identifier
+    const idDiffAmount = computeFallbackIdentifier({
+      occurredOnDate: "2026-03-01",
+      amountMinor: 5000n,
+      currency: "PLN",
+      kind: "expense",
+      normalizedDescription: "grocery store",
+    });
+    expect(id1).not.toBe(idDiffAmount);
+  });
+
+  it("computes authoritative dedupe hash scoped to account, namespace, sourceAccount, and authoritativeId", () => {
+    const hashAcc1 = computeRowDedupeHash({
+      accountId: "acc-1",
+      sourceNamespace: "bank_a",
+      sourceAccountId: "iban-1",
+      authoritativeId: "TX-9988",
+    });
+
+    const hashAcc2 = computeRowDedupeHash({
+      accountId: "acc-2",
+      sourceNamespace: "bank_a",
+      sourceAccountId: "iban-1",
+      authoritativeId: "TX-9988",
+    });
+
+    // Same external reference in two different accounts produces distinct dedupe hashes
+    expect(hashAcc1).not.toBe(hashAcc2);
+
+    // Identical parameters produce identical hash
+    const hashAcc1Repeat = computeRowDedupeHash({
+      accountId: "acc-1",
+      sourceNamespace: "bank_a",
+      sourceAccountId: "iban-1",
+      authoritativeId: "TX-9988",
+    });
+    expect(hashAcc1).toBe(hashAcc1Repeat);
+  });
+
+  it("extracts authoritative transaction ID and populates source namespace and source account", () => {
+    const authMapping: StatementImportMappingConfig = {
+      ...baseMapping,
+      authoritativeIdColumn: "RefID",
+      sourceNamespace: "revolut",
+      sourceAccountId: "rev-acc-123",
+    };
+
+    const counter = new Map<string, number>();
+    const res = normalizeImportRow({
+      rowIndex: 0,
+      rawCells: ["2026-03-01", "-55.00", "Cafe", "REV-TXN-001"],
+      headers: ["Data", "Kwota", "Opis", "RefID"],
+      mapping: authMapping,
+      targetAccountCurrency: "PLN",
+      accountId: "acc-1",
+      fileHash: "filehash123",
+      occurrenceCounter: counter,
+    });
+
+    expect(res.valid).toBe(true);
+    expect(res.normalized?.identityType).toBe("authoritative");
+    expect(res.normalized?.authoritativeId).toBe("REV-TXN-001");
+    expect(res.normalized?.sourceNamespace).toBe("revolut");
+    expect(res.normalized?.sourceAccountId).toBe("rev-acc-123");
+    expect(res.normalized?.sourceRowIdentity).toBe("REV-TXN-001");
+  });
+
+  it("does not treat a source-row reference as an authoritative bank transaction ID", () => {
+    const mapping: StatementImportMappingConfig = {
+      ...baseMapping,
+      sourceRowIdentityColumn: "RefID",
+      sourceNamespace: "generic_csv",
+    };
+
+    const res = normalizeImportRow({
+      rowIndex: 0,
+      rawCells: ["2026-03-01", "-55.00", "Cafe", "ROW-001"],
+      headers: ["Data", "Kwota", "Opis", "RefID"],
+      mapping,
+      targetAccountCurrency: "PLN",
+      accountId: "acc-1",
+      fileHash: "filehash123",
+      occurrenceCounter: new Map<string, number>(),
+    });
+
+    expect(res.valid).toBe(true);
+    expect(res.normalized?.identityType).toBe("fallback");
+    expect(res.normalized?.authoritativeId).toBeNull();
+    expect(res.normalized?.sourceRowIdentity).toBe("ROW-001");
+  });
+
+  it("preserves two identical legitimate purchases in the same file without collapsing them", () => {
+    const counter = new Map<string, number>();
+
+    // First purchase of 15.00 PLN coffee
+    const row1 = normalizeImportRow({
+      rowIndex: 0,
+      rawCells: ["2026-03-01", "-15.00", "Corner Coffee"],
+      headers: ["Data", "Kwota", "Opis"],
+      mapping: baseMapping,
+      targetAccountCurrency: "PLN",
+      accountId: "acc-1",
+      fileHash: "filehash123",
+      occurrenceCounter: counter,
+    });
+
+    // Second legitimate purchase of 15.00 PLN coffee on same day
+    const row2 = normalizeImportRow({
+      rowIndex: 1,
+      rawCells: ["2026-03-01", "-15.00", "Corner Coffee"],
+      headers: ["Data", "Kwota", "Opis"],
+      mapping: baseMapping,
+      targetAccountCurrency: "PLN",
+      accountId: "acc-1",
+      fileHash: "filehash123",
+      occurrenceCounter: counter,
+    });
+
+    expect(row1.valid).toBe(true);
+    expect(row2.valid).toBe(true);
+    expect(row1.normalized?.identityType).toBe("fallback");
+    expect(row2.normalized?.identityType).toBe("fallback");
+
+    // Same fallbackIdentifier
+    expect(row1.normalized?.fallbackIdentifier).toBe(row2.normalized?.fallbackIdentifier);
+
+    // Sequential occurrence indices: 0 and 1
+    expect(row1.normalized?.occurrenceIndex).toBe(0);
+    expect(row2.normalized?.occurrenceIndex).toBe(1);
+
+    // Distinct dedupe hashes: no collapse!
+    expect(row1.normalized?.dedupeHash).not.toBe(row2.normalized?.dedupeHash);
   });
 });
