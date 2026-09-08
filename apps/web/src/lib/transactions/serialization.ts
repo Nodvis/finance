@@ -19,6 +19,9 @@ export function serializeTransaction(tx: Transaction): SerializedTransaction {
     householdId: tx.householdId,
     amount: serializedAmount,
     occurredOn: tx.occurredOn.toISOString(),
+    version: tx.version,
+    voidedAt: tx.voidedAt ? tx.voidedAt.toISOString() : null,
+    voidReason: tx.voidReason ?? null,
   };
 
   if (tx.kind === "expense") {
@@ -28,6 +31,7 @@ export function serializeTransaction(tx: Transaction): SerializedTransaction {
       accountId: tx.accountId,
       payee: tx.payee,
       paidByPersonId: tx.paidByPersonId,
+      categoryId: tx.categoryId ?? null,
     };
     return expense;
   }
@@ -39,6 +43,7 @@ export function serializeTransaction(tx: Transaction): SerializedTransaction {
       accountId: tx.accountId,
       source: tx.source,
       receivedByPersonId: tx.receivedByPersonId,
+      categoryId: tx.categoryId ?? null,
     };
     return income;
   }

@@ -5,6 +5,7 @@ import { TRANSACTION_KINDS } from "@nodvis/finance-domain";
 
 import {
   accounts,
+  categories,
   householdMemberships,
   households,
   transactionKindEnum,
@@ -35,16 +36,31 @@ describe("transactions schema", () => {
     expect(checks).toContain("transactions_kind_structure");
   });
 
-  it("enforces cross-household isolation on accounts and members via composite foreign keys", () => {
+  it("enforces cross-household isolation on accounts, categories and members via composite foreign keys", () => {
     const config = getTableConfig(transactions);
     const foreignKeys = config.foreignKeys;
     const fkNames = foreignKeys.map((fk) => fk.getName());
 
     expect(fkNames).toContain("transactions_household_account_fk");
+    expect(fkNames).toContain("transactions_household_category_fk");
     expect(fkNames).toContain("transactions_household_from_account_fk");
     expect(fkNames).toContain("transactions_household_to_account_fk");
     expect(fkNames).toContain("transactions_household_paid_by_person_fk");
     expect(fkNames).toContain("transactions_household_received_by_person_fk");
+
+    const categoryFk = foreignKeys.find(
+      (fk) => fk.getName() === "transactions_household_category_fk",
+    );
+    expect(categoryFk?.reference().foreignTable).toBe(categories);
+    expect(categoryFk?.reference().columns.map((c) => c.name)).toEqual([
+      "household_id",
+      "category_id",
+    ]);
+    expect(categoryFk?.reference().foreignColumns.map((c) => c.name)).toEqual([
+      "household_id",
+      "id",
+    ]);
+    expect(categoryFk?.onDelete).toBe("set null");
 
     const accountFk = foreignKeys.find(
       (fk) => fk.getName() === "transactions_household_account_fk",
@@ -109,9 +125,32 @@ describe("transactions schema", () => {
 
     expect(indexNames).toContain("transactions_household_id_idx");
     expect(indexNames).toContain("transactions_account_id_idx");
+    expect(indexNames).toContain("transactions_category_id_idx");
     expect(indexNames).toContain("transactions_from_account_id_idx");
     expect(indexNames).toContain("transactions_to_account_id_idx");
     expect(indexNames).toContain("transactions_occurred_on_idx");
     expect(indexNames).toContain("transactions_household_occurred_on_idx");
+    expect(indexNames).toContain("transactions_household_voided_at_idx");
+    expect(indexNames).toContain("transactions_household_submission_id_idx");
+  });
+
+  it("defines optimistic versioning and void/audit columns with check constraints", () => {
+    const config = getTableConfig(transactions);
+    const checks = config.checks.map((c) => c.name);
+
+    expect(checks).toContain("transactions_version_positive");
+
+    expect(transactions.version.getSQLType()).toBe("integer");
+    expect(transactions.version.notNull).toBe(true);
+    expect(transactions.version.default).toBe(1);
+
+    expect(transactions.voidedAt.getSQLType()).toBe("timestamp with time zone");
+    expect(transactions.voidedAt.notNull).toBe(false);
+
+    expect(transactions.voidReason.getSQLType()).toBe("varchar(280)");
+    expect(transactions.voidReason.notNull).toBe(false);
+
+    expect(transactions.submissionId.getSQLType()).toBe("varchar(64)");
+    expect(transactions.submissionId.notNull).toBe(false);
   });
 });

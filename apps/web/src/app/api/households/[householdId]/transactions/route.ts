@@ -12,18 +12,29 @@ import {
 } from "../../../../../lib/transactions/schema";
 import { serializeTransaction } from "../../../../../lib/transactions/serialization";
 import {
-  createManualTransaction,
-  listManualTransactions,
+  DuplicateSubmissionError,
   TransactionAccountNotFoundError,
+  TransactionAlreadyVoidedError,
+  TransactionCategoryApplicabilityError,
+  TransactionCategoryArchivedError,
+  TransactionCategoryNotAllowedError,
+  TransactionCategoryNotFoundError,
   TransactionCurrencyMismatchError,
   TransactionInvalidPersonError,
+  TransactionKindMismatchError,
+  TransactionNotFoundError,
+  TransactionVersionConflictError,
+  createManualTransaction,
+  exportManualTransactionsToCsv,
+  listManualTransactions,
+  queryManualTransactions,
 } from "../../../../../lib/transactions/service";
 
 type RouteContext = {
   params: Promise<{ householdId: string }>;
 };
 
-function handleRouteError(error: unknown): NextResponse {
+export function handleRouteError(error: unknown): NextResponse {
   if (error instanceof AuthenticationRequiredError) {
     return NextResponse.json(
       { error: "Authentication is required" },
@@ -35,6 +46,23 @@ function handleRouteError(error: unknown): NextResponse {
     return NextResponse.json(
       { error: "Household access denied" },
       { status: 403 },
+    );
+  }
+
+  if (error instanceof TransactionNotFoundError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 404 },
+    );
+  }
+
+  if (
+    error instanceof TransactionVersionConflictError ||
+    error instanceof DuplicateSubmissionError
+  ) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 409 },
     );
   }
 
@@ -50,8 +78,14 @@ function handleRouteError(error: unknown): NextResponse {
 
   if (
     error instanceof TransactionAccountNotFoundError ||
+    error instanceof TransactionCategoryNotFoundError ||
+    error instanceof TransactionCategoryArchivedError ||
+    error instanceof TransactionCategoryApplicabilityError ||
+    error instanceof TransactionCategoryNotAllowedError ||
     error instanceof TransactionCurrencyMismatchError ||
     error instanceof TransactionInvalidPersonError ||
+    error instanceof TransactionAlreadyVoidedError ||
+    error instanceof TransactionKindMismatchError ||
     error instanceof SyntaxError
   ) {
     return NextResponse.json(
@@ -60,8 +94,8 @@ function handleRouteError(error: unknown): NextResponse {
     );
   }
 
-  // Also catch any domain invariant Error thrown during transaction creation
-  if (error instanceof Error && error.message.includes("Transaction")) {
+  // Also catch any domain invariant Error thrown during transaction creation/correction
+  if (error instanceof Error && (error.message.includes("Transaction") || error.message.includes("Transfer"))) {
     return NextResponse.json(
       { error: error.message },
       { status: 400 },
@@ -107,28 +141,48 @@ export async function POST(
 export async function GET(
   request: Request,
   context: RouteContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   try {
     const { householdId } = await context.params;
     const access = await requireHouseholdAccess(householdId);
 
     const url = new URL(request.url);
     const queryParams: Record<string, string> = {};
-
-    const accountId = url.searchParams.get("accountId");
-    if (accountId) queryParams.accountId = accountId;
-
-    const limit = url.searchParams.get("limit");
-    if (limit) queryParams.limit = limit;
-
-    const offset = url.searchParams.get("offset");
-    if (offset) queryParams.offset = offset;
+    for (const [key, value] of url.searchParams.entries()) {
+      queryParams[key] = value;
+    }
 
     const parsedQuery = listTransactionsQuerySchema.parse(queryParams);
-    const transactions = await listManualTransactions(access, parsedQuery);
+
+    if (parsedQuery.format === "csv" || parsedQuery.export === "csv") {
+      const locale = parsedQuery.locale ?? "en";
+      const csv = await exportManualTransactionsToCsv(access, parsedQuery, locale);
+      const todayStr = new Date().toISOString().split("T")[0];
+      return new Response(csv, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="transactions-${todayStr}.csv"`,
+          "Cache-Control": "no-store, no-cache",
+        },
+      });
+    }
+
+    const { transactions, total, limit, offset, page, totalPages, hasMore } =
+      await queryManualTransactions(access, parsedQuery);
 
     return NextResponse.json(
-      { data: transactions.map(serializeTransaction) },
+      {
+        data: transactions.map(serializeTransaction),
+        pagination: {
+          total,
+          limit,
+          offset,
+          page,
+          totalPages,
+          hasMore,
+        },
+      },
       { status: 200 },
     );
   } catch (error) {

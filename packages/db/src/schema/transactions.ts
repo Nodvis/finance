@@ -4,6 +4,8 @@ import {
   check,
   foreignKey,
   index,
+  integer,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -17,6 +19,7 @@ import {
   households,
   instant,
 } from "./foundation";
+import { categories } from "./categories";
 import { financeSchema } from "./namespace";
 
 export const transactionKindEnum = financeSchema.enum(
@@ -41,6 +44,9 @@ export const transactions = financeSchema.table(
     // Expense / Income single account
     accountId: uuid("account_id"),
 
+    // Optional category (Expense / Income)
+    categoryId: uuid("category_id"),
+
     // Expense context
     payee: varchar("payee", { length: 160 }),
     paidByPersonId: uuid("paid_by_person_id"),
@@ -53,6 +59,14 @@ export const transactions = financeSchema.table(
     fromAccountId: uuid("from_account_id"),
     toAccountId: uuid("to_account_id"),
 
+    // Audit and correction tracking
+    version: integer("version").notNull().default(1),
+    voidedAt: instant("voided_at"),
+    voidReason: varchar("void_reason", { length: 280 }),
+
+    // Idempotency / duplicate submission protection at boundary
+    submissionId: varchar("submission_id", { length: 64 }),
+
     createdAt: instant("created_at").defaultNow().notNull(),
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },
@@ -62,6 +76,11 @@ export const transactions = financeSchema.table(
       columns: [table.householdId, table.accountId],
       foreignColumns: [accounts.householdId, accounts.id],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "transactions_household_category_fk",
+      columns: [table.householdId, table.categoryId],
+      foreignColumns: [categories.householdId, categories.id],
+    }).onDelete("set null"),
     foreignKey({
       name: "transactions_household_from_account_fk",
       columns: [table.householdId, table.fromAccountId],
@@ -89,6 +108,7 @@ export const transactions = financeSchema.table(
       ],
     }).onDelete("cascade"),
     check("transactions_amount_positive", sql`${table.amountMinor} > 0`),
+    check("transactions_version_positive", sql`${table.version} >= 1`),
     check("transactions_currency_format", currencyCheck(table.currency)),
     check(
       "transactions_transfer_distinct_accounts",
@@ -101,17 +121,26 @@ export const transactions = financeSchema.table(
         or
         (${table.kind} = 'income' and ${table.accountId} is not null and ${table.source} is not null and length(btrim(${table.source})) > 0 and ${table.receivedByPersonId} is not null and ${table.payee} is null and ${table.paidByPersonId} is null and ${table.fromAccountId} is null and ${table.toAccountId} is null)
         or
-        (${table.kind} = 'transfer' and ${table.fromAccountId} is not null and ${table.toAccountId} is not null and ${table.accountId} is null and ${table.payee} is null and ${table.paidByPersonId} is null and ${table.source} is null and ${table.receivedByPersonId} is null)
+        (${table.kind} = 'transfer' and ${table.fromAccountId} is not null and ${table.toAccountId} is not null and ${table.accountId} is null and ${table.payee} is null and ${table.paidByPersonId} is null and ${table.source} is null and ${table.receivedByPersonId} is null and ${table.categoryId} is null)
       )`,
     ),
     index("transactions_household_id_idx").on(table.householdId),
     index("transactions_account_id_idx").on(table.accountId),
+    index("transactions_category_id_idx").on(table.categoryId),
     index("transactions_from_account_id_idx").on(table.fromAccountId),
     index("transactions_to_account_id_idx").on(table.toAccountId),
     index("transactions_occurred_on_idx").on(table.occurredOn),
     index("transactions_household_occurred_on_idx").on(
       table.householdId,
       table.occurredOn,
+    ),
+    index("transactions_household_voided_at_idx").on(
+      table.householdId,
+      table.voidedAt,
+    ),
+    uniqueIndex("transactions_household_submission_id_idx").on(
+      table.householdId,
+      table.submissionId,
     ),
   ],
 );

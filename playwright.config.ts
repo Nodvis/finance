@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000",
     trace: "on-first-retry",
   },
   projects: [
@@ -16,10 +16,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: "http://127.0.0.1:3000/pl",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: process.env.PLAYWRIGHT_SKIP_SERVER
+    ? undefined
+    : {
+        command: "pnpm dev",
+        url: "http://127.0.0.1:3000/pl",
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });

@@ -29,14 +29,48 @@ export type {
   UpdateHouseholdAccountMetadataInput,
 } from "./access/accounts";
 export {
+  DuplicateSubmissionError,
+  TransactionAlreadyVoidedError,
+  TransactionNotFoundError,
+  TransactionVersionConflictError,
+  buildTransactionConditions,
+  countTransactionsByHousehold,
   findTransactionById,
   insertTransaction,
   listTransactionsByHousehold,
   mapRowToTransaction,
+  queryTransactionsByHousehold,
+  updateTransactionInDb,
+  voidTransactionInDb,
 } from "./access/transactions";
 export type {
   ListTransactionsParams,
   NewTransactionRow,
   TransactionRow,
 } from "./access/transactions";
+export {
+  CategoryNotFoundError,
+  archiveHouseholdCategory,
+  createHouseholdCategory,
+  findCategoryInHousehold,
+  listCategoriesByHousehold,
+  renameHouseholdCategory,
+  seedDefaultCategories,
+  unarchiveHouseholdCategory,
+} from "./access/categories";
+export type {
+  CreateHouseholdCategoryInput,
+  HouseholdCategorySummary,
+  ListCategoriesOptions,
+} from "./access/categories";
+export {
+  getHouseholdEligibleAccounts,
+  getHouseholdPeriodCashFlow,
+  getHouseholdPeriodCategorySpending,
+} from "./access/overview";
+export type {
+  DbAssetAccountRow,
+  DbCategorySpendingRow,
+  DbPeriodCashFlowRow,
+} from "./access/overview";
 export * from "./schema/index";
