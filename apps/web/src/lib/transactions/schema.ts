@@ -186,20 +186,74 @@ export type VoidTransactionInput = z.infer<typeof voidTransactionSchema>;
 
 export const listTransactionsQuerySchema = z.object({
   accountId: z.string().uuid("Invalid accountId UUID").optional(),
-  categoryId: z.string().uuid("Invalid categoryId UUID").optional(),
+  categoryId: z
+    .union([z.string().uuid("Invalid categoryId UUID"), z.literal("uncategorized")])
+    .optional(),
+  kind: z.enum(["expense", "income", "transfer"]).optional(),
+  type: z.enum(["expense", "income", "transfer"]).optional(),
+  month: z
+    .string()
+    .regex(/^\d{4}-(?:0[1-9]|1[0-2])$/, "Month must be in YYYY-MM format")
+    .optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be in YYYY-MM-DD format")
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format")
+    .optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  search: z.string().trim().max(100).optional(),
+  q: z.string().trim().max(100).optional(),
+  status: z.enum(["active", "voided", "all"]).optional(),
   includeVoided: z
     .preprocess((val) => val === "true" || val === true, z.boolean())
     .optional(),
+  page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
+  format: z.enum(["json", "csv"]).optional(),
+  export: z.enum(["json", "csv"]).optional(),
+  locale: z.string().max(10).optional(),
 });
 
 export type ListTransactionsQuery = {
   accountId?: string | undefined;
   categoryId?: string | undefined;
+  kind?: "expense" | "income" | "transfer" | undefined;
+  type?: "expense" | "income" | "transfer" | undefined;
+  month?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  startDate?: string | undefined;
+  endDate?: string | undefined;
+  search?: string | undefined;
+  q?: string | undefined;
+  status?: "active" | "voided" | "all" | undefined;
   includeVoided?: boolean | undefined;
+  page?: number | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
+  format?: "json" | "csv" | undefined;
+  export?: "json" | "csv" | undefined;
+  locale?: string | undefined;
+};
+export type ParsedListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
+
+export type PaginationMetadata = {
+  total: number;
+  limit: number;
+  offset: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+};
+
+export type PaginatedTransactionsResponse = {
+  data: SerializedTransaction[];
+  pagination: PaginationMetadata;
 };
 
 export type SerializedMoney = {

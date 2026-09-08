@@ -1,13 +1,26 @@
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import {
   accountId,
   categoryId,
   createExpense,
   createIncome,
+  createMonthPeriod,
   createTransfer,
   householdId,
   money,
+  parseMonthKey,
   personId,
   transactionId,
 } from "@nodvis/finance-domain";
@@ -342,18 +355,36 @@ export type ListTransactionsParams = {
   householdId: string;
   accountId?: string | undefined;
   categoryId?: string | undefined;
+  kind?: "expense" | "income" | "transfer" | undefined;
+  type?: "expense" | "income" | "transfer" | undefined;
+  month?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
+  search?: string | undefined;
+  q?: string | undefined;
+  status?: "active" | "voided" | "all" | undefined;
   includeVoided?: boolean | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
 };
 
-export async function listTransactionsByHousehold(
-  params: ListTransactionsParams,
-): Promise<Transaction[]> {
+export function buildTransactionConditions(params: ListTransactionsParams) {
   const conditions = [eq(transactions.householdId, params.householdId)];
 
-  if (!params.includeVoided) {
+  if (params.status === "voided") {
+    conditions.push(isNotNull(transactions.voidedAt));
+  } else if (params.status === "all" || params.includeVoided) {
+    // No voided condition
+  } else {
+    // Default: active only
     conditions.push(isNull(transactions.voidedAt));
+  }
+
+  const kind = params.kind ?? params.type;
+  if (kind) {
+    conditions.push(eq(transactions.kind, kind));
   }
 
   if (params.accountId) {
@@ -366,15 +397,99 @@ export async function listTransactionsByHousehold(
     );
   }
 
-  if (params.categoryId) {
+  if (params.categoryId === "uncategorized") {
+    conditions.push(
+      and(
+        or(eq(transactions.kind, "expense"), eq(transactions.kind, "income")),
+        isNull(transactions.categoryId),
+      )!,
+    );
+  } else if (params.categoryId) {
     conditions.push(eq(transactions.categoryId, params.categoryId));
   }
+
+  let effectiveStartDate = params.startDate;
+  let effectiveEndDate = params.endDate;
+
+  if (params.month && !effectiveStartDate && !effectiveEndDate) {
+    try {
+      const { year, month } = parseMonthKey(params.month);
+      const period = createMonthPeriod(year, month);
+      effectiveStartDate = period.startDate;
+      effectiveEndDate = period.endDate;
+    } catch {
+      // ignore invalid month
+    }
+  }
+
+  if (params.from && !effectiveStartDate) {
+    const match = params.from.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const y = Number.parseInt(match[1]!, 10);
+      const m = Number.parseInt(match[2]!, 10);
+      const d = Number.parseInt(match[3]!, 10);
+      effectiveStartDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+    } else {
+      effectiveStartDate = new Date(params.from);
+    }
+  }
+
+  if (params.to && !effectiveEndDate) {
+    const match = params.to.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const y = Number.parseInt(match[1]!, 10);
+      const m = Number.parseInt(match[2]!, 10);
+      const d = Number.parseInt(match[3]!, 10);
+      effectiveEndDate = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+    } else {
+      effectiveEndDate = new Date(params.to);
+    }
+  }
+
+  if (effectiveStartDate && !Number.isNaN(effectiveStartDate.getTime())) {
+    conditions.push(gte(transactions.occurredOn, effectiveStartDate));
+  }
+
+  if (effectiveEndDate && !Number.isNaN(effectiveEndDate.getTime())) {
+    conditions.push(lte(transactions.occurredOn, effectiveEndDate));
+  }
+
+  const search = (params.search ?? params.q)?.trim();
+  if (search) {
+    const escaped = search.replace(/[%_\\]/g, "\\$&");
+    const pattern = `%${escaped}%`;
+    conditions.push(
+      or(
+        ilike(transactions.payee, pattern),
+        ilike(transactions.source, pattern),
+        ilike(transactions.voidReason, pattern),
+      )!,
+    );
+  }
+
+  return conditions;
+}
+
+export async function queryTransactionsByHousehold(
+  params: ListTransactionsParams,
+): Promise<{ transactions: Transaction[]; total: number }> {
+  const conditions = buildTransactionConditions(params);
+
+  const [countResult] = await getDb()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(transactions)
+    .where(and(...conditions));
+  const total = Number(countResult?.count ?? 0);
 
   let query = getDb()
     .select()
     .from(transactions)
     .where(and(...conditions))
-    .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt));
+    .orderBy(
+      desc(transactions.occurredOn),
+      desc(transactions.createdAt),
+      desc(transactions.id),
+    );
 
   if (typeof params.limit === "number" && params.limit > 0) {
     query = query.limit(params.limit) as typeof query;
@@ -384,7 +499,28 @@ export async function listTransactionsByHousehold(
   }
 
   const rows = await query;
-  return rows.map(mapRowToTransaction);
+  return {
+    transactions: rows.map(mapRowToTransaction),
+    total,
+  };
+}
+
+export async function countTransactionsByHousehold(
+  params: ListTransactionsParams,
+): Promise<number> {
+  const conditions = buildTransactionConditions(params);
+  const [result] = await getDb()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(transactions)
+    .where(and(...conditions));
+  return Number(result?.count ?? 0);
+}
+
+export async function listTransactionsByHousehold(
+  params: ListTransactionsParams,
+): Promise<Transaction[]> {
+  const result = await queryTransactionsByHousehold(params);
+  return result.transactions;
 }
 
 export async function findTransactionById(

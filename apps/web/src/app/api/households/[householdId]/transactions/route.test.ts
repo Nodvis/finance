@@ -26,7 +26,9 @@ vi.mock("../../../../../lib/transactions/service", async (importOriginal) => {
   return {
     ...actual,
     createManualTransaction: vi.fn(),
+    exportManualTransactionsToCsv: vi.fn(),
     listManualTransactions: vi.fn(),
+    queryManualTransactions: vi.fn(),
   };
 });
 
@@ -37,7 +39,9 @@ import {
 } from "../../../../../lib/authorization/household";
 import {
   createManualTransaction,
+  exportManualTransactionsToCsv,
   listManualTransactions,
+  queryManualTransactions,
   TransactionAccountNotFoundError,
   TransactionCurrencyMismatchError,
 } from "../../../../../lib/transactions/service";
@@ -314,7 +318,7 @@ describe("Transactions API Route Handler", () => {
       expect(response.status).toBe(400);
     });
 
-    it("returns 200 with serialized transactions list", async () => {
+    it("returns 200 with serialized transactions list and pagination metadata", async () => {
       vi.mocked(requireHouseholdAccess).mockResolvedValueOnce(authorizedContext);
 
       const domainExpense = createExpense({
@@ -326,7 +330,15 @@ describe("Transactions API Route Handler", () => {
         paidByPersonId: personId(validPerson),
         occurredOn: new Date("2026-09-07T11:00:00Z"),
       });
-      vi.mocked(listManualTransactions).mockResolvedValueOnce([domainExpense]);
+      vi.mocked(queryManualTransactions).mockResolvedValueOnce({
+        transactions: [domainExpense],
+        total: 1,
+        limit: 10,
+        offset: 0,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
+      });
 
       const req = new Request(
         `http://localhost/api/households/any/transactions?accountId=${validAccount1}&limit=10&offset=0`,
@@ -340,11 +352,41 @@ describe("Transactions API Route Handler", () => {
       expect(json.data).toHaveLength(1);
       expect(json.data[0].amount.amountMinor).toBe("1500");
       expect(json.data[0].amount.currency).toBe("PLN");
-      expect(listManualTransactions).toHaveBeenCalledWith(authorizedContext, {
-        accountId: validAccount1,
+      expect(json.pagination).toEqual({
+        total: 1,
         limit: 10,
         offset: 0,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
       });
+      expect(queryManualTransactions).toHaveBeenCalledWith(
+        authorizedContext,
+        expect.objectContaining({
+          accountId: validAccount1,
+          limit: 10,
+          offset: 0,
+        }),
+      );
+    });
+
+    it("returns CSV when format=csv is specified", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValueOnce(authorizedContext);
+      vi.mocked(exportManualTransactionsToCsv).mockResolvedValueOnce(
+        "\uFEFFDate,Type,Amount,Currency,Account,Category,Description,Status,Void Reason\r\n",
+      );
+
+      const req = new Request(
+        `http://localhost/api/households/any/transactions?format=csv&month=2026-09`,
+      );
+      const response = await GET(req, {
+        params: Promise.resolve({ householdId: validHousehold }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
+      const text = await response.text();
+      expect(text).toContain("Date,Type,Amount,Currency");
     });
   });
 });

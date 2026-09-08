@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -23,7 +23,18 @@ type TransactionListProps = {
   householdId?: string;
 };
 
-type FilterTab = "active" | "voided";
+type FilterOverrides = {
+  search?: string;
+  type?: string;
+  accountId?: string;
+  categoryId?: string;
+  month?: string;
+  from?: string;
+  to?: string;
+  status?: "active" | "voided" | "all";
+  page?: number;
+  limit?: number;
+};
 
 export function TransactionList({
   transactions,
@@ -33,6 +44,7 @@ export function TransactionList({
   householdId,
 }: TransactionListProps) {
   const t = useTranslations("Transactions");
+  const tFilters = useTranslations("Transactions.filters");
   const tActions = useTranslations("Transactions.actions");
   const tDetails = useTranslations("Transactions.details");
   const tEdit = useTranslations("Transactions.edit");
@@ -40,7 +52,25 @@ export function TransactionList({
   const tAccess = useTranslations("Accessibility");
   const router = useRouter();
 
-  const [filter, setFilter] = useState<FilterTab>("active");
+  // Server-side filter state
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState<string>("");
+  const [accountId, setAccountId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [month, setMonth] = useState<string>("");
+  const [from, setFrom] = useState<string>("");
+  const [to, setTo] = useState<string>("");
+  const [status, setStatus] = useState<"active" | "voided" | "all">("active");
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(20);
+
+  // Paginated items and count
+  const [items, setItems] = useState<SerializedTransaction[]>(transactions);
+  const [totalCount, setTotalCount] = useState<number>(transactions.length);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [inspectTx, setInspectTx] = useState<SerializedTransaction | null>(null);
   const [editTx, setEditTx] = useState<SerializedTransaction | null>(null);
   const [voidTx, setVoidTx] = useState<SerializedTransaction | null>(null);
@@ -71,17 +101,206 @@ export function TransactionList({
     [categories],
   );
 
-  const activeTransactions = useMemo(
-    () => transactions.filter((tx) => !tx.voidedAt),
-    [transactions],
-  );
-  const voidedTransactions = useMemo(
-    () => transactions.filter((tx) => !!tx.voidedAt),
-    [transactions],
+  useEffect(() => {
+    setItems(transactions);
+    setTotalCount(transactions.length);
+  }, [transactions]);
+
+  const fetchFilteredTransactions = useCallback(
+    async (overrideParams: FilterOverrides = {}) => {
+      if (!householdId) return;
+      setIsLoading(true);
+
+      const effectiveSearch =
+        overrideParams.search !== undefined ? overrideParams.search : search;
+      const effectiveType =
+        overrideParams.type !== undefined ? overrideParams.type : type;
+      const effectiveAccount =
+        overrideParams.accountId !== undefined ? overrideParams.accountId : accountId;
+      const effectiveCategory =
+        overrideParams.categoryId !== undefined ? overrideParams.categoryId : categoryId;
+      const effectiveMonth =
+        overrideParams.month !== undefined ? overrideParams.month : month;
+      const effectiveFrom =
+        overrideParams.from !== undefined ? overrideParams.from : from;
+      const effectiveTo =
+        overrideParams.to !== undefined ? overrideParams.to : to;
+      const effectiveStatus =
+        overrideParams.status !== undefined ? overrideParams.status : status;
+      const effectivePage =
+        overrideParams.page !== undefined ? overrideParams.page : page;
+      const effectiveLimit =
+        overrideParams.limit !== undefined ? overrideParams.limit : limit;
+
+      try {
+        const sp = new URLSearchParams();
+        if (effectiveSearch.trim()) sp.set("search", effectiveSearch.trim());
+        if (effectiveType) sp.set("type", effectiveType);
+        if (effectiveAccount) sp.set("accountId", effectiveAccount);
+        if (effectiveCategory) sp.set("categoryId", effectiveCategory);
+        if (effectiveMonth) sp.set("month", effectiveMonth);
+        if (effectiveFrom) sp.set("from", effectiveFrom);
+        if (effectiveTo) sp.set("to", effectiveTo);
+        if (effectiveStatus) sp.set("status", effectiveStatus);
+        if (effectivePage > 1) sp.set("page", String(effectivePage));
+        if (effectiveLimit !== 20) sp.set("limit", String(effectiveLimit));
+
+        // Sync URL in browser without full reload
+        if (typeof window !== "undefined") {
+          const queryStr = sp.toString();
+          const newUrl = queryStr
+            ? `${window.location.pathname}?${queryStr}`
+            : window.location.pathname;
+          window.history.replaceState(null, "", newUrl);
+        }
+
+        const fetchQuery = new URLSearchParams(sp);
+        fetchQuery.set("page", String(effectivePage));
+        fetchQuery.set("limit", String(effectiveLimit));
+
+        const res = await fetch(
+          `/api/households/${householdId}/transactions?${fetchQuery.toString()}`,
+        );
+        if (res.ok) {
+          const json = await res.json();
+          setItems(json.data ?? []);
+          setTotalCount(json.pagination?.total ?? (json.data?.length ?? 0));
+        }
+      } catch (err) {
+        console.error("Failed to load transactions", err);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [householdId, search, type, accountId, categoryId, month, from, to, status, page, limit],
   );
 
-  const displayedTransactions =
-    filter === "active" ? activeTransactions : voidedTransactions;
+  const scheduleFetch = useCallback(
+    (overrideParams: FilterOverrides = {}) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        fetchFilteredTransactions(overrideParams);
+      }, 250);
+    },
+    [fetchFilteredTransactions],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const urlSearch = sp.get("search") ?? sp.get("q") ?? "";
+    const urlType = sp.get("type") ?? sp.get("kind") ?? "";
+    const urlAccount = sp.get("accountId") ?? "";
+    const urlCategory = sp.get("categoryId") ?? "";
+    const urlMonth = sp.get("month") ?? "";
+    const urlFrom = sp.get("from") ?? sp.get("startDate") ?? "";
+    const urlTo = sp.get("to") ?? sp.get("endDate") ?? "";
+    const rawStatus = sp.get("status");
+    const urlStatus: "active" | "voided" | "all" =
+      rawStatus === "active" || rawStatus === "voided" || rawStatus === "all"
+        ? rawStatus
+        : sp.get("includeVoided") === "true"
+          ? "all"
+          : "active";
+    const urlPage = parseInt(sp.get("page") ?? "1", 10) || 1;
+    const urlLimit = parseInt(sp.get("limit") ?? "20", 10) || 20;
+
+    let hasUrlParams = false;
+    if (urlSearch) { setSearch(urlSearch); hasUrlParams = true; }
+    if (urlType) { setType(urlType); hasUrlParams = true; }
+    if (urlAccount) { setAccountId(urlAccount); hasUrlParams = true; }
+    if (urlCategory) { setCategoryId(urlCategory); hasUrlParams = true; }
+    if (urlMonth) { setMonth(urlMonth); hasUrlParams = true; }
+    if (urlFrom) { setFrom(urlFrom); hasUrlParams = true; }
+    if (urlTo) { setTo(urlTo); hasUrlParams = true; }
+    if (urlStatus !== "active") { setStatus(urlStatus); hasUrlParams = true; }
+    if (urlPage > 1) { setPage(urlPage); hasUrlParams = true; }
+    if (urlLimit !== 20) { setLimit(urlLimit); hasUrlParams = true; }
+
+    if (hasUrlParams && householdId) {
+      fetchFilteredTransactions({
+        search: urlSearch,
+        type: urlType,
+        accountId: urlAccount,
+        categoryId: urlCategory,
+        month: urlMonth,
+        from: urlFrom,
+        to: urlTo,
+        status: urlStatus,
+        page: urlPage,
+        limit: urlLimit,
+      });
+    }
+  }, []);
+
+  const exportCsvUrl = useMemo(() => {
+    if (!householdId) return "";
+    const sp = new URLSearchParams();
+    if (search.trim()) sp.set("search", search.trim());
+    if (type) sp.set("type", type);
+    if (accountId) sp.set("accountId", accountId);
+    if (categoryId) sp.set("categoryId", categoryId);
+    if (month) sp.set("month", month);
+    if (from) sp.set("from", from);
+    if (to) sp.set("to", to);
+    if (status) sp.set("status", status);
+    sp.set("locale", locale);
+    return `/api/households/${householdId}/transactions/export?${sp.toString()}`;
+  }, [householdId, search, type, accountId, categoryId, month, from, to, status, locale]);
+
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+      type ||
+      accountId ||
+      categoryId ||
+      month ||
+      from ||
+      to ||
+      status !== "active" ||
+      page > 1,
+  );
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (search.trim()) count++;
+    if (type) count++;
+    if (accountId) count++;
+    if (categoryId) count++;
+    if (month || from || to) count++;
+    if (status !== "active") count++;
+    return count;
+  }, [search, type, accountId, categoryId, month, from, to, status]);
+
+  const handleReset = () => {
+    setSearch("");
+    setType("");
+    setAccountId("");
+    setCategoryId("");
+    setMonth("");
+    setFrom("");
+    setTo("");
+    setStatus("active");
+    setPage(1);
+    fetchFilteredTransactions({
+      search: "",
+      type: "",
+      accountId: "",
+      categoryId: "",
+      month: "",
+      from: "",
+      to: "",
+      status: "active",
+      page: 1,
+      limit,
+    });
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  const startRecord = totalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const endRecord = Math.min(page * limit, totalCount);
+  const displayedTransactions = items;
 
   // Close modals on Escape key
   useEffect(() => {
@@ -300,7 +519,7 @@ export function TransactionList({
       aria-label={t("list.title")}
       className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs"
     >
-      {/* Header with Title and Filter Tabs */}
+      {/* Header with Title and Export CSV action */}
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-stone-100">
@@ -311,40 +530,317 @@ export function TransactionList({
           </p>
         </div>
 
-        {/* Active vs Voided Toggle Tabs */}
-        <div
-          role="tablist"
-          aria-label={t("list.title")}
-          className="inline-flex rounded-xl border border-stone-800 bg-stone-950/80 p-1 text-xs"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "active"}
-            onClick={() => setFilter("active")}
-            className={`rounded-lg px-3 py-1.5 font-medium transition-colors ${
-              filter === "active"
-                ? "bg-stone-800 text-stone-100 shadow-xs"
-                : "text-stone-400 hover:text-stone-200"
-            }`}
-          >
-            {t("list.filterActive")} ({activeTransactions.length})
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === "voided"}
-            onClick={() => setFilter("voided")}
-            className={`rounded-lg px-3 py-1.5 font-medium transition-colors ${
-              filter === "voided"
-                ? "bg-rose-950/80 text-rose-200 border border-rose-800/60 shadow-xs"
-                : "text-stone-400 hover:text-stone-200"
-            }`}
-          >
-            {t("list.filterVoided", { count: voidedTransactions.length })}
-          </button>
-        </div>
+        {householdId && (
+          <div className="flex items-center gap-3">
+            <a
+              href={exportCsvUrl}
+              download
+              role="button"
+              aria-label={tAccess("csvExport")}
+              className="inline-flex items-center gap-2 rounded-xl border border-stone-700 bg-stone-800/90 px-3.5 py-2 text-xs font-medium text-stone-200 shadow-xs transition-colors hover:border-stone-600 hover:bg-stone-700/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-stone-500"
+            >
+              <svg
+                className="h-4 w-4 text-stone-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.75}
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                />
+              </svg>
+              {tFilters("exportCsv")}
+            </a>
+          </div>
+        )}
       </header>
+
+      {/* Filter toolbar */}
+      <div
+        aria-label={tAccess("transactionFilters")}
+        className="mb-6 rounded-xl border border-stone-800/80 bg-stone-950/60 p-4"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Text Search */}
+          <div className="relative">
+            <label
+              htmlFor="tx-filter-search"
+              className="sr-only"
+            >
+              {tFilters("searchLabel")}
+            </label>
+            <input
+              id="tx-filter-search"
+              type="search"
+              value={search}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearch(val);
+                setPage(1);
+                scheduleFetch({ search: val, page: 1 });
+              }}
+              placeholder={tFilters("searchPlaceholder")}
+              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 placeholder-stone-500 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setPage(1);
+                  fetchFilteredTransactions({ search: "", page: 1 });
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 text-xs"
+                aria-label={tActions("close")}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Transaction Type */}
+          <div>
+            <label htmlFor="tx-filter-type" className="sr-only">
+              {tFilters("typeLabel")}
+            </label>
+            <select
+              id="tx-filter-type"
+              value={type}
+              onChange={(e) => {
+                const val = e.target.value;
+                setType(val);
+                setPage(1);
+                fetchFilteredTransactions({ type: val, page: 1 });
+              }}
+              aria-label={tFilters("typeLabel")}
+              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+            >
+              <option value="">{tFilters("typeAll")}</option>
+              <option value="expense">{tFilters("typeExpense")}</option>
+              <option value="income">{tFilters("typeIncome")}</option>
+              <option value="transfer">{tFilters("typeTransfer")}</option>
+            </select>
+          </div>
+
+          {/* Account Filter */}
+          <div>
+            <label htmlFor="tx-filter-account" className="sr-only">
+              {tFilters("accountLabel")}
+            </label>
+            <select
+              id="tx-filter-account"
+              value={accountId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setAccountId(val);
+                setPage(1);
+                fetchFilteredTransactions({ accountId: val, page: 1 });
+              }}
+              aria-label={tFilters("accountLabel")}
+              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+            >
+              <option value="">{tFilters("accountAll")}</option>
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name} ({acc.currency})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Category Filter */}
+          <div>
+            <label htmlFor="tx-filter-category" className="sr-only">
+              {tFilters("categoryLabel")}
+            </label>
+            <select
+              id="tx-filter-category"
+              value={categoryId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCategoryId(val);
+                setPage(1);
+                fetchFilteredTransactions({ categoryId: val, page: 1 });
+              }}
+              aria-label={tFilters("categoryLabel")}
+              className="w-full rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-2 text-xs text-stone-100 focus:border-stone-600 focus:outline-none focus:ring-1 focus:ring-stone-600"
+            >
+              <option value="">{tFilters("categoryAll")}</option>
+              <option value="uncategorized">{tFilters("uncategorized")}</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Second row of filters: Status & Date Ranges & Reset */}
+        <div className="mt-3 flex flex-wrap items-center gap-3 pt-3 border-t border-stone-800/60">
+          {/* Status selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-stone-400">{tFilters("statusLabel")}:</span>
+            <div
+              role="radiogroup"
+              aria-label={tFilters("statusLabel")}
+              className="inline-flex rounded-lg border border-stone-800 bg-stone-900 p-0.5 text-xs"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={status === "active"}
+                onClick={() => {
+                  setStatus("active");
+                  setPage(1);
+                  fetchFilteredTransactions({ status: "active", page: 1 });
+                }}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  status === "active"
+                    ? "bg-stone-800 text-stone-100 shadow-xs"
+                    : "text-stone-400 hover:text-stone-200"
+                }`}
+              >
+                {tFilters("statusActive")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={status === "voided"}
+                onClick={() => {
+                  setStatus("voided");
+                  setPage(1);
+                  fetchFilteredTransactions({ status: "voided", page: 1 });
+                }}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  status === "voided"
+                    ? "bg-rose-950/80 text-rose-200 border border-rose-800/60 shadow-xs"
+                    : "text-stone-400 hover:text-stone-200"
+                }`}
+              >
+                {tFilters("statusVoided")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={status === "all"}
+                onClick={() => {
+                  setStatus("all");
+                  setPage(1);
+                  fetchFilteredTransactions({ status: "all", page: 1 });
+                }}
+                className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                  status === "all"
+                    ? "bg-stone-800 text-stone-100 shadow-xs"
+                    : "text-stone-400 hover:text-stone-200"
+                }`}
+              >
+                {tFilters("statusAll")}
+              </button>
+            </div>
+          </div>
+
+          {/* Month shortcut or Date Range */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="tx-filter-month" className="text-xs text-stone-400">
+                {tFilters("monthLabel")}:
+              </label>
+              <input
+                id="tx-filter-month"
+                type="month"
+                value={month}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setMonth(val);
+                  if (val) {
+                    setFrom("");
+                    setTo("");
+                  }
+                  setPage(1);
+                  fetchFilteredTransactions({
+                    month: val,
+                    from: val ? "" : from,
+                    to: val ? "" : to,
+                    page: 1,
+                  });
+                }}
+                className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1 text-xs text-stone-100 focus:border-stone-600 focus:outline-none"
+              />
+            </div>
+
+            <span className="text-xs text-stone-500">|</span>
+
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="tx-filter-from" className="text-xs text-stone-400">
+                {tFilters("dateFromLabel")}:
+              </label>
+              <input
+                id="tx-filter-from"
+                type="date"
+                value={from}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFrom(val);
+                  if (val) setMonth("");
+                  setPage(1);
+                  fetchFilteredTransactions({
+                    from: val,
+                    month: "",
+                    page: 1,
+                  });
+                }}
+                className="rounded-lg border border-stone-800 bg-stone-900 px-2 py-1 text-xs text-stone-100 focus:border-stone-600 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="tx-filter-to" className="text-xs text-stone-400">
+                {tFilters("dateToLabel")}:
+              </label>
+              <input
+                id="tx-filter-to"
+                type="date"
+                value={to}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTo(val);
+                  if (val) setMonth("");
+                  setPage(1);
+                  fetchFilteredTransactions({
+                    to: val,
+                    month: "",
+                    page: 1,
+                  });
+                }}
+                className="rounded-lg border border-stone-800 bg-stone-900 px-2 py-1 text-xs text-stone-100 focus:border-stone-600 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Active filters badge & Reset button */}
+          <div className="ml-auto flex items-center gap-2">
+            {activeFilterCount > 0 && (
+              <span className="rounded-md border border-stone-700 bg-stone-800/80 px-2 py-0.5 text-[11px] font-medium text-stone-300">
+                {tFilters("activeFiltersCount", { count: activeFilterCount })}
+              </span>
+            )}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="rounded-lg border border-stone-700/80 bg-stone-800/60 px-2.5 py-1 text-xs font-medium text-stone-300 hover:bg-stone-800 hover:text-stone-100 transition-colors"
+              >
+                {tFilters("reset")}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Transaction Content */}
       {displayedTransactions.length === 0 ? (
@@ -366,15 +862,26 @@ export function TransactionList({
             </svg>
           </div>
           <h3 className="mt-3 text-base font-medium text-stone-200">
-            {filter === "active"
-              ? t("list.emptyTitle")
-              : t("list.emptyVoidedTitle")}
+            {hasActiveFilters
+              ? tFilters("noResultsTitle")
+              : t("list.emptyTitle")}
           </h3>
           <p className="mx-auto mt-1 max-w-sm text-sm text-stone-400">
-            {filter === "active"
-              ? t("list.emptyDescription")
-              : t("list.emptyVoidedDescription")}
+            {hasActiveFilters
+              ? tFilters("noResultsDescription")
+              : t("list.emptyDescription")}
           </p>
+          {hasActiveFilters && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="rounded-lg border border-stone-700 bg-stone-800 px-3 py-1.5 text-xs font-medium text-stone-200 hover:bg-stone-700 hover:text-white transition-colors"
+              >
+                {tFilters("reset")}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -669,6 +1176,79 @@ export function TransactionList({
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          <nav
+            aria-label={tAccess("transactionPagination")}
+            className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-stone-800/80 pt-4 sm:flex-row text-xs text-stone-400"
+          >
+            <div className="flex items-center gap-4">
+              <span>
+                {tFilters("showingCount", {
+                  start: startRecord,
+                  end: endRecord,
+                  total: totalCount,
+                })}
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="tx-page-size" className="text-stone-400">
+                  {tFilters("pageSize")}:
+                </label>
+                <select
+                  id="tx-page-size"
+                  value={limit}
+                  onChange={(e) => {
+                    const newLimit = Number(e.target.value);
+                    setLimit(newLimit);
+                    setPage(1);
+                    fetchFilteredTransactions({ limit: newLimit, page: 1 });
+                  }}
+                  className="rounded-md border border-stone-800 bg-stone-900 px-2 py-1 text-xs text-stone-200 focus:border-stone-600 focus:outline-none"
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span>
+                {tFilters("pageLabel", {
+                  current: page,
+                  total: totalPages,
+                })}
+              </span>
+
+              <div className="inline-flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={page <= 1 || isLoading}
+                  onClick={() => {
+                    const prevPage = page - 1;
+                    setPage(prevPage);
+                    fetchFilteredTransactions({ page: prevPage });
+                  }}
+                  className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {tFilters("prevPage")}
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages || isLoading}
+                  onClick={() => {
+                    const nextPage = page + 1;
+                    setPage(nextPage);
+                    fetchFilteredTransactions({ page: nextPage });
+                  }}
+                  className="rounded-lg border border-stone-800 bg-stone-900 px-2.5 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-700 hover:text-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {tFilters("nextPage")}
+                </button>
+              </div>
+            </div>
+          </nav>
         </>
       )}
 

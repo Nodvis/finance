@@ -83,3 +83,22 @@ Weryfikacja Phase 3:
 - `git diff --check`: passed.
 
 Overview nie tworzy migracji — używa istniejącego modelu transakcji, kategorii, kont i snapshotów.
+
+## Checkpoint: filtrowanie, paginacja i CSV — lokalnie zweryfikowane
+
+- server-side filtry household-scoped: okres/data range, typ, konto, kategoria, tekst i status;
+- stabilna paginacja z sortowaniem occurredOn, createdAt i id;
+- URL zachowuje stan filtrów, reset oraz stany pustych wyników;
+- CSV bieżącego filtrowania zawiera datę, typ, dokładną kwotę dziesiętną, walutę, konto, kategorię, opis i status;
+- eksport używa UTF-8 BOM, RFC 4180 escaping i ochrony przed spreadsheet formula injection;
+- PL/EN parity zachowana.
+
+Weryfikacja Phase 4:
+
+- `pnpm test`: 356 testów passed (domain 78, db 42, web 236);
+- `pnpm typecheck`: passed;
+- `pnpm lint`: passed;
+- `pnpm build`: passed, w tym endpoint export;
+- `git diff --check`: passed.
+
+E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts` sprawdza wycofane marketingowe teksty i nie pokrywa nowych przepływów.

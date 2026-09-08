@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   isExpense,
@@ -13,7 +13,9 @@ import {
   TransactionAlreadyVoidedError,
   TransactionNotFoundError,
   TransactionVersionConflictError,
+  buildTransactionConditions,
   mapRowToTransaction,
+  queryTransactionsByHousehold,
 } from "./transactions";
 import type { TransactionRow } from "./transactions";
 
@@ -372,5 +374,189 @@ describe("mapRowToTransaction", () => {
     expect(dup).toBeInstanceOf(Error);
     expect(dup.name).toBe("DuplicateSubmissionError");
     expect(dup.message).toBe("duplicate");
+  });
+});
+
+describe("buildTransactionConditions", () => {
+  it("generates household condition and default active-only condition", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+    });
+    expect(conditions).toHaveLength(2); // householdId + isNull(voidedAt)
+  });
+
+  it("handles voided status and all status", () => {
+    const voidedConditions = buildTransactionConditions({
+      householdId: householdUuid,
+      status: "voided",
+    });
+    expect(voidedConditions).toHaveLength(2); // householdId + isNotNull(voidedAt)
+
+    const allConditions = buildTransactionConditions({
+      householdId: householdUuid,
+      status: "all",
+    });
+    expect(allConditions).toHaveLength(1); // householdId only
+
+    const includeVoidedConditions = buildTransactionConditions({
+      householdId: householdUuid,
+      includeVoided: true,
+    });
+    expect(includeVoidedConditions).toHaveLength(1); // householdId only
+  });
+
+  it("filters by transaction kind/type", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+      kind: "expense",
+    });
+    expect(conditions).toHaveLength(3); // household + active + kind
+  });
+
+  it("filters by account across single account and transfer accounts", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+      accountId: accountUuid1,
+    });
+    expect(conditions).toHaveLength(3); // household + active + account
+  });
+
+  it("filters by specific category UUID and uncategorized", () => {
+    const categoryUuid = "018f47a0-7762-7b9c-8d17-27f2f79e59a9";
+    const specificCat = buildTransactionConditions({
+      householdId: householdUuid,
+      categoryId: categoryUuid,
+    });
+    expect(specificCat).toHaveLength(3); // household + active + category
+
+    const uncat = buildTransactionConditions({
+      householdId: householdUuid,
+      categoryId: "uncategorized",
+    });
+    expect(uncat).toHaveLength(3); // household + active + uncategorized condition
+  });
+
+  it("resolves month key to start and end date boundaries", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+      month: "2026-09",
+    });
+    // household + active + gte(2026-09-01) + lte(2026-09-30)
+    expect(conditions).toHaveLength(4);
+  });
+
+  it("resolves from and to date string boundaries", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+      from: "2026-09-05",
+      to: "2026-09-15",
+    });
+    // household + active + gte + lte
+    expect(conditions).toHaveLength(4);
+  });
+
+  it("builds text search condition escaping special characters", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+      search: "100% discount_deal",
+    });
+    // household + active + search OR (payee, source, voidReason)
+    expect(conditions).toHaveLength(3);
+  });
+
+  it("combines multiple filter parameters simultaneously", () => {
+    const conditions = buildTransactionConditions({
+      householdId: householdUuid,
+      kind: "expense",
+      accountId: accountUuid1,
+      categoryId: "uncategorized",
+      month: "2026-09",
+      search: "Groceries",
+      status: "active",
+    });
+    // household + active + kind + account + category + gte + lte + search
+    expect(conditions).toHaveLength(8);
+  });
+});
+
+describe("queryTransactionsByHousehold and tie-breaker sorting", () => {
+  it("queries transactions with count and deterministic tie-breaker sorting", async () => {
+    const mockRow: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 2500n,
+      currency: "PLN",
+      occurredOn: new Date("2026-09-07T10:00:00Z"),
+      accountId: accountUuid1,
+      categoryId: null,
+      payee: "Cafe",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      version: 1,
+      voidedAt: null,
+      voidReason: null,
+      submissionId: null,
+      createdAt: new Date("2026-09-07T10:00:01Z"),
+      updatedAt: new Date("2026-09-07T10:00:01Z"),
+    };
+
+    let queryOrderByArgs: unknown = null;
+    let queryLimitVal: number | null = null;
+    let queryOffsetVal: number | null = null;
+
+    const queryBuilder = {
+      from: () => queryBuilder,
+      where: () => queryBuilder,
+      orderBy: (...args: unknown[]) => {
+        queryOrderByArgs = args;
+        return queryBuilder;
+      },
+      limit: (val: number) => {
+        queryLimitVal = val;
+        return queryBuilder;
+      },
+      offset: (val: number) => {
+        queryOffsetVal = val;
+        return queryBuilder;
+      },
+      then: (resolve: (val: unknown) => unknown) => resolve([mockRow]),
+    };
+
+    const countBuilder = {
+      from: () => countBuilder,
+      where: () => countBuilder,
+      then: (resolve: (val: unknown) => unknown) => resolve([{ count: 42 }]),
+    };
+
+    const mockDb = {
+      select: (fields?: unknown) => {
+        if (fields && typeof fields === "object" && "count" in fields) {
+          return countBuilder;
+        }
+        return queryBuilder;
+      },
+    };
+
+    const dbClient = await import("../client");
+    vi.spyOn(dbClient, "getDb").mockReturnValue(mockDb as any);
+
+    const result = await queryTransactionsByHousehold({
+      householdId: householdUuid,
+      limit: 10,
+      offset: 20,
+    });
+
+    expect(result.total).toBe(42);
+    expect(result.transactions).toHaveLength(1);
+    expect(result.transactions[0]!.id).toBe(txUuid1);
+    expect(queryLimitVal).toBe(10);
+    expect(queryOffsetVal).toBe(20);
+    // OrderBy should contain 3 columns: occurredOn DESC, createdAt DESC, id DESC (the tie-breaker)
+    expect(Array.isArray(queryOrderByArgs)).toBe(true);
+    expect((queryOrderByArgs as unknown[]).length).toBe(3);
   });
 });

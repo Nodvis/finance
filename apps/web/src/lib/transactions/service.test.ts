@@ -12,7 +12,9 @@ vi.mock("@nodvis/finance-db", async (importOriginal) => {
     insertTransaction: vi.fn(),
     isPersonInHousehold: vi.fn(),
     listAccountsByHousehold: vi.fn(),
+    listCategoriesByHousehold: vi.fn(),
     listTransactionsByHousehold: vi.fn(),
+    queryTransactionsByHousehold: vi.fn(),
     updateTransactionInDb: vi.fn(),
     voidTransactionInDb: vi.fn(),
   };
@@ -25,7 +27,9 @@ import {
   insertTransaction,
   isPersonInHousehold,
   listAccountsByHousehold,
+  listCategoriesByHousehold,
   listTransactionsByHousehold,
+  queryTransactionsByHousehold,
   updateTransactionInDb,
   voidTransactionInDb,
 } from "@nodvis/finance-db";
@@ -62,9 +66,11 @@ import {
   TransactionVersionConflictError,
   correctManualTransaction,
   createManualTransaction,
+  exportManualTransactionsToCsv,
   getManualTransaction,
   listHouseholdAccounts,
   listManualTransactions,
+  queryManualTransactions,
   voidManualTransaction,
 } from "./service";
 import type { AuthorizedHouseholdContext } from "./service";
@@ -332,6 +338,94 @@ describe("transaction-service", () => {
         limit: 20,
         offset: 10,
       });
+    });
+  });
+
+  describe("queryManualTransactions", () => {
+    it("delegates to queryTransactionsByHousehold with pagination calculations and filters", async () => {
+      vi.mocked(queryTransactionsByHousehold).mockResolvedValueOnce({
+        transactions: [],
+        total: 45,
+      });
+
+      const result = await queryManualTransactions(testContext, {
+        accountId: validAccount1,
+        kind: "expense",
+        month: "2026-09",
+        search: "grocery",
+        status: "active",
+        page: 2,
+        limit: 20,
+      });
+
+      expect(result).toEqual({
+        transactions: [],
+        total: 45,
+        limit: 20,
+        offset: 20,
+        page: 2,
+        totalPages: 3,
+        hasMore: true,
+      });
+
+      expect(queryTransactionsByHousehold).toHaveBeenCalledWith({
+        householdId: validHousehold,
+        accountId: validAccount1,
+        categoryId: undefined,
+        kind: "expense",
+        month: "2026-09",
+        from: undefined,
+        to: undefined,
+        search: "grocery",
+        status: "active",
+        includeVoided: undefined,
+        limit: 20,
+        offset: 20,
+      });
+    });
+  });
+
+  describe("exportManualTransactionsToCsv", () => {
+    it("queries authorized accounts, categories, and transactions and generates CSV", async () => {
+      vi.mocked(listAccountsByHousehold).mockResolvedValueOnce([
+        {
+          id: validAccount1,
+          householdId: validHousehold,
+          name: "Daily Checking",
+          type: "checking",
+          currency: "PLN",
+          balanceSnapshotMinor: 10000n,
+          balanceSnapshotAt: new Date("2026-09-08T00:00:00Z"),
+          archivedAt: null,
+          ownerPersonIds: [],
+        },
+      ]);
+      vi.mocked(listCategoriesByHousehold).mockResolvedValueOnce([]);
+
+      const testExpense = createExpense({
+        id: transactionId("018f47a0-7762-7b9c-8d17-27f2f79e59a6"),
+        householdId: householdId(validHousehold),
+        accountId: accountId(validAccount1),
+        amount: money(4550n, "PLN"),
+        payee: "Market",
+        paidByPersonId: personId(validPerson1),
+        occurredOn: new Date("2026-09-08T10:00:00Z"),
+      });
+
+      vi.mocked(queryTransactionsByHousehold).mockResolvedValueOnce({
+        transactions: [testExpense],
+        total: 1,
+      });
+
+      const csv = await exportManualTransactionsToCsv(
+        testContext,
+        { status: "active" },
+        "pl",
+      );
+
+      expect(csv.startsWith("\uFEFF")).toBe(true);
+      expect(csv).toContain("Data,Typ,Kwota,Waluta,Konto,Kategoria,Opis,Status,Powód anulowania");
+      expect(csv).toContain("2026-09-08,Wydatek,45.50,PLN,Daily Checking,Bez kategorii,Market,Aktywna,");
     });
   });
 

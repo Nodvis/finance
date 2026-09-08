@@ -11,10 +11,13 @@ import {
   insertTransaction,
   isPersonInHousehold,
   listAccountsByHousehold,
+  listCategoriesByHousehold,
   listTransactionsByHousehold,
+  queryTransactionsByHousehold,
   updateTransactionInDb,
   voidTransactionInDb,
 } from "@nodvis/finance-db";
+import { generateTransactionsCsv } from "./csv-export";
 import {
   accountId as toAccountId,
   categoryId as toCategoryId,
@@ -549,17 +552,113 @@ export async function voidManualTransaction(
   });
 }
 
+export async function queryManualTransactions(
+  context: AuthorizedHouseholdContext,
+  query: ListTransactionsQuery,
+): Promise<{
+  transactions: Transaction[];
+  total: number;
+  limit: number;
+  offset: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}> {
+  const limit = query.limit ?? 50;
+  const offset =
+    query.page && query.page > 1
+      ? (query.page - 1) * limit
+      : (query.offset ?? 0);
+
+  const kind = query.kind ?? query.type;
+  const search = query.search ?? query.q;
+  const from = query.from ?? query.startDate;
+  const to = query.to ?? query.endDate;
+
+  const result = await queryTransactionsByHousehold({
+    householdId: context.householdId,
+    accountId: query.accountId,
+    categoryId: query.categoryId,
+    kind,
+    month: query.month,
+    from,
+    to,
+    search,
+    status: query.status,
+    includeVoided: query.includeVoided,
+    limit,
+    offset,
+  });
+
+  const page = Math.floor(offset / limit) + 1;
+  const totalPages = Math.max(1, Math.ceil(result.total / limit));
+  const hasMore = offset + result.transactions.length < result.total;
+
+  return {
+    transactions: result.transactions,
+    total: result.total,
+    limit,
+    offset,
+    page,
+    totalPages,
+    hasMore,
+  };
+}
+
 export async function listManualTransactions(
   context: AuthorizedHouseholdContext,
   query: ListTransactionsQuery,
 ): Promise<Transaction[]> {
+  const limit = query.limit ?? 50;
+  const offset =
+    query.page && query.page > 1
+      ? (query.page - 1) * limit
+      : (query.offset ?? 0);
+
+  const kind = query.kind ?? query.type;
+  const search = query.search ?? query.q;
+  const from = query.from ?? query.startDate;
+  const to = query.to ?? query.endDate;
+
   return await listTransactionsByHousehold({
     householdId: context.householdId,
     ...(query.accountId ? { accountId: query.accountId } : {}),
     ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+    ...(kind ? { kind } : {}),
+    ...(query.month ? { month: query.month } : {}),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+    ...(search ? { search } : {}),
+    ...(query.status ? { status: query.status } : {}),
     includeVoided: query.includeVoided,
-    limit: query.limit,
-    offset: query.offset,
+    limit,
+    offset,
+  });
+}
+
+export async function exportManualTransactionsToCsv(
+  context: AuthorizedHouseholdContext,
+  query: ListTransactionsQuery,
+  locale: string = "en",
+): Promise<string> {
+  const [accounts, categories, result] = await Promise.all([
+    listAccountsByHousehold(context.householdId, { includeArchived: true }),
+    listCategoriesByHousehold(context.householdId, { includeArchived: true }),
+    queryManualTransactions(context, {
+      ...query,
+      limit: query.limit ?? 10000,
+      offset: query.offset ?? 0,
+    }),
+  ]);
+
+  const accountMap = new Map(accounts.map((a) => [a.id, a]));
+  const categoryMap = new Map(categories.map((c) => [c.id, c]));
+
+  return generateTransactionsCsv({
+    transactions: result.transactions,
+    accounts: accountMap,
+    categories: categoryMap,
+    locale,
   });
 }
 

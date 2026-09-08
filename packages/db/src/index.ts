@@ -33,10 +33,13 @@ export {
   TransactionAlreadyVoidedError,
   TransactionNotFoundError,
   TransactionVersionConflictError,
+  buildTransactionConditions,
+  countTransactionsByHousehold,
   findTransactionById,
   insertTransaction,
   listTransactionsByHousehold,
   mapRowToTransaction,
+  queryTransactionsByHousehold,
   updateTransactionInDb,
   voidTransactionInDb,
 } from "./access/transactions";
