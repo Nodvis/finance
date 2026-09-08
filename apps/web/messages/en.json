@@ -10,6 +10,7 @@
     "accounts": "Accounts",
     "categories": "Categories",
     "imports": "Imports",
+    "transfers": "Transfers",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private"
   },
@@ -108,6 +109,12 @@
     "emptyArchivedDescription": "No archived accounts in this household.",
     "balanceUnknown": "Unknown",
     "balanceUnknownHelp": "No balance snapshot recorded",
+    "identifiersLabel": "Account identifiers",
+    "noIdentifiers": "No identifiers registered",
+    "identifiersModalTitle": "Account identifiers",
+    "registeredIdentifiers": "Registered account numbers",
+    "addIdentifierTitle": "Add account number / IBAN",
+    "addIdentifierHelp": "Enter the full 26-digit Polish account number or international IBAN. Safe masking is applied in all ordinary views.",
     "types": {
       "checking": "Checking",
       "savings": "Savings",
@@ -125,6 +132,12 @@
     "actions": {
       "addAccount": "Add account",
       "importStatement": "Import CSV",
+      "manageIdentifiers": "Identifiers",
+      "addIdentifier": "Add identifier",
+      "adding": "Adding...",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "close": "Close",
       "edit": "Edit",
       "archive": "Archive",
       "unarchive": "Restore",
@@ -146,12 +159,16 @@
       "initialBalancePlaceholder": "e.g. 1500.50 or leave empty",
       "initialBalanceHelp": "Leave empty if the balance is unknown. Decimals are parsed with exact minor units.",
       "creditCardNotice": "For credit cards, enter negative value for outstanding debt (e.g. -250.00).",
+      "identifierNumber": "Account number (NRB or IBAN)",
+      "identifierLabelOptional": "Label / description (optional)",
       "submitAdd": "Create account",
       "submittingAdd": "Creating account...",
       "successAdd": "Account created successfully.",
       "successEdit": "Account metadata updated successfully.",
       "successArchive": "Account archived without deleting history.",
       "successUnarchive": "Account restored to active status.",
+      "successAddIdentifier": "Account identifier added successfully.",
+      "successDeleteIdentifier": "Account identifier removed.",
       "errorGeneric": "An error occurred while saving the account.",
       "errorOwnersRequired": "Please select at least one owner.",
       "errorNameRequired": "Account name is required."
@@ -450,7 +467,10 @@
     "categoryBreakdown": "Category spending breakdown",
     "cashFlowSummary": "Period cash flow summary",
     "accountObservations": "Account observations status",
-    "transactionHistoryTimeline": "Transaction change history timeline"
+    "transactionHistoryTimeline": "Transaction change history timeline",
+    "transfersList": "Transfer candidates list",
+    "transfersTabs": "Transfer review categories",
+    "accountIdentifiersModal": "Manage account identifiers dialog"
   },
   "Imports": {
     "title": "Import a CSV statement",
@@ -480,6 +500,69 @@
     "fileSelected": "Selected file: {name} ({size})",
     "resetFile": "Choose different file",
     "errors": { "generic": "The import could not be completed." }
+  },
+  "Transfers": {
+    "eyebrow": "Internal reconciliation",
+    "title": "Internal transfers",
+    "description": "Review and match money transfers between your household accounts without double-counting expenses or income.",
+    "tabs": {
+      "readyAuto": "Ready to match ({count})",
+      "reviewOnly": "Needs review ({count})",
+      "oneSidedPending": "Pending counterpart ({count})",
+      "ambiguous": "Ambiguous ({count})",
+      "reconciled": "Reconciled history ({count})"
+    },
+    "badges": {
+      "readyAuto": "Ready",
+      "reviewOnly": "Needs review",
+      "oneSidedPending": "Pending counterpart",
+      "ambiguous": "Ambiguous",
+      "reconciled": "Reconciled"
+    },
+    "actions": {
+      "autoMatchAll": "Auto-match all confirmed ({count})",
+      "autoMatching": "Matching transfers...",
+      "match": "Match transfer",
+      "matching": "Matching...",
+      "confirmMatch": "Confirm match",
+      "cancel": "Cancel",
+      "viewTransaction": "View details"
+    },
+    "hints": {
+      "readyAuto": "Both sides of this transfer have arrived with matching amounts, matching currency, and a confirmed account identifier linking your accounts.",
+      "reviewOnly": "Amounts and dates match between accounts, but no registered account number confirmed this link. Manual confirmation is required.",
+      "oneSidedPending": "An outflow was sent to a known household account number, but the counterpart deposit has not arrived or been imported yet.",
+      "ambiguous": "Multiple candidate counterparts were found for this transfer, or currencies differ. Choose the correct counterpart manually."
+    },
+    "empty": {
+      "readyAutoTitle": "No transfers ready to match",
+      "readyAutoDescription": "All confirmed transfer counterpart pairs have already been matched.",
+      "reviewOnlyTitle": "No transfers need review",
+      "reviewOnlyDescription": "No unconfirmed transfers with matching amounts and dates were found.",
+      "oneSidedPendingTitle": "No pending one-sided transfers",
+      "oneSidedPendingDescription": "No outflows to known accounts are waiting for their counterpart deposit.",
+      "ambiguousTitle": "No ambiguous transfer candidates",
+      "ambiguousDescription": "There are no candidate transfers with multiple counterpart options.",
+      "reconciledTitle": "No reconciled transfers yet",
+      "reconciledDescription": "Matched internal transfers will appear here in the history."
+    },
+    "card": {
+      "outflow": "Outflow (Source)",
+      "inflow": "Inflow (Destination)",
+      "account": "Account",
+      "date": "Date",
+      "amount": "Amount",
+      "description": "Description",
+      "matchedIdentifier": "Confirmed identifier",
+      "reconciledAt": "Reconciled at",
+      "selectCounterpart": "Select counterpart transaction:"
+    },
+    "feedback": {
+      "successMatch": "Transfer successfully matched and reconciled.",
+      "successAutoMatch": "Successfully matched {count} internal transfers.",
+      "noAutoMatched": "No transfers were eligible for automatic matching.",
+      "errorGeneric": "Failed to match transfer. Please try again."
+    }
   },
   "Overview": {
     "periodLabel": "Selected period",

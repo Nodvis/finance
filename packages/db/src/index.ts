@@ -102,4 +102,29 @@ export type {
   StatementImportRowRecord,
 } from "./access/statement-imports";
 
+export {
+  AccountIdentifierNotFoundError,
+  DuplicateAccountIdentifierError,
+  InvalidAccountIdentifierError,
+  addAccountIdentifier,
+  deleteAccountIdentifier,
+  findAccountIdentifierById,
+  listAccountIdentifiersByHousehold,
+  mapAccountIdentifierRow,
+} from "./access/account-identifiers";
+export type {
+  AccountIdentifierRecord,
+  AddAccountIdentifierInput,
+} from "./access/account-identifiers";
+
+export {
+  InvalidTransferMatchError,
+  executeTransferMatch,
+  listTransferMatchesByHousehold,
+} from "./access/transfer-matching";
+export type {
+  ExecuteTransferMatchParams,
+  TransferMatchRecord,
+} from "./access/transfer-matching";
+
 export * from "./schema/index";

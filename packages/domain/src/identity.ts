@@ -6,12 +6,16 @@ declare const personIdBrand: unique symbol;
 declare const accountIdBrand: unique symbol;
 declare const transactionIdBrand: unique symbol;
 declare const categoryIdBrand: unique symbol;
+declare const accountIdentifierIdBrand: unique symbol;
 
 export type HouseholdId = string & { readonly [householdIdBrand]: true };
 export type PersonId = string & { readonly [personIdBrand]: true };
 export type AccountId = string & { readonly [accountIdBrand]: true };
 export type TransactionId = string & { readonly [transactionIdBrand]: true };
 export type CategoryId = string & { readonly [categoryIdBrand]: true };
+export type AccountIdentifierId = string & {
+  readonly [accountIdentifierIdBrand]: true;
+};
 
 export function householdId(value: string): HouseholdId {
   return domainId(value, "household") as HouseholdId;
@@ -31,6 +35,10 @@ export function transactionId(value: string): TransactionId {
 
 export function categoryId(value: string): CategoryId {
   return domainId(value, "category") as CategoryId;
+}
+
+export function accountIdentifierId(value: string): AccountIdentifierId {
+  return domainId(value, "account identifier") as AccountIdentifierId;
 }
 
 function domainId(value: string, kind: string): string {
