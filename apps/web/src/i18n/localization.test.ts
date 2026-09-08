@@ -83,4 +83,21 @@ describe("i18n localization messages", () => {
     expect(plMessages.Transactions.form.amountMinor).not.toContain("jednostkach mniejszych");
     expect(enMessages.Transactions.form.amountMinor).not.toContain("minor units");
   });
+
+  it("defines essential category navigation and form keys", () => {
+    const plKeys = getLeafKeys(plMessages);
+    expect(plKeys).toContain("Navigation.categories");
+    expect(plKeys).toContain("Categories.title");
+    expect(plKeys).toContain("Categories.activeCategories");
+    expect(plKeys).toContain("Categories.archivedCategories");
+    expect(plKeys).toContain("Categories.actions.addCategory");
+    expect(plKeys).toContain("Categories.actions.archive");
+    expect(plKeys).toContain("Categories.actions.unarchive");
+    expect(plKeys).toContain("Categories.applicability.expense");
+    expect(plKeys).toContain("Categories.applicability.income");
+    expect(plKeys).toContain("Categories.applicability.both");
+    expect(plKeys).toContain("Transactions.form.category");
+    expect(plKeys).toContain("Transactions.list.colCategory");
+    expect(plKeys).toContain("Accessibility.categoriesList");
+  });
 });

@@ -1,4 +1,10 @@
-import type { AccountId, HouseholdId, PersonId, TransactionId } from "./identity";
+import type {
+  AccountId,
+  CategoryId,
+  HouseholdId,
+  PersonId,
+  TransactionId,
+} from "./identity";
 import type { Money } from "./money";
 import { addMoney, money, negateMoney } from "./money";
 
@@ -14,6 +20,7 @@ export type ExpenseTransaction = Readonly<{
   payee: string; // counterparty / merchant
   paidByPersonId: PersonId; // payer (transaction context, distinct from account owner)
   occurredOn: Date;
+  categoryId: CategoryId | null;
 }>;
 
 export type IncomeTransaction = Readonly<{
@@ -25,6 +32,7 @@ export type IncomeTransaction = Readonly<{
   source: string; // counterparty / source
   receivedByPersonId: PersonId; // beneficiary (transaction context)
   occurredOn: Date;
+  categoryId: CategoryId | null;
 }>;
 
 export type TransferTransaction = Readonly<{
@@ -88,6 +96,7 @@ export function createExpense(input: {
   payee: string;
   paidByPersonId: PersonId;
   occurredOn: Date;
+  categoryId?: CategoryId | null;
 }): ExpenseTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
@@ -102,6 +111,7 @@ export function createExpense(input: {
     payee,
     paidByPersonId: input.paidByPersonId,
     occurredOn,
+    categoryId: input.categoryId ?? null,
   });
 }
 
@@ -113,6 +123,7 @@ export function createIncome(input: {
   source: string;
   receivedByPersonId: PersonId;
   occurredOn: Date;
+  categoryId?: CategoryId | null;
 }): IncomeTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
@@ -127,6 +138,7 @@ export function createIncome(input: {
     source,
     receivedByPersonId: input.receivedByPersonId,
     occurredOn,
+    categoryId: input.categoryId ?? null,
   });
 }
 
@@ -137,9 +149,14 @@ export function createTransfer(input: {
   toAccountId: AccountId;
   amount: Money;
   occurredOn: Date;
+  categoryId?: unknown;
 }): TransferTransaction {
   assertPositiveAmount(input.amount);
   const occurredOn = assertValidDate(input.occurredOn);
+
+  if (input.categoryId !== undefined && input.categoryId !== null) {
+    throw new Error("Transfer transactions cannot have a category");
+  }
 
   if (input.fromAccountId === input.toAccountId) {
     throw new Error(

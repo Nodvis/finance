@@ -28,6 +28,7 @@ export function serializeTransaction(tx: Transaction): SerializedTransaction {
       accountId: tx.accountId,
       payee: tx.payee,
       paidByPersonId: tx.paidByPersonId,
+      categoryId: tx.categoryId ?? null,
     };
     return expense;
   }
@@ -39,6 +40,7 @@ export function serializeTransaction(tx: Transaction): SerializedTransaction {
       accountId: tx.accountId,
       source: tx.source,
       receivedByPersonId: tx.receivedByPersonId,
+      categoryId: tx.categoryId ?? null,
     };
     return income;
   }

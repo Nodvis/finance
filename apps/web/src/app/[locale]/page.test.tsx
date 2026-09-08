@@ -20,6 +20,10 @@ vi.mock("@/lib/authorization/household", () => ({
   getCurrentUserHouseholdsStatus: vi.fn(),
 }));
 
+vi.mock("@/lib/categories/service", () => ({
+  listHouseholdCategories: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("@/lib/transactions/service", () => ({
   listManualTransactions: vi.fn(),
 }));
@@ -31,6 +35,7 @@ vi.mock("@/lib/transactions/serialization", () => ({
 import { listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
+import { listHouseholdCategories } from "@/lib/categories/service";
 import { listManualTransactions } from "@/lib/transactions/service";
 import HomePage from "./page";
 

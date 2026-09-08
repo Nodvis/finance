@@ -17,6 +17,7 @@ import {
   households,
   instant,
 } from "./foundation";
+import { categories } from "./categories";
 import { financeSchema } from "./namespace";
 
 export const transactionKindEnum = financeSchema.enum(
@@ -41,6 +42,9 @@ export const transactions = financeSchema.table(
     // Expense / Income single account
     accountId: uuid("account_id"),
 
+    // Optional category (Expense / Income)
+    categoryId: uuid("category_id"),
+
     // Expense context
     payee: varchar("payee", { length: 160 }),
     paidByPersonId: uuid("paid_by_person_id"),
@@ -62,6 +66,11 @@ export const transactions = financeSchema.table(
       columns: [table.householdId, table.accountId],
       foreignColumns: [accounts.householdId, accounts.id],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "transactions_household_category_fk",
+      columns: [table.householdId, table.categoryId],
+      foreignColumns: [categories.householdId, categories.id],
+    }).onDelete("set null"),
     foreignKey({
       name: "transactions_household_from_account_fk",
       columns: [table.householdId, table.fromAccountId],
@@ -101,11 +110,12 @@ export const transactions = financeSchema.table(
         or
         (${table.kind} = 'income' and ${table.accountId} is not null and ${table.source} is not null and length(btrim(${table.source})) > 0 and ${table.receivedByPersonId} is not null and ${table.payee} is null and ${table.paidByPersonId} is null and ${table.fromAccountId} is null and ${table.toAccountId} is null)
         or
-        (${table.kind} = 'transfer' and ${table.fromAccountId} is not null and ${table.toAccountId} is not null and ${table.accountId} is null and ${table.payee} is null and ${table.paidByPersonId} is null and ${table.source} is null and ${table.receivedByPersonId} is null)
+        (${table.kind} = 'transfer' and ${table.fromAccountId} is not null and ${table.toAccountId} is not null and ${table.accountId} is null and ${table.payee} is null and ${table.paidByPersonId} is null and ${table.source} is null and ${table.receivedByPersonId} is null and ${table.categoryId} is null)
       )`,
     ),
     index("transactions_household_id_idx").on(table.householdId),
     index("transactions_account_id_idx").on(table.accountId),
+    index("transactions_category_id_idx").on(table.categoryId),
     index("transactions_from_account_id_idx").on(table.fromAccountId),
     index("transactions_to_account_id_idx").on(table.toAccountId),
     index("transactions_occurred_on_idx").on(table.occurredOn),

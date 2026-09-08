@@ -230,6 +230,7 @@ describe("Transactions API Route Handler", () => {
         householdId: validHousehold,
         kind: "expense",
         accountId: validAccount1,
+        categoryId: null,
         amount: { amountMinor: "4500", currency: "PLN" },
         payee: "Grocery Store",
         paidByPersonId: validPerson,

@@ -33,6 +33,7 @@ export const createExpenseSchema = z.object({
     .max(160, "Payee must be at most 160 characters"),
   paidByPersonId: z.string().uuid("Invalid paidByPersonId UUID").optional(),
   occurredOn: z.coerce.date(),
+  categoryId: z.string().uuid("Invalid categoryId UUID").optional().nullable(),
 });
 
 export const createIncomeSchema = z.object({
@@ -49,6 +50,7 @@ export const createIncomeSchema = z.object({
     .uuid("Invalid receivedByPersonId UUID")
     .optional(),
   occurredOn: z.coerce.date(),
+  categoryId: z.string().uuid("Invalid categoryId UUID").optional().nullable(),
 });
 
 export const createTransferSchema = z
@@ -58,11 +60,16 @@ export const createTransferSchema = z
     toAccountId: z.string().uuid("Invalid toAccountId UUID"),
     amount: moneySchema,
     occurredOn: z.coerce.date(),
+    categoryId: z.union([z.string(), z.null(), z.undefined()]).optional(),
   })
   .refine((data) => data.fromAccountId !== data.toAccountId, {
     message:
       "Self-transfer rejected: fromAccountId and toAccountId must be different",
     path: ["toAccountId"],
+  })
+  .refine((data) => !data.categoryId, {
+    message: "Transfer transactions cannot have a category",
+    path: ["categoryId"],
   });
 
 const createTransactionDiscriminatedUnion = z.discriminatedUnion("kind", [
@@ -98,6 +105,7 @@ export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
 export const listTransactionsQuerySchema = z.object({
   accountId: z.string().uuid("Invalid accountId UUID").optional(),
+  categoryId: z.string().uuid("Invalid categoryId UUID").optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -118,6 +126,7 @@ export type SerializedExpenseTransaction = {
   payee: string;
   paidByPersonId: string;
   occurredOn: string;
+  categoryId: string | null;
 };
 
 export type SerializedIncomeTransaction = {
@@ -129,6 +138,7 @@ export type SerializedIncomeTransaction = {
   source: string;
   receivedByPersonId: string;
   occurredOn: string;
+  categoryId: string | null;
 };
 
 export type SerializedTransferTransaction = {

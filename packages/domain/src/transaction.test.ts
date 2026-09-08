@@ -7,12 +7,14 @@ import {
 } from "./index";
 import {
   accountId,
+  categoryId,
   householdId,
   personId,
   transactionId,
 } from "./identity";
 import type {
   AccountId,
+  CategoryId,
   HouseholdId,
   PersonId,
   TransactionId,
@@ -86,6 +88,7 @@ describe("Manual transactions happy paths and immutability", () => {
       payee: "Biedronka",
       paidByPersonId: personUuid1,
       occurredOn,
+      categoryId: null,
     });
 
     expect(Object.isFrozen(expense)).toBe(true);
@@ -114,6 +117,7 @@ describe("Manual transactions happy paths and immutability", () => {
       source: "Acme Corp",
       receivedByPersonId: personUuid2,
       occurredOn,
+      categoryId: null,
     });
 
     expect(Object.isFrozen(income)).toBe(true);
@@ -631,5 +635,82 @@ describe("Financial invariants", () => {
     // Beneficiary is personUuid2, distinct from account owner personUuid1
     expect(income.receivedByPersonId).toBe(transactionPayer);
     expect(income.accountId).toBe(jointAccount.id);
+  });
+});
+
+describe("Transaction category assignment", () => {
+  const catId = categoryId("018f47a0-7762-7b9c-8d17-27f2f79e59a9");
+  const occurredOn = new Date("2026-09-07T12:00:00Z");
+
+  it("assigns category to expense when provided", () => {
+    const expense = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(4500n, "PLN"),
+      payee: "Pharmacy",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+      categoryId: catId,
+    });
+
+    expect(expense.categoryId).toBe(catId);
+  });
+
+  it("preserves null categoryId when omitted on expense (uncategorized expense)", () => {
+    const expense = createExpense({
+      id: transactionId(txUuid1),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(4500n, "PLN"),
+      payee: "Pharmacy",
+      paidByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    expect(expense.categoryId).toBeNull();
+  });
+
+  it("assigns category to income when provided", () => {
+    const income = createIncome({
+      id: transactionId(txUuid2),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(500000n, "PLN"),
+      source: "Salary",
+      receivedByPersonId: personId(personUuid1),
+      occurredOn,
+      categoryId: catId,
+    });
+
+    expect(income.categoryId).toBe(catId);
+  });
+
+  it("preserves null categoryId when omitted on income (uncategorized income)", () => {
+    const income = createIncome({
+      id: transactionId(txUuid2),
+      householdId: householdId(householdUuid),
+      accountId: accountId(accountUuid1),
+      amount: money(500000n, "PLN"),
+      source: "Salary",
+      receivedByPersonId: personId(personUuid1),
+      occurredOn,
+    });
+
+    expect(income.categoryId).toBeNull();
+  });
+
+  it("rejects category assignment on transfer creation", () => {
+    expect(() =>
+      createTransfer({
+        id: transactionId(txUuid3),
+        householdId: householdId(householdUuid),
+        fromAccountId: accountId(accountUuid1),
+        toAccountId: accountId(accountUuid2),
+        amount: money(1000n, "PLN"),
+        occurredOn,
+        categoryId: catId,
+      }),
+    ).toThrow(/Transfer transactions cannot have a category/);
   });
 });

@@ -5,6 +5,7 @@ import { TRANSACTION_KINDS } from "@nodvis/finance-domain";
 
 import {
   accounts,
+  categories,
   householdMemberships,
   households,
   transactionKindEnum,
@@ -35,16 +36,31 @@ describe("transactions schema", () => {
     expect(checks).toContain("transactions_kind_structure");
   });
 
-  it("enforces cross-household isolation on accounts and members via composite foreign keys", () => {
+  it("enforces cross-household isolation on accounts, categories and members via composite foreign keys", () => {
     const config = getTableConfig(transactions);
     const foreignKeys = config.foreignKeys;
     const fkNames = foreignKeys.map((fk) => fk.getName());
 
     expect(fkNames).toContain("transactions_household_account_fk");
+    expect(fkNames).toContain("transactions_household_category_fk");
     expect(fkNames).toContain("transactions_household_from_account_fk");
     expect(fkNames).toContain("transactions_household_to_account_fk");
     expect(fkNames).toContain("transactions_household_paid_by_person_fk");
     expect(fkNames).toContain("transactions_household_received_by_person_fk");
+
+    const categoryFk = foreignKeys.find(
+      (fk) => fk.getName() === "transactions_household_category_fk",
+    );
+    expect(categoryFk?.reference().foreignTable).toBe(categories);
+    expect(categoryFk?.reference().columns.map((c) => c.name)).toEqual([
+      "household_id",
+      "category_id",
+    ]);
+    expect(categoryFk?.reference().foreignColumns.map((c) => c.name)).toEqual([
+      "household_id",
+      "id",
+    ]);
+    expect(categoryFk?.onDelete).toBe("set null");
 
     const accountFk = foreignKeys.find(
       (fk) => fk.getName() === "transactions_household_account_fk",
@@ -109,6 +125,7 @@ describe("transactions schema", () => {
 
     expect(indexNames).toContain("transactions_household_id_idx");
     expect(indexNames).toContain("transactions_account_id_idx");
+    expect(indexNames).toContain("transactions_category_id_idx");
     expect(indexNames).toContain("transactions_from_account_id_idx");
     expect(indexNames).toContain("transactions_to_account_id_idx");
     expect(indexNames).toContain("transactions_occurred_on_idx");

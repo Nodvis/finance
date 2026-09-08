@@ -1,13 +1,16 @@
 import { and, asc, eq } from "drizzle-orm";
 import {
+  DEFAULT_POLISH_CATEGORIES,
   createHousehold,
   createPerson,
+  generateDefaultCategoryId,
   householdId as toHouseholdId,
   personId as toPersonId,
 } from "@nodvis/finance-domain";
 
 import { getDb } from "../client";
 import { authUsers } from "../schema/auth";
+import { categories } from "../schema/categories";
 import {
   householdMemberships,
   households,
@@ -295,6 +298,21 @@ export async function createHouseholdOnboarding(
       householdId: newHouseholdDomain.id,
       personId,
     });
+
+    // 4. Seed modest Polish default categories for the new household
+    for (const def of DEFAULT_POLISH_CATEGORIES) {
+      const stableId = generateDefaultCategoryId(newHouseholdDomain.id, def.key);
+      await tx
+        .insert(categories)
+        .values({
+          id: stableId,
+          householdId: newHouseholdDomain.id,
+          name: def.name,
+          applicability: def.applicability,
+          archivedAt: null,
+        })
+        .onConflictDoNothing();
+    }
 
     return {
       householdId: newHouseholdDomain.id,

@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 vi.mock("@nodvis/finance-db", () => ({
   findAccountInHousehold: vi.fn(),
+  findCategoryInHousehold: vi.fn(),
   insertTransaction: vi.fn(),
   isPersonInHousehold: vi.fn(),
   listAccountsByHousehold: vi.fn(),
@@ -12,6 +13,7 @@ vi.mock("@nodvis/finance-db", () => ({
 
 import {
   findAccountInHousehold,
+  findCategoryInHousehold,
   insertTransaction,
   isPersonInHousehold,
   listAccountsByHousehold,
@@ -32,6 +34,10 @@ import {
   listHouseholdAccounts,
   listManualTransactions,
   TransactionAccountNotFoundError,
+  TransactionCategoryApplicabilityError,
+  TransactionCategoryArchivedError,
+  TransactionCategoryNotAllowedError,
+  TransactionCategoryNotFoundError,
   TransactionCurrencyMismatchError,
   TransactionInvalidPersonError,
 } from "./service";
@@ -298,6 +304,152 @@ describe("transaction-service", () => {
         limit: 20,
         offset: 10,
       });
+    });
+  });
+
+  describe("category assignment and validation", () => {
+    const validCategory = "018f47a0-7762-7b9c-8d17-27f2f79e59a9";
+
+    it("assigns category to expense when category is active and applicable to expense", async () => {
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
+      vi.mocked(isPersonInHousehold).mockResolvedValueOnce(true);
+      vi.mocked(findCategoryInHousehold).mockResolvedValueOnce({
+        id: validCategory,
+        householdId: validHousehold,
+        name: "Food",
+        applicability: "expense",
+        archivedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      vi.mocked(insertTransaction).mockImplementationOnce(async (tx) => tx);
+
+      const result = await createManualTransaction(testContext, {
+        kind: "expense",
+        accountId: validAccount1,
+        categoryId: validCategory,
+        amount: money(1500n, "PLN"),
+        payee: "Supermarket",
+        occurredOn: new Date(),
+      });
+
+      expect(isExpense(result)).toBe(true);
+      if (isExpense(result)) {
+        expect(result.categoryId).toBe(validCategory);
+      }
+    });
+
+    it("assigns category to income when category is active and applicable to income", async () => {
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
+      vi.mocked(isPersonInHousehold).mockResolvedValueOnce(true);
+      vi.mocked(findCategoryInHousehold).mockResolvedValueOnce({
+        id: validCategory,
+        householdId: validHousehold,
+        name: "Salary",
+        applicability: "income",
+        archivedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      vi.mocked(insertTransaction).mockImplementationOnce(async (tx) => tx);
+
+      const result = await createManualTransaction(testContext, {
+        kind: "income",
+        accountId: validAccount1,
+        categoryId: validCategory,
+        amount: money(500000n, "PLN"),
+        source: "Company",
+        occurredOn: new Date(),
+      });
+
+      expect(isIncome(result)).toBe(true);
+      if (isIncome(result)) {
+        expect(result.categoryId).toBe(validCategory);
+      }
+    });
+
+    it("rejects category assignment when category is not found in household", async () => {
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
+      vi.mocked(isPersonInHousehold).mockResolvedValueOnce(true);
+      vi.mocked(findCategoryInHousehold).mockResolvedValueOnce(null);
+
+      await expect(
+        createManualTransaction(testContext, {
+          kind: "expense",
+          accountId: validAccount1,
+          categoryId: validCategory,
+          amount: money(1500n, "PLN"),
+          payee: "Supermarket",
+          occurredOn: new Date(),
+        }),
+      ).rejects.toThrow(TransactionCategoryNotFoundError);
+    });
+
+    it("rejects category assignment when category is archived", async () => {
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
+      vi.mocked(isPersonInHousehold).mockResolvedValueOnce(true);
+      vi.mocked(findCategoryInHousehold).mockResolvedValueOnce({
+        id: validCategory,
+        householdId: validHousehold,
+        name: "Old Category",
+        applicability: "expense",
+        archivedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await expect(
+        createManualTransaction(testContext, {
+          kind: "expense",
+          accountId: validAccount1,
+          categoryId: validCategory,
+          amount: money(1500n, "PLN"),
+          payee: "Supermarket",
+          occurredOn: new Date(),
+        }),
+      ).rejects.toThrow(TransactionCategoryArchivedError);
+    });
+
+    it("rejects category assignment when category applicability does not match kind", async () => {
+      vi.mocked(findAccountInHousehold).mockResolvedValueOnce(makeAccount());
+      vi.mocked(isPersonInHousehold).mockResolvedValueOnce(true);
+      vi.mocked(findCategoryInHousehold).mockResolvedValueOnce({
+        id: validCategory,
+        householdId: validHousehold,
+        name: "Salary",
+        applicability: "income",
+        archivedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await expect(
+        createManualTransaction(testContext, {
+          kind: "expense",
+          accountId: validAccount1,
+          categoryId: validCategory,
+          amount: money(1500n, "PLN"),
+          payee: "Supermarket",
+          occurredOn: new Date(),
+        }),
+      ).rejects.toThrow(TransactionCategoryApplicabilityError);
+    });
+
+    it("rejects category assignment on transfers", async () => {
+      vi.mocked(findAccountInHousehold)
+        .mockResolvedValueOnce(makeAccount({ id: validAccount1 }))
+        .mockResolvedValueOnce(makeAccount({ id: validAccount2 }));
+
+      await expect(
+        createManualTransaction(testContext, {
+          kind: "transfer",
+          fromAccountId: validAccount1,
+          toAccountId: validAccount2,
+          categoryId: validCategory,
+          amount: money(1000n, "PLN"),
+          occurredOn: new Date(),
+        } as any),
+      ).rejects.toThrow(TransactionCategoryNotAllowedError);
     });
   });
 

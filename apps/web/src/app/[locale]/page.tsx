@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
+import { listHouseholdCategories } from "@/lib/categories/service";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
 
@@ -39,6 +40,12 @@ export default async function HomePage({ params }: HomePageProps) {
   const accounts = householdContext
     ? await listAccountsByHousehold(householdContext.householdId, {
         includeArchived: false,
+      })
+    : [];
+
+  const categories = householdContext
+    ? await listHouseholdCategories(householdContext, {
+        includeArchived: true,
       })
     : [];
 
@@ -151,6 +158,12 @@ export default async function HomePage({ params }: HomePageProps) {
               >
                 {tNav("accounts")}
               </Link>
+              <Link
+                href={`/${locale}/categories`}
+                className="rounded-lg border border-stone-700 bg-stone-800/80 px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-600 hover:text-stone-100"
+              >
+                {tNav("categories")}
+              </Link>
               <SignOutButton />
             </div>
           </div>
@@ -160,6 +173,7 @@ export default async function HomePage({ params }: HomePageProps) {
             <TransactionForms
               householdId={householdContext.householdId}
               accounts={accounts}
+              categories={categories}
               defaultCurrency={householdContext.defaultCurrency}
               locale={locale}
             />
@@ -170,6 +184,7 @@ export default async function HomePage({ params }: HomePageProps) {
             <TransactionList
               transactions={serializedTransactions}
               accounts={accounts}
+              categories={categories}
               locale={locale}
             />
           </div>

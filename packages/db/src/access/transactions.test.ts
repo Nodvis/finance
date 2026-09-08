@@ -34,6 +34,7 @@ describe("mapRowToTransaction", () => {
       currency: "PLN",
       occurredOn,
       accountId: accountUuid1,
+      categoryId: null,
       payee: "Grocery Store",
       paidByPersonId: personUuid1,
       source: null,
@@ -58,8 +59,37 @@ describe("mapRowToTransaction", () => {
       payee: "Grocery Store",
       paidByPersonId: personUuid1,
       occurredOn,
+      categoryId: null,
     });
     expect(Object.isFrozen(tx)).toBe(true);
+  });
+
+  it("hydrates an expense row with categoryId", () => {
+    const categoryUuid = "018f47a0-7762-7b9c-8d17-27f2f79e59a9";
+    const row: TransactionRow = {
+      id: txUuid1,
+      householdId: householdUuid,
+      kind: "expense",
+      amountMinor: 4500n,
+      currency: "PLN",
+      occurredOn,
+      accountId: accountUuid1,
+      categoryId: categoryUuid,
+      payee: "Grocery Store",
+      paidByPersonId: personUuid1,
+      source: null,
+      receivedByPersonId: null,
+      fromAccountId: null,
+      toAccountId: null,
+      createdAt,
+      updatedAt,
+    };
+
+    const tx = mapRowToTransaction(row);
+    expect(isExpense(tx)).toBe(true);
+    if (isExpense(tx)) {
+      expect(tx.categoryId).toBe(categoryUuid);
+    }
   });
 
   it("hydrates an income row into a frozen IncomeTransaction domain entity", () => {
@@ -71,6 +101,7 @@ describe("mapRowToTransaction", () => {
       currency: "PLN",
       occurredOn,
       accountId: accountUuid1,
+      categoryId: null,
       source: "Employer",
       receivedByPersonId: personUuid2,
       payee: null,
@@ -95,6 +126,7 @@ describe("mapRowToTransaction", () => {
       source: "Employer",
       receivedByPersonId: personUuid2,
       occurredOn,
+      categoryId: null,
     });
     expect(Object.isFrozen(tx)).toBe(true);
   });
@@ -110,6 +142,7 @@ describe("mapRowToTransaction", () => {
       fromAccountId: accountUuid1,
       toAccountId: accountUuid2,
       accountId: null,
+      categoryId: null,
       payee: null,
       paidByPersonId: null,
       source: null,
@@ -145,6 +178,7 @@ describe("mapRowToTransaction", () => {
       currency: "PLN",
       occurredOn,
       accountId: null,
+      categoryId: null,
       payee: "Store",
       paidByPersonId: personUuid1,
       source: null,
@@ -180,6 +214,7 @@ describe("mapRowToTransaction", () => {
       currency: "PLN",
       occurredOn,
       accountId: accountUuid1,
+      categoryId: null,
       source: null,
       receivedByPersonId: personUuid1,
       payee: null,
@@ -203,6 +238,7 @@ describe("mapRowToTransaction", () => {
       fromAccountId: accountUuid1,
       toAccountId: null,
       accountId: null,
+      categoryId: null,
       payee: null,
       paidByPersonId: null,
       source: null,
@@ -222,6 +258,7 @@ describe("mapRowToTransaction", () => {
       currency: "PLN",
       occurredOn,
       accountId: accountUuid1,
+      categoryId: null,
       payee: "Store",
       paidByPersonId: personUuid1,
       source: null,
@@ -243,6 +280,7 @@ describe("mapRowToTransaction", () => {
       fromAccountId: accountUuid1,
       toAccountId: accountUuid1,
       accountId: null,
+      categoryId: null,
       payee: null,
       paidByPersonId: null,
       source: null,

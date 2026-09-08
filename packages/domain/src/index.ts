@@ -25,13 +25,38 @@ export type {
   AccountType,
 } from "./account";
 
-export { accountId, householdId, personId, transactionId } from "./identity";
+export {
+  accountId,
+  categoryId,
+  householdId,
+  personId,
+  transactionId,
+} from "./identity";
 export type {
   AccountId,
+  CategoryId,
   HouseholdId,
   PersonId,
   TransactionId,
 } from "./identity";
+
+export {
+  CATEGORY_APPLICABILITIES,
+  DEFAULT_POLISH_CATEGORIES,
+  archiveCategory,
+  categoryApplicability,
+  createCategory,
+  generateDefaultCategoryId,
+  isCategoryApplicableToKind,
+  isCategoryArchived,
+  renameCategory,
+  unarchiveCategory,
+} from "./category";
+export type {
+  Category,
+  CategoryApplicability,
+  DefaultCategoryDefinition,
+} from "./category";
 
 export {
   createHousehold,

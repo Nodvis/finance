@@ -15,6 +15,10 @@ import {
   createManualTransaction,
   listManualTransactions,
   TransactionAccountNotFoundError,
+  TransactionCategoryApplicabilityError,
+  TransactionCategoryArchivedError,
+  TransactionCategoryNotAllowedError,
+  TransactionCategoryNotFoundError,
   TransactionCurrencyMismatchError,
   TransactionInvalidPersonError,
 } from "../../../../../lib/transactions/service";
@@ -50,6 +54,10 @@ function handleRouteError(error: unknown): NextResponse {
 
   if (
     error instanceof TransactionAccountNotFoundError ||
+    error instanceof TransactionCategoryNotFoundError ||
+    error instanceof TransactionCategoryArchivedError ||
+    error instanceof TransactionCategoryApplicabilityError ||
+    error instanceof TransactionCategoryNotAllowedError ||
     error instanceof TransactionCurrencyMismatchError ||
     error instanceof TransactionInvalidPersonError ||
     error instanceof SyntaxError
@@ -117,6 +125,9 @@ export async function GET(
 
     const accountId = url.searchParams.get("accountId");
     if (accountId) queryParams.accountId = accountId;
+
+    const categoryId = url.searchParams.get("categoryId");
+    if (categoryId) queryParams.categoryId = categoryId;
 
     const limit = url.searchParams.get("limit");
     if (limit) queryParams.limit = limit;

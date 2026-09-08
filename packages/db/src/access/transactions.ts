@@ -2,6 +2,7 @@ import { and, desc, eq, or } from "drizzle-orm";
 
 import {
   accountId,
+  categoryId,
   createExpense,
   createIncome,
   createTransfer,
@@ -37,6 +38,7 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       payee: row.payee,
       paidByPersonId: personId(row.paidByPersonId),
       occurredOn: row.occurredOn,
+      categoryId: row.categoryId ? categoryId(row.categoryId) : null,
     });
   }
 
@@ -52,6 +54,7 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
       source: row.source,
       receivedByPersonId: personId(row.receivedByPersonId),
       occurredOn: row.occurredOn,
+      categoryId: row.categoryId ? categoryId(row.categoryId) : null,
     });
   }
 
@@ -87,6 +90,7 @@ export async function insertTransaction(tx: Transaction): Promise<Transaction> {
     values = {
       ...baseValues,
       accountId: tx.accountId,
+      categoryId: tx.categoryId ?? null,
       payee: tx.payee,
       paidByPersonId: tx.paidByPersonId,
       source: null,
@@ -98,6 +102,7 @@ export async function insertTransaction(tx: Transaction): Promise<Transaction> {
     values = {
       ...baseValues,
       accountId: tx.accountId,
+      categoryId: tx.categoryId ?? null,
       source: tx.source,
       receivedByPersonId: tx.receivedByPersonId,
       payee: null,
@@ -111,6 +116,7 @@ export async function insertTransaction(tx: Transaction): Promise<Transaction> {
       fromAccountId: tx.fromAccountId,
       toAccountId: tx.toAccountId,
       accountId: null,
+      categoryId: null,
       payee: null,
       paidByPersonId: null,
       source: null,
@@ -133,6 +139,7 @@ export async function insertTransaction(tx: Transaction): Promise<Transaction> {
 export type ListTransactionsParams = {
   householdId: string;
   accountId?: string | undefined;
+  categoryId?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
 };
@@ -150,6 +157,10 @@ export async function listTransactionsByHousehold(
         eq(transactions.toAccountId, params.accountId),
       )!,
     );
+  }
+
+  if (params.categoryId) {
+    conditions.push(eq(transactions.categoryId, params.categoryId));
   }
 
   let query = getDb()

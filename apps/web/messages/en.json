@@ -8,6 +8,7 @@
     "tagline": "Private household finance",
     "home": "Overview",
     "accounts": "Accounts",
+    "categories": "Categories",
     "skipToContent": "Skip to main content",
     "privateBadge": "Self-hosted"
   },
@@ -135,6 +136,56 @@
       "errorNameRequired": "Account name is required."
     }
   },
+  "Categories": {
+    "eyebrow": "Household categories",
+    "title": "Categories",
+    "description": "Organize expenses and income with household-scoped categories.",
+    "activeCategories": "Active categories",
+    "archivedCategories": "Archived categories",
+    "showArchived": "Show archived ({count})",
+    "hideArchived": "Hide archived",
+    "emptyActiveTitle": "No active categories",
+    "emptyActiveDescription": "Create your first category below.",
+    "emptyArchivedDescription": "No archived categories in this household.",
+    "applicability": {
+      "expense": "Expense only",
+      "income": "Income only",
+      "both": "Income & Expense"
+    },
+    "badges": {
+      "expense": "Expense",
+      "income": "Income",
+      "both": "Both",
+      "archived": "Archived"
+    },
+    "actions": {
+      "addCategory": "Add category",
+      "edit": "Rename",
+      "archive": "Archive",
+      "unarchive": "Restore",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "archiving": "Archiving...",
+      "unarchiving": "Restoring..."
+    },
+    "archiveConfirm": "Archive this category? Historical transactions will retain this category.",
+    "form": {
+      "name": "Category name",
+      "namePlaceholder": "e.g. Groceries, Transport, Bonus",
+      "applicability": "Applicability",
+      "applicabilityHelp": "Specify whether this category applies to expenses, income, or both.",
+      "submitAdd": "Create category",
+      "submittingAdd": "Creating category...",
+      "successAdd": "Category created successfully.",
+      "successEdit": "Category renamed successfully.",
+      "successArchive": "Category archived successfully.",
+      "successUnarchive": "Category restored successfully.",
+      "errorGeneric": "An error occurred while saving the category.",
+      "errorNameRequired": "Category name is required.",
+      "errorDuplicateName": "A category with this name already exists in this household."
+    }
+  },
   "Transactions": {
     "sectionTitle": "Manual transactions",
     "sectionDescription": "Record expenses, income, and transfers between owned accounts while preserving financial rules.",
@@ -150,6 +201,10 @@
       "toAccount": "To account (destination)",
       "selectSourceAccount": "Select source account...",
       "selectDestinationAccount": "Select destination account...",
+      "category": "Category",
+      "selectCategory": "Select category (optional)...",
+      "uncategorized": "Uncategorized",
+      "categoryHelp": "Optional. Assign an active category to this transaction.",
       "payee": "Payee / merchant",
       "payeePlaceholder": "e.g. Grocery Store, Pharmacy, Landlord",
       "source": "Income source",
@@ -181,12 +236,14 @@
       "description": "Recorded financial operations in the household.",
       "colDate": "Date",
       "colType": "Type",
+      "colCategory": "Category",
       "colDescription": "Description / Counterparty",
       "colAccount": "Account",
       "colAmount": "Amount",
       "kindExpense": "Expense",
       "kindIncome": "Income",
       "kindTransfer": "Transfer",
+      "uncategorized": "Uncategorized",
       "emptyTitle": "No transactions yet",
       "emptyDescription": "No transactions have been recorded in this household yet. Use the form above to add an expense, income, or transfer."
     }
@@ -206,6 +263,10 @@
     "archivedAccountsList": "Archived accounts list",
     "createAccountForm": "Create account form",
     "editAccountForm": "Edit account form",
+    "categoriesList": "Household categories list",
+    "archivedCategoriesList": "Archived categories list",
+    "createCategoryForm": "Create category form",
+    "editCategoryForm": "Edit category form",
     "householdSelection": "Household selection",
     "onboarding": "Household onboarding",
     "authentication": "Authentication",

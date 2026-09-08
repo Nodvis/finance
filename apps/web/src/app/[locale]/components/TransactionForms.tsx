@@ -4,13 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import type { HouseholdAccountSummary } from "@nodvis/finance-db";
+import type {
+  HouseholdAccountSummary,
+  HouseholdCategorySummary,
+} from "@nodvis/finance-db";
 import { parseNaturalDecimalToMinor } from "@/lib/transactions/money-entry";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 
 type TransactionFormsProps = {
   householdId: string;
   accounts: HouseholdAccountSummary[];
+  categories?: HouseholdCategorySummary[];
   defaultCurrency: string;
   locale: string;
 };
@@ -30,6 +34,7 @@ function getTodayDateString(): string {
 export function TransactionForms({
   householdId,
   accounts,
+  categories = [],
   defaultCurrency,
   locale,
 }: TransactionFormsProps) {
@@ -50,6 +55,7 @@ export function TransactionForms({
   const [amountInput, setAmountInput] = useState("");
   const [payee, setPayee] = useState("");
   const [source, setSource] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [occurredOn, setOccurredOn] = useState(getTodayDateString());
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,6 +83,7 @@ export function TransactionForms({
         if (draft.amountInput) setAmountInput(draft.amountInput);
         if (draft.payee) setPayee(draft.payee);
         if (draft.source) setSource(draft.source);
+        if (draft.categoryId) setCategoryId(draft.categoryId);
         if (draft.occurredOn) setOccurredOn(draft.occurredOn);
       }
     } catch {
@@ -95,6 +102,7 @@ export function TransactionForms({
         amountInput,
         payee,
         source,
+        categoryId,
         occurredOn,
       };
       sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
@@ -109,8 +117,28 @@ export function TransactionForms({
     amountInput,
     payee,
     source,
+    categoryId,
     occurredOn,
   ]);
+
+  const availableCategories = useMemo(() => {
+    if (!categories) return [];
+    if (activeTab === "expense") {
+      return categories.filter(
+        (c) =>
+          !c.archivedAt &&
+          (c.applicability === "expense" || c.applicability === "both"),
+      );
+    }
+    if (activeTab === "income") {
+      return categories.filter(
+        (c) =>
+          !c.archivedAt &&
+          (c.applicability === "income" || c.applicability === "both"),
+      );
+    }
+    return [];
+  }, [categories, activeTab]);
 
   // Selected account for expense/income
   const selectedAccount = useMemo(() => {
@@ -182,6 +210,7 @@ export function TransactionForms({
         payload = {
           kind: "expense",
           accountId: selectedAccountId || selectedAccount?.id,
+          categoryId: categoryId ? categoryId : null,
           amountMinor: minorUnits,
           currency: selectedAccount?.currency ?? defaultCurrency,
           payee: payee.trim(),
@@ -196,6 +225,7 @@ export function TransactionForms({
         payload = {
           kind: "income",
           accountId: selectedAccountId || selectedAccount?.id,
+          categoryId: categoryId ? categoryId : null,
           amountMinor: minorUnits,
           currency: selectedAccount?.currency ?? defaultCurrency,
           source: source.trim(),
@@ -241,6 +271,7 @@ export function TransactionForms({
         setAmountInput("");
         setPayee("");
         setSource("");
+        setCategoryId("");
         try {
           sessionStorage.removeItem(DRAFT_STORAGE_KEY);
         } catch {
@@ -493,6 +524,36 @@ export function TransactionForms({
                 placeholder={t("form.sourcePlaceholder")}
                 className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
               />
+            </div>
+          )}
+
+          {/* Category Selection (Expense & Income only) */}
+          {activeTab !== "transfer" && (
+            <div>
+              <label
+                htmlFor="transaction-category"
+                className="block text-sm font-medium text-stone-300"
+              >
+                {t("form.category")}
+              </label>
+              <select
+                id="transaction-category"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+              >
+                <option value="">
+                  {t("form.selectCategory")}
+                </option>
+                {availableCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-stone-400">
+                {t("form.categoryHelp")}
+              </p>
             </div>
           )}
 

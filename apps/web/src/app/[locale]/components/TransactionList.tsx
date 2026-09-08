@@ -1,23 +1,29 @@
 import { useTranslations } from "next-intl";
 
-import type { HouseholdAccountSummary } from "@nodvis/finance-db";
+import type {
+  HouseholdAccountSummary,
+  HouseholdCategorySummary,
+} from "@nodvis/finance-db";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 import type { SerializedTransaction } from "@/lib/transactions/schema";
 
 type TransactionListProps = {
   transactions: SerializedTransaction[];
   accounts: HouseholdAccountSummary[];
+  categories?: HouseholdCategorySummary[];
   locale: string;
 };
 
 export function TransactionList({
   transactions,
   accounts,
+  categories = [],
   locale,
 }: TransactionListProps) {
   const t = useTranslations("Transactions");
 
   const accountMap = new Map(accounts.map((acc) => [acc.id, acc]));
+  const categoryMap = new Map(categories.map((cat) => [cat.id, cat]));
 
   const formatDate = (isoString: string) => {
     try {
@@ -89,6 +95,9 @@ export function TransactionList({
                   {t("list.colType")}
                 </th>
                 <th scope="col" className="pb-3 px-4">
+                  {t("list.colCategory")}
+                </th>
+                <th scope="col" className="pb-3 px-4">
                   {t("list.colDescription")}
                 </th>
                 <th scope="col" className="pb-3 px-4">
@@ -152,6 +161,15 @@ export function TransactionList({
                       >
                         {typeLabel}
                       </span>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-stone-300">
+                      {tx.kind !== "transfer" && "categoryId" in tx && tx.categoryId ? (
+                        <span className="inline-flex items-center rounded-md border border-stone-700 bg-stone-800/60 px-2 py-0.5 text-xs text-stone-200">
+                          {categoryMap.get(tx.categoryId)?.name ?? tx.categoryId}
+                        </span>
+                      ) : (
+                        <span className="text-stone-500">—</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-medium text-stone-100">
                       {description}

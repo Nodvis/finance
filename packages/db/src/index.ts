@@ -39,4 +39,19 @@ export type {
   NewTransactionRow,
   TransactionRow,
 } from "./access/transactions";
+export {
+  CategoryNotFoundError,
+  archiveHouseholdCategory,
+  createHouseholdCategory,
+  findCategoryInHousehold,
+  listCategoriesByHousehold,
+  renameHouseholdCategory,
+  seedDefaultCategories,
+  unarchiveHouseholdCategory,
+} from "./access/categories";
+export type {
+  CreateHouseholdCategoryInput,
+  HouseholdCategorySummary,
+  ListCategoriesOptions,
+} from "./access/categories";
 export * from "./schema/index";

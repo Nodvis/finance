@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   findAccountInHousehold,
+  findCategoryInHousehold,
   insertTransaction,
   isPersonInHousehold,
   listAccountsByHousehold,
@@ -9,9 +10,11 @@ import {
 } from "@nodvis/finance-db";
 import {
   accountId as toAccountId,
+  categoryId as toCategoryId,
   createExpense,
   createIncome,
   createTransfer,
+  isCategoryApplicableToKind,
   money,
   personId as toPersonId,
   transactionId,
@@ -42,6 +45,34 @@ export class TransactionInvalidPersonError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "TransactionInvalidPersonError";
+  }
+}
+
+export class TransactionCategoryNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionCategoryNotFoundError";
+  }
+}
+
+export class TransactionCategoryArchivedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionCategoryArchivedError";
+  }
+}
+
+export class TransactionCategoryApplicabilityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionCategoryApplicabilityError";
+  }
+}
+
+export class TransactionCategoryNotAllowedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionCategoryNotAllowedError";
   }
 }
 
@@ -86,6 +117,28 @@ export async function createManualTransaction(
       }
     }
 
+    if (input.categoryId) {
+      const category = await findCategoryInHousehold(
+        context.householdId,
+        input.categoryId,
+      );
+      if (!category) {
+        throw new TransactionCategoryNotFoundError(
+          `Category ${input.categoryId} not found in household`,
+        );
+      }
+      if (category.archivedAt) {
+        throw new TransactionCategoryArchivedError(
+          `Category "${category.name}" is archived and cannot be assigned to new transactions`,
+        );
+      }
+      if (!isCategoryApplicableToKind(category.applicability, "expense")) {
+        throw new TransactionCategoryApplicabilityError(
+          `Category "${category.name}" cannot be applied to expense transactions`,
+        );
+      }
+    }
+
     const expense = createExpense({
       id: newTxId,
       householdId: context.householdId,
@@ -94,6 +147,7 @@ export async function createManualTransaction(
       payee: input.payee,
       paidByPersonId: toPersonId(paidByPersonId),
       occurredOn: input.occurredOn,
+      categoryId: input.categoryId ? toCategoryId(input.categoryId) : null,
     });
 
     return await insertTransaction(expense);
@@ -128,6 +182,28 @@ export async function createManualTransaction(
       }
     }
 
+    if (input.categoryId) {
+      const category = await findCategoryInHousehold(
+        context.householdId,
+        input.categoryId,
+      );
+      if (!category) {
+        throw new TransactionCategoryNotFoundError(
+          `Category ${input.categoryId} not found in household`,
+        );
+      }
+      if (category.archivedAt) {
+        throw new TransactionCategoryArchivedError(
+          `Category "${category.name}" is archived and cannot be assigned to new transactions`,
+        );
+      }
+      if (!isCategoryApplicableToKind(category.applicability, "income")) {
+        throw new TransactionCategoryApplicabilityError(
+          `Category "${category.name}" cannot be applied to income transactions`,
+        );
+      }
+    }
+
     const income = createIncome({
       id: newTxId,
       householdId: context.householdId,
@@ -136,12 +212,19 @@ export async function createManualTransaction(
       source: input.source,
       receivedByPersonId: toPersonId(receivedByPersonId),
       occurredOn: input.occurredOn,
+      categoryId: input.categoryId ? toCategoryId(input.categoryId) : null,
     });
 
     return await insertTransaction(income);
   }
 
   if (input.kind === "transfer") {
+    if ((input as { categoryId?: unknown }).categoryId) {
+      throw new TransactionCategoryNotAllowedError(
+        "Transfer transactions cannot have a category",
+      );
+    }
+
     const fromAccount = await findAccountInHousehold(
       context.householdId,
       input.fromAccountId,
@@ -194,6 +277,7 @@ export async function listManualTransactions(
   return await listTransactionsByHousehold({
     householdId: context.householdId,
     ...(query.accountId ? { accountId: query.accountId } : {}),
+    ...(query.categoryId ? { categoryId: query.categoryId } : {}),
     limit: query.limit,
     offset: query.offset,
   });

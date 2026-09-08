@@ -8,6 +8,7 @@
     "tagline": "Prywatne finanse domowe",
     "home": "Podsumowanie",
     "accounts": "Konta",
+    "categories": "Kategorie",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Self-hosted"
   },
@@ -135,6 +136,56 @@
       "errorNameRequired": "Podanie nazwy konta jest wymagane."
     }
   },
+  "Categories": {
+    "eyebrow": "Kategorie gospodarstwa",
+    "title": "Kategorie",
+    "description": "Organizuj wydatki i przychody za pomocą kategorii przypisanych do gospodarstwa domowego.",
+    "activeCategories": "Aktywne kategorie",
+    "archivedCategories": "Zarchiwizowane kategorie",
+    "showArchived": "Pokaż zarchiwizowane ({count})",
+    "hideArchived": "Ukryj zarchiwizowane",
+    "emptyActiveTitle": "Brak aktywnych kategorii",
+    "emptyActiveDescription": "Utwórz poniżej swoją pierwszą kategorię.",
+    "emptyArchivedDescription": "Brak zarchiwizowanych kategorii w tym gospodarstwie domowym.",
+    "applicability": {
+      "expense": "Tylko wydatki",
+      "income": "Tylko przychody",
+      "both": "Przychody i wydatki"
+    },
+    "badges": {
+      "expense": "Wydatek",
+      "income": "Przychód",
+      "both": "Przychód i wydatek",
+      "archived": "Zarchiwizowane"
+    },
+    "actions": {
+      "addCategory": "Dodaj kategorię",
+      "edit": "Zmień nazwę",
+      "archive": "Zarchiwizuj",
+      "unarchive": "Przywróć",
+      "cancel": "Anuluj",
+      "save": "Zapisz zmiany",
+      "saving": "Zapisywanie...",
+      "archiving": "Archiwizowanie...",
+      "unarchiving": "Przywracanie..."
+    },
+    "archiveConfirm": "Zarchiwizować tę kategorię? Dotychczasowe transakcje zachowają przypisaną kategorię.",
+    "form": {
+      "name": "Nazwa kategorii",
+      "namePlaceholder": "np. Jedzenie, Transport, Premia",
+      "applicability": "Zastosowanie",
+      "applicabilityHelp": "Określ, czy kategoria dotyczy wydatków, przychodów czy obu rodzajów.",
+      "submitAdd": "Utwórz kategorię",
+      "submittingAdd": "Tworzenie kategorii...",
+      "successAdd": "Kategoria została pomyślnie utworzona.",
+      "successEdit": "Nazwa kategorii została pomyślnie zmieniona.",
+      "successArchive": "Kategoria została zarchiwizowana.",
+      "successUnarchive": "Kategoria została przywrócona.",
+      "errorGeneric": "Wystąpił błąd podczas zapisywania kategorii.",
+      "errorNameRequired": "Podanie nazwy kategorii jest wymagane.",
+      "errorDuplicateName": "Kategoria o tej nazwie już istnieje w tym gospodarstwie domowym."
+    }
+  },
   "Transactions": {
     "sectionTitle": "Ręczne transakcje",
     "sectionDescription": "Wprowadzaj wydatki, przychody oraz przelewy między kontami z zachowaniem reguł finansowych.",
@@ -150,6 +201,10 @@
       "toAccount": "Konto docelowe",
       "selectSourceAccount": "Wybierz konto źródłowe...",
       "selectDestinationAccount": "Wybierz konto docelowe...",
+      "category": "Kategoria",
+      "selectCategory": "Wybierz kategorię (opcjonalnie)...",
+      "uncategorized": "Bez kategorii",
+      "categoryHelp": "Opcjonalnie. Przypisz aktywną kategorię do tej transakcji.",
       "payee": "Odbiorca / sklep",
       "payeePlaceholder": "np. Biedronka, Apteka, Czynsz",
       "source": "Źródło",
@@ -181,12 +236,14 @@
       "description": "Zarejestrowane operacje finansowe w gospodarstwie domowym.",
       "colDate": "Data",
       "colType": "Typ",
+      "colCategory": "Kategoria",
       "colDescription": "Opis / Kontrahent",
       "colAccount": "Konto",
       "colAmount": "Kwota",
       "kindExpense": "Wydatek",
       "kindIncome": "Przychód",
       "kindTransfer": "Przelew",
+      "uncategorized": "Bez kategorii",
       "emptyTitle": "Brak transakcji",
       "emptyDescription": "W tym gospodarstwie domowym nie zarejestrowano jeszcze żadnych transakcji. Skorzystaj z formularza powyżej, aby dodać wydatek, przychód lub przelew."
     }
@@ -206,6 +263,10 @@
     "archivedAccountsList": "Lista zarchiwizowanych kont",
     "createAccountForm": "Formularz tworzenia konta",
     "editAccountForm": "Formularz edycji konta",
+    "categoriesList": "Lista kategorii gospodarstwa domowego",
+    "archivedCategoriesList": "Lista zarchiwizowanych kategorii",
+    "createCategoryForm": "Formularz tworzenia kategorii",
+    "editCategoryForm": "Formularz edycji kategorii",
     "householdSelection": "Wybór gospodarstwa domowego",
     "onboarding": "Konfiguracja gospodarstwa domowego",
     "authentication": "Logowanie",

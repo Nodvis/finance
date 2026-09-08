@@ -76,6 +76,12 @@ export function AppHeader() {
           >
             {tNav("accounts")}
           </Link>
+          <Link
+            href="/categories"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800/80 hover:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-400"
+          >
+            {tNav("categories")}
+          </Link>
         </nav>
 
         {/* Global actions: Language Switcher */}
