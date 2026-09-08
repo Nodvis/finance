@@ -8,7 +8,6 @@ import type { HouseholdAccessSummary } from "@nodvis/finance-db";
 import type { SerializedHouseholdAccount } from "@/lib/accounts/serialization";
 import type { AuthorizedHouseholdUserContext } from "@/lib/authorization/household";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
-import { SignOutButton } from "../components/SignOutButton";
 
 const COMMON_CURRENCIES = ["PLN", "EUR", "USD", "GBP", "CHF"] as const;
 const ACCOUNT_TYPES = ["checking", "savings", "cash", "credit_card"] as const;
@@ -28,14 +27,11 @@ type AccountsViewProps = {
 
 export function AccountsView({
   householdContext,
-  allHouseholds,
   initialAccounts,
   members,
   locale,
 }: AccountsViewProps) {
   const tAccounts = useTranslations("Accounts");
-  const tHousehold = useTranslations("Household");
-  const tSelection = useTranslations("HouseholdSelection");
   const tAccess = useTranslations("Accessibility");
   const router = useRouter();
 
@@ -44,7 +40,6 @@ export function AccountsView({
   const [isCreating, setIsCreating] = useState(false);
   const [editingAccount, setEditingAccount] = useState<SerializedHouseholdAccount | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [isSwitchingHousehold, setIsSwitchingHousehold] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -67,21 +62,6 @@ export function AccountsView({
 
   const activeAccounts = accounts.filter((a) => a.archivedAt === null);
   const archivedAccounts = accounts.filter((a) => a.archivedAt !== null);
-
-  const handleSwitchHousehold = async (targetHouseholdId: string) => {
-    try {
-      const res = await fetch("/api/households/select", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ householdId: targetHouseholdId }),
-      });
-      if (res.ok) {
-        router.refresh();
-      }
-    } catch {
-      // Ignore
-    }
-  };
 
   const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -301,86 +281,19 @@ export function AccountsView({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header Overview */}
       <header className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400/80">
           {tAccounts("eyebrow")}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-100 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-stone-100">
           {tAccounts("title")}
         </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-stone-400 sm:text-base">
+        <p className="max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base dark:text-stone-400">
           {tAccounts("description")}
         </p>
       </header>
-
-      {/* Household Context Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 shadow-xs backdrop-blur-xs">
-        <div className="flex flex-wrap items-center gap-6 text-sm">
-          <div>
-            <span className="text-stone-400">{tHousehold("label")}: </span>
-            <span className="font-semibold text-stone-100">
-              {householdContext.householdName}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400">{tHousehold("member")}: </span>
-            <span className="font-medium text-stone-200">
-              {householdContext.personDisplayName}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400">{tHousehold("currency")}: </span>
-            <span className="font-mono font-semibold text-stone-100">
-              {householdContext.defaultCurrency}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {allHouseholds.length > 1 && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsSwitchingHousehold(!isSwitchingHousehold)}
-                className="rounded-lg border border-stone-700 bg-stone-800 px-3 py-1.5 text-xs font-medium text-stone-200 transition-colors hover:bg-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-400"
-              >
-                {tSelection("switchButton")}
-              </button>
-
-              {isSwitchingHousehold && (
-                <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-stone-700 bg-stone-900 p-2 shadow-xl backdrop-blur-md">
-                  <p className="px-2 py-1 text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
-                    {tSelection("title")}
-                  </p>
-                  {allHouseholds.map((h) => (
-                    <button
-                      key={h.householdId}
-                      type="button"
-                      onClick={() => {
-                        setIsSwitchingHousehold(false);
-                        handleSwitchHousehold(h.householdId);
-                      }}
-                      className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
-                        h.householdId === householdContext.householdId
-                          ? "bg-stone-800 font-semibold text-stone-100"
-                          : "text-stone-300 hover:bg-stone-800/60 hover:text-stone-100"
-                      }`}
-                    >
-                      <div>{h.householdName}</div>
-                      <div className="text-[10px] text-stone-400 font-mono">
-                        {h.defaultCurrency}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          <SignOutButton />
-        </div>
-      </div>
 
       {/* Status Feedback Notification */}
       {statusMessage && (
@@ -388,8 +301,8 @@ export function AccountsView({
           role="alert"
           className={`rounded-lg border p-3 text-sm ${
             statusMessage.type === "success"
-              ? "border-emerald-900/80 bg-emerald-950/60 text-emerald-200"
-              : "border-rose-900/80 bg-rose-950/60 text-rose-200"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/80 dark:bg-emerald-950/60 dark:text-emerald-200"
+              : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/80 dark:bg-rose-950/60 dark:text-rose-200"
           }`}
         >
           {statusMessage.text}
@@ -399,9 +312,9 @@ export function AccountsView({
       {/* Top Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="rounded-lg bg-stone-900 border border-stone-800 px-3 py-1.5 text-xs text-stone-300">
+          <span className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-300">
             {tAccounts("activeAccounts")}:{" "}
-            <strong className="text-stone-100 font-semibold">
+            <strong className="font-semibold text-slate-900 dark:text-stone-100">
               {activeAccounts.length}
             </strong>
           </span>
@@ -409,7 +322,7 @@ export function AccountsView({
             <button
               type="button"
               onClick={() => setShowArchived(!showArchived)}
-              className="text-xs text-stone-400 hover:text-stone-200 transition-colors underline underline-offset-4 focus:outline-none"
+              className="text-xs text-slate-500 underline underline-offset-4 transition-colors hover:text-slate-800 focus:outline-none dark:text-stone-400 dark:hover:text-stone-200"
             >
               {showArchived
                 ? tAccounts("hideArchived")
@@ -418,283 +331,290 @@ export function AccountsView({
           )}
         </div>
 
-        {!isCreating && (
-          <button
-            type="button"
-            onClick={() => {
-              setIsCreating(true);
-              setStatusMessage(null);
-            }}
-            className="rounded-lg bg-stone-100 px-4 py-2 text-xs font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-400"
-          >
-            + {tAccounts("actions.addAccount")}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => {
+            setIsCreating(true);
+            setStatusMessage(null);
+          }}
+          className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+        >
+          + {tAccounts("actions.addAccount")}
+        </button>
       </div>
 
-      {/* Create Account Form */}
+      {/* Focused Create Account Modal / Dialog */}
       {isCreating && (
         <div
+          role="dialog"
+          aria-modal="true"
           aria-label={tAccess("createAccountForm")}
-          className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs overflow-y-auto dark:bg-black/60"
         >
-          <div className="flex items-center justify-between border-b border-stone-800/80 pb-4">
-            <h2 className="text-lg font-semibold tracking-tight text-stone-100">
-              {tAccounts("actions.addAccount")}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setIsCreating(false)}
-              className="text-xs text-stone-400 hover:text-stone-200 transition-colors focus:outline-none"
-            >
-              {tAccounts("actions.cancel")}
-            </button>
-          </div>
-
-          <form onSubmit={handleCreateSubmit} className="mt-5 max-w-xl space-y-4">
-            <div>
-              <label
-                htmlFor="account-name"
-                className="block text-sm font-medium text-stone-300"
-              >
-                {tAccounts("form.name")}
-              </label>
-              <input
-                id="account-name"
-                type="text"
-                required
-                maxLength={160}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={tAccounts("form.namePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="account-type"
-                  className="block text-sm font-medium text-stone-300"
-                >
-                  {tAccounts("form.type")}
-                </label>
-                <select
-                  id="account-type"
-                  value={type}
-                  onChange={(e) =>
-                    setType(e.target.value as (typeof ACCOUNT_TYPES)[number])
-                  }
-                  className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-                >
-                  {ACCOUNT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {tAccounts(`types.${t}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="account-currency"
-                  className="block text-sm font-medium text-stone-300"
-                >
-                  {tAccounts("form.currency")}
-                </label>
-                <select
-                  id="account-currency"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-                >
-                  {COMMON_CURRENCIES.map((code) => (
-                    <option key={code} value={code}>
-                      {code}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Same-Household Owners Multi-Select Checkboxes */}
-            <div>
-              <span className="block text-sm font-medium text-stone-300">
-                {tAccounts("form.owners")}
-              </span>
-              <p className="text-xs text-stone-400">
-                {tAccounts("form.ownersHelp")}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {members.map((m) => {
-                  const isChecked = selectedOwnerIds.includes(m.personId);
-                  return (
-                    <label
-                      key={m.personId}
-                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${
-                        isChecked
-                          ? "border-stone-500 bg-stone-800 text-stone-100"
-                          : "border-stone-800 bg-stone-900/50 text-stone-400 hover:border-stone-700 hover:text-stone-300"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() =>
-                          toggleOwner(
-                            m.personId,
-                            selectedOwnerIds,
-                            setSelectedOwnerIds,
-                          )
-                        }
-                        className="rounded border-stone-700 bg-stone-900 text-stone-100 focus:ring-stone-400"
-                      />
-                      <span>{m.displayName}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Initial Balance (Optional, Preserves Unknown Balance as Unknown) */}
-            <div>
-              <label
-                htmlFor="account-initial-balance"
-                className="block text-sm font-medium text-stone-300"
-              >
-                {tAccounts("form.initialBalance")}
-              </label>
-              <input
-                id="account-initial-balance"
-                type="text"
-                value={initialBalanceNatural}
-                onChange={(e) => setInitialBalanceNatural(e.target.value)}
-                placeholder={tAccounts("form.initialBalancePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400 font-mono"
-              />
-              <p className="mt-1 text-xs text-stone-400">
-                {tAccounts("form.initialBalanceHelp")}
-              </p>
-              {type === "credit_card" && (
-                <p className="mt-1 text-xs text-amber-400/90">
-                  {tAccounts("form.creditCardNotice")}
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={isSubmittingCreate}
-                className="rounded-lg bg-stone-100 px-4 py-2 text-xs font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-400 disabled:opacity-50"
-              >
-                {isSubmittingCreate
-                  ? tAccounts("form.submittingAdd")
-                  : tAccounts("form.submitAdd")}
-              </button>
+          <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-stone-800 dark:bg-stone-900">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-stone-800">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+                {tAccounts("actions.addAccount")}
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsCreating(false)}
-                className="rounded-lg border border-stone-700 px-4 py-2 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800 focus:outline-none"
+                className="text-xs text-slate-400 hover:text-slate-700 transition-colors focus:outline-none dark:text-stone-400 dark:hover:text-stone-200"
               >
                 {tAccounts("actions.cancel")}
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4">
+              <div>
+                <label
+                  htmlFor="account-name"
+                  className="block text-sm font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {tAccounts("form.name")}
+                </label>
+                <input
+                  id="account-name"
+                  type="text"
+                  required
+                  maxLength={160}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={tAccounts("form.namePlaceholder")}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="account-type"
+                    className="block text-sm font-medium text-slate-700 dark:text-stone-300"
+                  >
+                    {tAccounts("form.type")}
+                  </label>
+                  <select
+                    id="account-type"
+                    value={type}
+                    onChange={(e) =>
+                      setType(e.target.value as (typeof ACCOUNT_TYPES)[number])
+                    }
+                    className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+                  >
+                    {ACCOUNT_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {tAccounts(`types.${t}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="account-currency"
+                    className="block text-sm font-medium text-slate-700 dark:text-stone-300"
+                  >
+                    {tAccounts("form.currency")}
+                  </label>
+                  <select
+                    id="account-currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+                  >
+                    {COMMON_CURRENCIES.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Same-Household Owners Multi-Select Checkboxes */}
+              <div>
+                <span className="block text-sm font-medium text-slate-700 dark:text-stone-300">
+                  {tAccounts("form.owners")}
+                </span>
+                <p className="text-xs text-slate-500 dark:text-stone-400">
+                  {tAccounts("form.ownersHelp")}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {members.map((m) => {
+                    const isChecked = selectedOwnerIds.includes(m.personId);
+                    return (
+                      <label
+                        key={m.personId}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${
+                          isChecked
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-stone-500 dark:bg-stone-800 dark:text-stone-100"
+                            : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:border-stone-800 dark:bg-stone-900/50 dark:text-stone-400 dark:hover:border-stone-700 dark:hover:text-stone-300"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          id={`owner-${m.personId}`}
+                          checked={isChecked}
+                          onChange={() =>
+                            toggleOwner(
+                              m.personId,
+                              selectedOwnerIds,
+                              setSelectedOwnerIds,
+                            )
+                          }
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900"
+                        />
+                        <span>{m.displayName}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Initial Balance */}
+              <div>
+                <label
+                  htmlFor="account-initial-balance"
+                  className="block text-sm font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {tAccounts("form.initialBalance")}
+                </label>
+                <input
+                  id="account-initial-balance"
+                  type="text"
+                  value={initialBalanceNatural}
+                  onChange={(e) => setInitialBalanceNatural(e.target.value)}
+                  placeholder={tAccounts("form.initialBalancePlaceholder")}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
+                />
+                <p className="mt-1 text-xs text-slate-500 dark:text-stone-400">
+                  {tAccounts("form.initialBalanceHelp")}
+                </p>
+                {type === "credit_card" && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400/90">
+                    {tAccounts("form.creditCardNotice")}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCreating(false)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  {tAccounts("actions.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingCreate}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+                >
+                  {isSubmittingCreate
+                    ? tAccounts("form.submittingAdd")
+                    : tAccounts("form.submitAdd")}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Edit Account Modal / Drawer */}
+      {/* Focused Edit Account Modal */}
       {editingAccount && (
         <div
+          role="dialog"
+          aria-modal="true"
           aria-label={tAccess("editAccountForm")}
-          className="rounded-2xl border border-stone-800 bg-stone-900/90 p-6 shadow-md backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs overflow-y-auto dark:bg-black/60"
         >
-          <div className="flex items-center justify-between border-b border-stone-800/80 pb-4">
-            <h2 className="text-lg font-semibold tracking-tight text-stone-100">
-              {tAccounts("actions.edit")}: {editingAccount.name}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setEditingAccount(null)}
-              className="text-xs text-stone-400 hover:text-stone-200 transition-colors focus:outline-none"
-            >
-              {tAccounts("actions.cancel")}
-            </button>
-          </div>
-
-          <form onSubmit={handleEditSubmit} className="mt-5 max-w-xl space-y-4">
-            <div>
-              <label
-                htmlFor="edit-account-name"
-                className="block text-sm font-medium text-stone-300"
-              >
-                {tAccounts("form.name")}
-              </label>
-              <input
-                id="edit-account-name"
-                type="text"
-                required
-                maxLength={160}
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
-              />
-            </div>
-
-            <div>
-              <span className="block text-sm font-medium text-stone-300">
-                {tAccounts("form.owners")}
-              </span>
-              <p className="text-xs text-stone-400">
-                {tAccounts("form.ownersHelp")}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {members.map((m) => {
-                  const isChecked = editOwnerIds.includes(m.personId);
-                  return (
-                    <label
-                      key={m.personId}
-                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${
-                        isChecked
-                          ? "border-stone-500 bg-stone-800 text-stone-100"
-                          : "border-stone-800 bg-stone-900/50 text-stone-400 hover:border-stone-700 hover:text-stone-300"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() =>
-                          toggleOwner(m.personId, editOwnerIds, setEditOwnerIds)
-                        }
-                        className="rounded border-stone-700 bg-stone-900 text-stone-100 focus:ring-stone-400"
-                      />
-                      <span>{m.displayName}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={isSubmittingEdit}
-                className="rounded-lg bg-stone-100 px-4 py-2 text-xs font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-400 disabled:opacity-50"
-              >
-                {isSubmittingEdit
-                  ? tAccounts("actions.saving")
-                  : tAccounts("actions.save")}
-              </button>
+          <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-stone-800 dark:bg-stone-900">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-stone-800">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+                {tAccounts("actions.edit")}: {editingAccount.name}
+              </h2>
               <button
                 type="button"
                 onClick={() => setEditingAccount(null)}
-                className="rounded-lg border border-stone-700 px-4 py-2 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800 focus:outline-none"
+                className="text-xs text-slate-400 hover:text-slate-700 transition-colors focus:outline-none dark:text-stone-400 dark:hover:text-stone-200"
               >
                 {tAccounts("actions.cancel")}
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleEditSubmit} className="mt-5 space-y-4">
+              <div>
+                <label
+                  htmlFor="edit-account-name"
+                  className="block text-sm font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {tAccounts("form.name")}
+                </label>
+                <input
+                  id="edit-account-name"
+                  type="text"
+                  required
+                  maxLength={160}
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+                />
+              </div>
+
+              <div>
+                <span className="block text-sm font-medium text-slate-700 dark:text-stone-300">
+                  {tAccounts("form.owners")}
+                </span>
+                <p className="text-xs text-slate-500 dark:text-stone-400">
+                  {tAccounts("form.ownersHelp")}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {members.map((m) => {
+                    const isChecked = editOwnerIds.includes(m.personId);
+                    return (
+                      <label
+                        key={m.personId}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors ${
+                          isChecked
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-stone-500 dark:bg-stone-800 dark:text-stone-100"
+                            : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:border-stone-800 dark:bg-stone-900/50 dark:text-stone-400 dark:hover:border-stone-700 dark:hover:text-stone-300"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() =>
+                            toggleOwner(m.personId, editOwnerIds, setEditOwnerIds)
+                          }
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900"
+                        />
+                        <span>{m.displayName}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingAccount(null)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  {tAccounts("actions.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEdit}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+                >
+                  {isSubmittingEdit
+                    ? tAccounts("actions.saving")
+                    : tAccounts("actions.save")}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -703,18 +623,25 @@ export function AccountsView({
         aria-label={tAccess("accountsList")}
         className="flex flex-col gap-4"
       >
-        <h2 className="text-sm font-semibold tracking-wide text-stone-300 uppercase">
+        <h2 className="text-sm font-semibold tracking-wide text-slate-700 uppercase dark:text-stone-300">
           {tAccounts("activeAccounts")}
         </h2>
 
         {activeAccounts.length === 0 ? (
-          <div className="rounded-2xl border border-stone-800/80 bg-stone-900/40 p-8 text-center">
-            <h3 className="text-base font-semibold text-stone-200">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-stone-800/80 dark:bg-stone-900/40">
+            <h3 className="text-base font-semibold text-slate-800 dark:text-stone-200">
               {tAccounts("emptyActiveTitle")}
             </h3>
-            <p className="mt-1 text-sm text-stone-400">
+            <p className="mt-1 text-sm text-slate-500 dark:text-stone-400">
               {tAccounts("emptyActiveDescription")}
             </p>
+            <button
+              type="button"
+              onClick={() => setIsCreating(true)}
+              className="mt-4 inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+            >
+              + {tAccounts("actions.addAccount")}
+            </button>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -729,19 +656,19 @@ export function AccountsView({
               return (
                 <article
                   key={acc.id}
-                  className="flex flex-col justify-between rounded-2xl border border-stone-800 bg-stone-900/70 p-5 shadow-xs backdrop-blur-xs transition-colors hover:border-stone-700"
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="font-semibold text-stone-100">
+                        <h3 className="font-semibold text-slate-900 dark:text-stone-100">
                           {acc.name}
                         </h3>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className="rounded-md border border-stone-700/80 bg-stone-800 px-2 py-0.5 text-[11px] font-medium text-stone-300">
+                          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-stone-700/80 dark:bg-stone-800 dark:text-stone-300">
                             {tAccounts(`types.${acc.type}`)}
                           </span>
-                          <span className="rounded-md border border-stone-700/80 bg-stone-800 px-1.5 py-0.5 text-[11px] font-mono text-stone-300">
+                          <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-mono text-slate-600 dark:border-stone-700/80 dark:bg-stone-800 dark:text-stone-300">
                             {acc.currency}
                           </span>
                         </div>
@@ -750,17 +677,17 @@ export function AccountsView({
                       {/* Financial State Badges */}
                       <div className="flex flex-col items-end gap-1">
                         {isDebt && (
-                          <span className="rounded-md border border-rose-800 bg-rose-950/60 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+                          <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
                             {tAccounts("badges.debt")}
                           </span>
                         )}
                         {isCredit && (
-                          <span className="rounded-md border border-emerald-800 bg-emerald-950/60 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                          <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                             {tAccounts("badges.credit")}
                           </span>
                         )}
                         {isOverdraft && (
-                          <span className="rounded-md border border-amber-800 bg-amber-950/60 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                          <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                             {tAccounts("badges.overdraft")}
                           </span>
                         )}
@@ -768,9 +695,9 @@ export function AccountsView({
                     </div>
 
                     {/* Balance Snapshot Display */}
-                    <div className="mt-4 border-t border-stone-800/60 pt-3">
+                    <div className="mt-4 border-t border-slate-100 pt-3 dark:border-stone-800/60">
                       <div className="flex items-baseline justify-between">
-                        <span className="text-xs text-stone-400">
+                        <span className="text-xs text-slate-500 dark:text-stone-400">
                           {hasSnapshot ? (
                             acc.balanceSnapshotAt ? (
                               <>
@@ -784,7 +711,7 @@ export function AccountsView({
                             tAccounts("balanceUnknownHelp")
                           )}
                         </span>
-                        <div className="text-right font-mono text-lg font-semibold tracking-tight text-stone-100">
+                        <div className="text-right font-mono text-lg font-semibold tracking-tight text-slate-900 dark:text-stone-100">
                           {hasSnapshot ? (
                             formatAmountPresentation(
                               acc.balanceSnapshotMinor!,
@@ -792,7 +719,7 @@ export function AccountsView({
                               locale,
                             )
                           ) : (
-                            <span className="text-stone-400">
+                            <span className="text-slate-400 dark:text-stone-400">
                               —{" "}
                               <span className="text-xs font-sans font-normal">
                                 ({tAccounts("balanceUnknown")})
@@ -804,29 +731,28 @@ export function AccountsView({
                     </div>
 
                     {/* Owners */}
-                    <div className="mt-3 text-xs text-stone-400">
-                      <span className="text-stone-400">
-                        {tAccounts("ownersLabel")}:{" "}
-                      </span>
-                      <span className="text-stone-300 font-medium">
+                    <div className="mt-3 text-xs text-slate-500 dark:text-stone-400">
+                      <span>{tAccounts("ownersLabel")}: </span>
+                      <span className="font-medium text-slate-700 dark:text-stone-300">
                         {getOwnerNames(acc.ownerPersonIds)}
                       </span>
                     </div>
                   </div>
 
-                  {/* Actions (Edit & Archive) */}
-                  <div className="mt-5 flex items-center justify-end gap-2 border-t border-stone-800/60 pt-3">
+                  {/* Actions (Import, Edit & Archive) */}
+                  <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-stone-800/60">
                     <button
                       type="button"
                       onClick={() => router.push(`/${locale}/imports?accountId=${acc.id}`)}
-                      className="rounded-lg border border-amber-700/80 bg-amber-950/30 px-2.5 py-1 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-900/40 focus:outline-none"
+                      className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-100 focus:outline-none dark:border-amber-700/80 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-900/40"
                     >
                       {tAccounts("actions.importStatement")}
                     </button>
                     <button
                       type="button"
                       onClick={() => startEdit(acc)}
-                      className="rounded-lg border border-stone-700 bg-stone-800 px-2.5 py-1 text-xs font-medium text-stone-200 transition-colors hover:bg-stone-700 focus:outline-none"
+                      aria-label={`${tAccounts("actions.edit")} ${acc.name}`}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
                     >
                       {tAccounts("actions.edit")}
                     </button>
@@ -834,7 +760,7 @@ export function AccountsView({
                       type="button"
                       disabled={actionLoadingId === acc.id}
                       onClick={() => handleArchive(acc.id)}
-                      className="rounded-lg border border-stone-800 px-2.5 py-1 text-xs font-medium text-stone-400 transition-colors hover:border-stone-700 hover:text-stone-300 focus:outline-none disabled:opacity-50"
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-800 focus:outline-none disabled:opacity-50 dark:border-stone-800 dark:text-stone-400 dark:hover:border-stone-700 dark:hover:text-stone-300"
                     >
                       {actionLoadingId === acc.id
                         ? tAccounts("actions.archiving")
@@ -852,19 +778,19 @@ export function AccountsView({
       {showArchived && (
         <section
           aria-label={tAccess("archivedAccountsList")}
-          className="flex flex-col gap-4 border-t border-stone-800/80 pt-6"
+          className="flex flex-col gap-4 border-t border-slate-200 pt-6 dark:border-stone-800/80"
         >
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold tracking-wide text-stone-400 uppercase">
+            <h2 className="text-sm font-semibold tracking-wide text-slate-500 uppercase dark:text-stone-400">
               {tAccounts("archivedAccounts")}
             </h2>
-            <span className="rounded-full bg-stone-800 px-2 py-0.5 text-[10px] text-stone-400 font-mono">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-mono dark:bg-stone-800 dark:text-stone-400">
               {archivedAccounts.length}
             </span>
           </div>
 
           {archivedAccounts.length === 0 ? (
-            <p className="text-xs text-stone-400">
+            <p className="text-xs text-slate-400 dark:text-stone-400">
               {tAccounts("emptyArchivedDescription")}
             </p>
           ) : (
@@ -872,45 +798,43 @@ export function AccountsView({
               {archivedAccounts.map((acc) => (
                 <article
                   key={acc.id}
-                  className="flex flex-col justify-between rounded-2xl border border-stone-800/60 bg-stone-900/40 p-5 opacity-75 transition-opacity hover:opacity-100"
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-slate-50/50 p-5 opacity-80 transition-opacity hover:opacity-100 dark:border-stone-800/60 dark:bg-stone-900/40"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="font-semibold text-stone-200">
+                        <h3 className="font-semibold text-slate-800 dark:text-stone-200">
                           {acc.name}
                         </h3>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className="rounded-md border border-stone-700/60 bg-stone-800/60 px-2 py-0.5 text-[11px] font-medium text-stone-400">
+                          <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:border-stone-700/60 dark:bg-stone-800/60 dark:text-stone-400">
                             {tAccounts(`types.${acc.type}`)}
                           </span>
-                          <span className="rounded-md border border-stone-700/60 bg-stone-800/60 px-1.5 py-0.5 text-[11px] font-mono text-stone-400">
+                          <span className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-mono text-slate-500 dark:border-stone-700/60 dark:bg-stone-800/60 dark:text-stone-400">
                             {acc.currency}
                           </span>
                         </div>
                       </div>
 
-                      <span className="rounded-md border border-stone-700 bg-stone-800 px-2 py-0.5 text-[10px] font-medium text-stone-400">
+                      <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400">
                         {tAccounts("badges.archived")}
                       </span>
                     </div>
 
-                    <div className="mt-4 border-t border-stone-800/40 pt-3 text-xs text-stone-400">
-                      <span className="text-stone-400">
-                        {tAccounts("ownersLabel")}:{" "}
-                      </span>
-                      <span className="text-stone-300">
+                    <div className="mt-4 border-t border-slate-200/50 pt-3 text-xs text-slate-500 dark:border-stone-800/40 dark:text-stone-400">
+                      <span>{tAccounts("ownersLabel")}: </span>
+                      <span className="text-slate-700 dark:text-stone-300">
                         {getOwnerNames(acc.ownerPersonIds)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-end border-t border-stone-800/40 pt-3">
+                  <div className="mt-5 flex items-center justify-end border-t border-slate-200/50 pt-3 dark:border-stone-800/40">
                     <button
                       type="button"
                       disabled={actionLoadingId === acc.id}
                       onClick={() => handleUnarchive(acc.id)}
-                      className="rounded-lg border border-stone-700 bg-stone-800 px-2.5 py-1 text-xs font-medium text-stone-200 transition-colors hover:bg-stone-700 focus:outline-none disabled:opacity-50"
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
                     >
                       {actionLoadingId === acc.id
                         ? tAccounts("actions.unarchiving")

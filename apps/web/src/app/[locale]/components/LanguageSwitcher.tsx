@@ -31,7 +31,7 @@ export function LanguageSwitcher() {
   return (
     <nav
       aria-label={t("label")}
-      className="inline-flex items-center rounded-lg border border-stone-800 bg-stone-900/90 p-1 shadow-xs backdrop-blur-xs"
+      className="inline-flex items-center rounded-lg border border-slate-200 bg-white/90 p-1 shadow-xs backdrop-blur-xs dark:border-stone-800 dark:bg-stone-900/90"
     >
       <div className="flex items-center gap-1" role="group" aria-label={t("label")}>
         {LOCALES.map((localeCode) => {
@@ -46,16 +46,16 @@ export function LanguageSwitcher() {
               onClick={() => handleSwitchLocale(localeCode)}
               aria-current={isActive ? "page" : undefined}
               aria-label={accessibleLabel}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-1 focus:ring-offset-stone-900 ${
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                 isActive
-                  ? "bg-stone-800 text-stone-100 font-semibold shadow-xs"
-                  : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
+                  ? "bg-slate-100 text-slate-900 font-semibold shadow-xs dark:bg-stone-800 dark:text-stone-100"
+                  : "text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200"
               }`}
             >
               <span className="font-mono text-[11px] uppercase tracking-wider">
                 {localeCode}
               </span>
-              <span className="hidden sm:inline text-stone-300">
+              <span className="hidden sm:inline text-slate-600 dark:text-stone-300">
                 · {config.nativeName}
               </span>
             </button>

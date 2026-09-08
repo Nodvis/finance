@@ -1,17 +1,24 @@
 {
   "Metadata": {
     "title": "Nodvis Finance",
-    "description": "Prywatne, self-hosted centrum kontroli finansów gospodarstwa domowego."
+    "description": "Przejrzyste i bezpieczne finanse Twojego gospodarstwa domowego."
   },
   "Navigation": {
     "brand": "Nodvis Finance",
-    "tagline": "Prywatne finanse domowe",
+    "tagline": "Finanse domowe",
     "home": "Podsumowanie",
     "accounts": "Konta",
     "categories": "Kategorie",
     "imports": "Importy",
     "skipToContent": "Przejdź do treści głównej",
-    "privateBadge": "Self-hosted"
+    "privateBadge": "Prywatne"
+  },
+  "Theme": {
+    "toggle": "Przełącz motyw",
+    "switchToDark": "Przełącz na tryb ciemny",
+    "switchToLight": "Przełącz na tryb jasny",
+    "light": "Jasny",
+    "dark": "Ciemny"
   },
   "LanguageSwitcher": {
     "label": "Wybierz język",
@@ -25,6 +32,8 @@
     "eyebrow": "Centrum kontroli finansowej",
     "title": "Twoja sytuacja finansowa bez księgowego chaosu.",
     "description": "Zestawienie dostępnych środków, bieżących zobowiązań oraz długu gospodarstwa domowego w czasie rzeczywistym.",
+    "publicHeroTitle": "Twoje finanse domowe w pełnym porządku",
+    "publicHeroSubtitle": "Wygodne zarządzanie kontami, wydatkami i oszczędnościami w jednym przejrzystym miejscu.",
     "quickActions": { "viewTransactions": "Zobacz transakcje", "addTransaction": "Dodaj transakcję" },
     "summaryLabel": "Podsumowanie finansowe",
     "noData": "Brak danych — model finansowy jest dopiero wdrażany.",
@@ -39,8 +48,8 @@
     }
   },
   "Auth": {
-    "signInTitle": "Zaloguj się do gospodarstwa domowego",
-    "signInDescription": "Wprowadź adres e-mail i hasło, aby uzyskać dostęp do transakcji gospodarstwa.",
+    "signInTitle": "Zaloguj się do finansów",
+    "signInDescription": "Wprowadź adres e-mail i hasło, aby uzyskać dostęp do swoich finansów.",
     "emailLabel": "Adres e-mail",
     "emailPlaceholder": "twoj@email.pl",
     "passwordLabel": "Hasło",
@@ -50,7 +59,16 @@
     "signedInAs": "Zalogowano jako",
     "errorInvalidCredentials": "Nieprawidłowy adres e-mail lub hasło.",
     "noHouseholdTitle": "Brak przypisanego gospodarstwa domowego",
-    "noHouseholdDescription": "To konto użytkownika nie jest jeszcze powiązane z żadnym gospodarstwem domowym."
+    "noHouseholdDescription": "To konto użytkownika nie jest jeszcze powiązane z żadnym gospodarstwem domowym.",
+    "tabSignIn": "Logowanie",
+    "tabSignUp": "Nowe konto",
+    "signUpTitle": "Nowe konto w Nodvis Finance",
+    "signUpDescription": "Zarejestruj się, aby zacząć zarządzać finansami domowymi.",
+    "nameLabel": "Twoje imię",
+    "namePlaceholder": "np. Anna",
+    "signUpButton": "Zarejestruj się",
+    "signingUp": "Tworzenie konta...",
+    "errorSignUp": "Nie udało się utworzyć konta. Sprawdź wprowadzone dane."
   },
   "Onboarding": {
     "title": "Utwórz gospodarstwo domowe",
@@ -395,12 +413,15 @@
     }
   },
   "Footer": {
-    "tagline": "Nodvis Finance — prywatne, self-hosted centrum finansów domowych.",
-    "privacyNote": "Wszystkie dane finansowe i operacje pozostają pod Twoją wyłączną kontrolą na lokalnym serwerze."
+    "tagline": "Nodvis Finance — proste i bezpieczne finanse domowe.",
+    "privacyNote": "Wszystkie Twoje dane finansowe są poufne i w pełni chronione."
   },
   "Accessibility": {
     "mainContent": "Treść główna",
     "mainNavigation": "Główna nawigacja",
+    "publicNavigation": "Nawigacja publiczna",
+    "publicShell": "Strona logowania i rejestracji",
+    "themeToggle": "Przełączanie motywu kolorystycznego",
     "languageNavigation": "Wybór języka interfejsu",
     "financialSummary": "Zestawienie wskaźników finansowych",
     "transactionForms": "Formularze dodawania transakcji",
@@ -452,6 +473,12 @@
     "working": "Przetwarzanie…",
     "success": "Zaimportowano {count} transakcji.",
     "selectHousehold": "Wybierz gospodarstwo przed importem.",
+    "noAccountsTitle": "Brak kont do importu",
+    "noAccountsDescription": "Przed zaimportowaniem wyciągu CSV musisz utworzyć co najmniej jedno konto w gospodarstwie domowym.",
+    "createAccountAction": "Przejdź do kont",
+    "dropzoneHint": "Przeciągnij i upuść plik wyciągu CSV lub kliknij, aby wybrać z dysku.",
+    "fileSelected": "Wybrany plik: {name} ({size})",
+    "resetFile": "Wybierz inny plik",
     "errors": { "generic": "Nie udało się wykonać importu." }
   },
   "Overview": {

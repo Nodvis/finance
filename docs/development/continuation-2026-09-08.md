@@ -191,3 +191,32 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - Build regression found and fixed: async shell uses server `getTranslations`, avoiding React prerender suspension failure on `/pl/accounts`.
 - Verification: `pnpm test` passed (domain 115, DB 60, web 267); `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` passed.
 - Delivery complete: private web image `sha256:67b78f2de2cd458b625f37a3966e8234ab30ff8f8514cdbff07deb2f7cbc28fc` is healthy and `/pl` returns HTTP 200; authenticated Chromium PL/EN + smoke passed 5/5; visual captures `/tmp/nodvis-redesign-desktop.png` and `/tmp/nodvis-redesign-mobile.png` show the compact shell and responsive collapsed transaction flow. PR #13 merged; remote main is `d8aa76d2471b3003df0d8e205f1af4fbe62c4173`.
+
+## Continuation: complete product mission and P0 auth/UI correction
+
+- Verified baseline: `origin/main=4dff3ad206607f19f4768bf6719c5114483b846f`; worktree clean; private web/PostgreSQL healthy.
+- Identified P0 gaps: unauthenticated dashboard leaked authenticated shell/placeholder metrics; repeated household/session bars; oversized inline forms; sparse Accounts/Imports; no light theme/theme preference.
+- New branch: `feature/product-ui-auth-redesign` from latest `origin/main`.
+
+## Checkpoint: P0 vertical slice — public/auth boundary, semantic tokens, and screens redesign
+
+- **Public & Authentication Separation**:
+  - Unauthenticated `/pl` and `/en` show zero dashboard metrics, zero authenticated nav links (`Accounts`, `Categories`, `Imports`), zero household bars, and zero admin copy.
+  - Dedicated public hero and `SignInCard` with Sign In and Sign Up tabs calling `authClient.signUp.email` / `authClient.signIn.email`.
+  - Public `AppHeader` renders brand identity, `#theme-toggle`, and `LanguageSwitcher`; authenticated navigation and session pills are strictly hidden.
+  - Preserved server-side household authorization, onboarding (`NoHouseholdCard`), and multi-household selection (`HouseholdSelectionCard`).
+- **Design Tokens & Theme System**:
+  - Semantic CSS variable tokens in `globals.css` with Tailwind v4 `@custom-variant dark (&:where(.dark, .dark *));`.
+  - Polished light finance UI as default for new users, with zero flash on hydration via inline `<script>` in root `layout.tsx`.
+  - `#theme-toggle` accessible switch (`role="switch"`, `aria-checked`) persists preference synchronously in `nodvis_theme` cookie and `localStorage`.
+- **Existing Screens Redesign**:
+  - **Overview**: Concise toolbar with month navigation and quick actions; removed repeated context/logout bars; readable dense cards for available cash, cash flow, and category spending; collapsible transaction forms drawer.
+  - **Accounts**: Focused modal dialogs for account creation (`role="dialog"`, `aria-modal="true"`) and editing; direct CSV import quick links on cards; truthful empty states; light/dark tokens.
+  - **Categories**: Focused modal dialogs for category creation (`#create-category-name`, `#create-category-applicability`, `actions.addCategory`) and editing; truthful empty states; light/dark tokens.
+  - **Imports**: Polished drag-and-drop CSV landing zone with file metadata; truthful empty state linking to Accounts when no accounts exist; safe automatic processing review table.
+- **Verification**:
+  - `pnpm test`: 445 tests passed across workspace (115 domain, 60 DB, 270 web).
+  - `pnpm -r typecheck`: passed with zero errors.
+  - `pnpm -r lint`: passed with zero errors.
+  - `pnpm build`: passed with zero errors.
+  - Playwright E2E: 4 smoke tests (public shell, localization, light/dark toggling) + 2 full Polish & English authenticated browser flows passed.

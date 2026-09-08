@@ -291,11 +291,11 @@ export function TransactionForms({
 
   if (accounts.length === 0) {
     return (
-      <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs">
-        <h2 className="text-lg font-semibold text-stone-100">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-stone-800 dark:bg-stone-900/80">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-stone-100">
           {t("sectionTitle")}
         </h2>
-        <p className="mt-2 text-sm text-stone-400">
+        <p className="mt-2 text-sm text-slate-500 dark:text-stone-400">
           {t("form.noAccounts")}
         </p>
       </div>
@@ -303,12 +303,12 @@ export function TransactionForms({
   }
 
   return (
-    <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-6 shadow-xs backdrop-blur-xs">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-stone-800 dark:bg-stone-900/80">
       <header className="mb-5">
-        <h2 className="text-xl font-semibold tracking-tight text-stone-100">
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
           {t("sectionTitle")}
         </h2>
-        <p className="mt-1 text-sm text-stone-400">
+        <p className="mt-1 text-sm text-slate-500 dark:text-stone-400">
           {t("sectionDescription")}
         </p>
       </header>
@@ -317,7 +317,7 @@ export function TransactionForms({
       <div
         role="tablist"
         aria-label={t("sectionTitle")}
-        className="flex gap-2 border-b border-stone-800 pb-3"
+        className="flex gap-2 border-b border-slate-200 pb-3 dark:border-stone-800"
       >
         <button
           type="button"
@@ -327,10 +327,10 @@ export function TransactionForms({
             setActiveTab("expense");
             setNotification(null);
           }}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
             activeTab === "expense"
-              ? "bg-rose-950/70 text-rose-200 border border-rose-800/60 shadow-xs"
-              : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
+              ? "bg-rose-50 text-rose-700 border border-rose-200 shadow-xs dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-800/60"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200"
           }`}
         >
           {t("tabs.expense")}
@@ -344,10 +344,10 @@ export function TransactionForms({
             setActiveTab("income");
             setNotification(null);
           }}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
             activeTab === "income"
-              ? "bg-emerald-950/70 text-emerald-200 border border-emerald-800/60 shadow-xs"
-              : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs dark:bg-emerald-950/70 dark:text-emerald-200 dark:border-emerald-800/60"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200"
           }`}
         >
           {t("tabs.income")}
@@ -361,10 +361,10 @@ export function TransactionForms({
             setActiveTab("transfer");
             setNotification(null);
           }}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/50 ${
+          className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
             activeTab === "transfer"
-              ? "bg-sky-950/70 text-sky-200 border border-sky-800/60 shadow-xs"
-              : "text-stone-400 hover:bg-stone-800/60 hover:text-stone-200"
+              ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-xs dark:bg-sky-950/70 dark:text-sky-200 dark:border-sky-800/60"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-stone-400 dark:hover:bg-stone-800/60 dark:hover:text-stone-200"
           }`}
         >
           {t("tabs.transfer")}
@@ -376,8 +376,8 @@ export function TransactionForms({
           role="alert"
           className={`mt-4 rounded-lg p-3 text-sm border ${
             notification.type === "success"
-              ? "bg-emerald-950/50 text-emerald-200 border-emerald-900"
-              : "bg-rose-950/50 text-rose-200 border-rose-900"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-200 dark:border-emerald-900"
+              : "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/50 dark:text-rose-200 dark:border-rose-900"
           }`}
         >
           {notification.message}
@@ -386,7 +386,7 @@ export function TransactionForms({
 
       {/* Transfer requires 2 accounts check */}
       {activeTab === "transfer" && accounts.length < 2 ? (
-        <div className="mt-5 rounded-lg border border-amber-900/60 bg-amber-950/30 p-4 text-sm text-amber-200">
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
           <p className="font-medium">{t("form.transferRequiresTwoAccounts")}</p>
           <p className="mt-1 text-xs opacity-90">
             {t("form.transferInvariantNotice")}
@@ -395,7 +395,7 @@ export function TransactionForms({
       ) : (
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {activeTab === "transfer" && (
-            <div className="rounded-lg border border-stone-800 bg-stone-950/60 p-3 text-xs text-stone-400">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-stone-800 dark:bg-stone-950/60 dark:text-stone-400">
               {t("form.transferInvariantNotice")}
             </div>
           )}
@@ -406,7 +406,7 @@ export function TransactionForms({
               <div>
                 <label
                   htmlFor="from-account"
-                  className="block text-sm font-medium text-stone-300"
+                  className="block text-sm font-medium text-slate-700 dark:text-stone-300"
                 >
                   {t("form.fromAccount")}
                 </label>
@@ -424,7 +424,7 @@ export function TransactionForms({
                       setToAccountId(firstEligible.id);
                     }
                   }}
-                  className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
                 >
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
@@ -437,7 +437,7 @@ export function TransactionForms({
               <div>
                 <label
                   htmlFor="to-account"
-                  className="block text-sm font-medium text-stone-300"
+                  className="block text-sm font-medium text-slate-700 dark:text-stone-300"
                 >
                   {t("form.toAccount")}
                 </label>
@@ -445,7 +445,7 @@ export function TransactionForms({
                   id="to-account"
                   value={toAccountId}
                   onChange={(e) => setToAccountId(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
                 >
                   {eligibleToAccounts.length === 0 ? (
                     <option disabled value="">
@@ -465,7 +465,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="single-account"
-                className="block text-sm font-medium text-stone-300"
+                className="block text-sm font-medium text-slate-700 dark:text-stone-300"
               >
                 {t("form.account")}
               </label>
@@ -473,7 +473,7 @@ export function TransactionForms({
                 id="single-account"
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -489,7 +489,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="expense-payee"
-                className="block text-sm font-medium text-stone-300"
+                className="block text-sm font-medium text-slate-700 dark:text-stone-300"
               >
                 {t("form.payee")}
               </label>
@@ -501,7 +501,7 @@ export function TransactionForms({
                 value={payee}
                 onChange={(e) => setPayee(e.target.value)}
                 placeholder={t("form.payeePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
             </div>
           )}
@@ -510,7 +510,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="income-source"
-                className="block text-sm font-medium text-stone-300"
+                className="block text-sm font-medium text-slate-700 dark:text-stone-300"
               >
                 {t("form.source")}
               </label>
@@ -522,7 +522,7 @@ export function TransactionForms({
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
                 placeholder={t("form.sourcePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
             </div>
           )}
@@ -532,7 +532,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="transaction-category"
-                className="block text-sm font-medium text-stone-300"
+                className="block text-sm font-medium text-slate-700 dark:text-stone-300"
               >
                 {t("form.category")}
               </label>
@@ -540,7 +540,7 @@ export function TransactionForms({
                 id="transaction-category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
               >
                 <option value="">
                   {t("form.selectCategory")}
@@ -551,7 +551,7 @@ export function TransactionForms({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-stone-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-stone-400">
                 {t("form.categoryHelp")}
               </p>
             </div>
@@ -562,7 +562,7 @@ export function TransactionForms({
             <div className="sm:col-span-2">
               <label
                 htmlFor="amount-input"
-                className="block text-sm font-medium text-stone-300"
+                className="block text-sm font-medium text-slate-700 dark:text-stone-300"
               >
                 {t("form.amountMinor")}
               </label>
@@ -574,15 +574,15 @@ export function TransactionForms({
                 value={amountInput}
                 onChange={(e) => setAmountInput(e.target.value)}
                 placeholder={t("form.amountMinorPlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm font-mono text-stone-100 placeholder:text-stone-500 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
-              <p className="mt-1 text-xs text-stone-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-stone-400">
                 {t("form.amountHelp")}
               </p>
               {formattedPreview && (
-                <p className="mt-1.5 text-xs text-stone-400">
+                <p className="mt-1.5 text-xs text-slate-500 dark:text-stone-400">
                   {t("form.amountPreview")}:{" "}
-                  <span className="font-semibold text-stone-100 font-mono">
+                  <span className="font-semibold text-slate-900 font-mono dark:text-stone-100">
                     {formattedPreview}
                   </span>
                 </p>
@@ -592,7 +592,7 @@ export function TransactionForms({
             <div>
               <label
                 htmlFor="transaction-currency"
-                className="block text-sm font-medium text-stone-300"
+                className="block text-sm font-medium text-slate-700 dark:text-stone-300"
               >
                 {t("form.currency")}
               </label>
@@ -601,7 +601,7 @@ export function TransactionForms({
                 type="text"
                 readOnly
                 value={currentCurrency}
-                className="mt-1 block w-full rounded-lg border border-stone-800 bg-stone-950 px-3 py-2 text-sm font-mono font-semibold text-stone-300 shadow-xs"
+                className="mt-1 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono font-semibold text-slate-600 shadow-xs dark:border-stone-800 dark:bg-stone-950 dark:text-stone-300"
               />
             </div>
           </div>
@@ -610,7 +610,7 @@ export function TransactionForms({
           <div>
             <label
               htmlFor="occurred-on"
-              className="block text-sm font-medium text-stone-300"
+              className="block text-sm font-medium text-slate-700 dark:text-stone-300"
             >
               {t("form.date")}
             </label>
@@ -620,7 +620,7 @@ export function TransactionForms({
               required
               value={occurredOn}
               onChange={(e) => setOccurredOn(e.target.value)}
-              className="mt-1 block w-full max-w-xs rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 shadow-xs focus:border-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+              className="mt-1 block w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
             />
           </div>
 
@@ -632,7 +632,13 @@ export function TransactionForms({
                 isSubmitting ||
                 (activeTab === "transfer" && eligibleToAccounts.length === 0)
               }
-              className="rounded-lg bg-stone-100 px-5 py-2.5 text-sm font-semibold text-stone-900 shadow-sm transition-all hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 focus:ring-offset-stone-900 disabled:opacity-50"
+              className={`rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 dark:text-stone-950 ${
+                activeTab === "expense"
+                  ? "bg-rose-600 hover:bg-rose-700 focus:ring-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400"
+                  : activeTab === "income"
+                  ? "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+                  : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:bg-sky-500 dark:hover:bg-sky-400"
+              }`}
             >
               {isSubmitting
                 ? t("form.submitting")

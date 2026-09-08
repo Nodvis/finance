@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 
 import { routing } from "@/i18n/routing";
+import { getCurrentSession } from "@/lib/auth/session";
 
 import { AppFooter } from "./components/AppFooter";
 import { AppHeader } from "./components/AppHeader";
+import { PublicAuthHeader } from "./components/PublicAuthHeader";
 import "../globals.css";
 
 type LocaleLayoutProps = {
@@ -35,7 +38,6 @@ export async function generateMetadata({
   };
 }
 
-
 export default async function LocaleLayout({
   children,
   params,
@@ -46,14 +48,35 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  const cookieStore = await cookies();
+  const themeCookie =
+    cookieStore.get("nodvis_theme")?.value ||
+    cookieStore.get("theme")?.value;
+  // Default new users to light finance UI without silently overriding an explicit existing preference
+  const theme = themeCookie === "dark" ? "dark" : "light";
+
   const messages = await getMessages();
+  const session = await getCurrentSession();
 
   return (
-    <html lang={locale} className="dark">
-      <body className="min-h-screen bg-stone-950 text-stone-100 antialiased selection:bg-stone-800 selection:text-stone-100">
+    <html
+      lang={locale}
+      className={theme}
+      data-theme={theme}
+      style={{ colorScheme: theme }}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('nodvis_theme');if(t==='dark'||t==='light'){document.documentElement.classList.remove('light','dark');document.documentElement.classList.add(t);document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-slate-200 selection:text-slate-900 dark:bg-stone-950 dark:text-stone-100 dark:selection:bg-stone-800 dark:selection:text-stone-100">
         <NextIntlClientProvider messages={messages}>
-          <div className="flex min-h-screen flex-col bg-stone-950 text-stone-100">
-            <AppHeader />
+          <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-stone-950 dark:text-stone-100">
+            {session ? <AppHeader /> : <PublicAuthHeader />}
             <div id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
               {children}
             </div>

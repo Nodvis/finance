@@ -1,8 +1,72 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  color-scheme: light dark;
-  font-family: Arial, Helvetica, sans-serif;
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
+  /* Semantic Light Design Tokens */
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #f1f5f9;
+  --bg-surface-hover: #f8fafc;
+  --bg-surface-elevated: #ffffff;
+
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  --brand-primary: #059669;
+  --brand-hover: #047857;
+  --brand-subtle: #ecfdf5;
+  --brand-text: #065f46;
+
+  --color-income: #059669;
+  --color-income-subtle: #ecfdf5;
+  --color-expense: #e11d48;
+  --color-expense-subtle: #fff1f2;
+  --color-warning: #d97706;
+  --color-warning-subtle: #fffbeb;
+  --color-transfer: #2563eb;
+  --color-transfer-subtle: #eff6ff;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Semantic Dark Design Tokens */
+  --bg-canvas: #0c0a09;
+  --bg-surface: #1c1917;
+  --bg-surface-subtle: #292524;
+  --bg-surface-hover: #292524;
+  --bg-surface-elevated: #292524;
+
+  --border-subtle: #292524;
+  --border-strong: #44403c;
+
+  --text-primary: #fafaf9;
+  --text-secondary: #d6d3d1;
+  --text-muted: #a8a29e;
+  --text-dim: #78716c;
+
+  --brand-primary: #10b981;
+  --brand-hover: #34d399;
+  --brand-subtle: #064e3b;
+  --brand-text: #6ee7b7;
+
+  --color-income: #10b981;
+  --color-income-subtle: #064e3b;
+  --color-expense: #f43f5e;
+  --color-expense-subtle: #881337;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #78350f;
+  --color-transfer: #60a5fa;
+  --color-transfer-subtle: #1e3a8a;
 }
 
 * {
@@ -16,13 +80,6 @@ body {
 
 body {
   margin: 0;
-  background: #f5f5f4;
-  color: #1c1917;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #0c0a09;
-    color: #fafaf9;
-  }
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
 }

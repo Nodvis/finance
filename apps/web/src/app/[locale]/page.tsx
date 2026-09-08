@@ -48,122 +48,125 @@ export default async function HomePage({
   const tAccess = await getTranslations("Accessibility");
 
   const session = await getCurrentSession();
-  const householdStatus = session
-    ? await getCurrentUserHouseholdsStatus()
-    : { status: "unauthenticated" as const };
 
-  const householdContext =
-    householdStatus.status === "single" ||
-    householdStatus.status === "multiple_selected"
-      ? householdStatus.activeContext
-      : null;
-
-  const [accounts, categories, rawTransactions, overview] =
-    householdContext
-      ? await Promise.all([
-          listAccountsByHousehold(householdContext.householdId, {
-            includeArchived: false,
-          }),
-          listHouseholdCategories(householdContext, {
-            includeArchived: true,
-          }),
-          listManualTransactions(householdContext, {
-            limit: 50,
-            offset: 0,
-            includeVoided: true,
-          }),
-          getHouseholdOverview(householdContext, {
-            month: monthParam,
-            from: fromParam,
-            to: toParam,
-          }),
-        ])
-      : [[], [], [], null];
-
-  const serializedTransactions = rawTransactions.map(serializeTransaction);
-  const serializedOverview = overview ? serializeOverview(overview) : null;
-
-  const placeholderSummaryCards = [
-    { key: "available", label: t("cards.available") },
-    { key: "upcoming", label: t("cards.upcoming") },
-    { key: "debt", label: t("cards.debt") },
-  ] as const;
-
-  return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-stone-800/80 pb-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400/80">
-            {t("eyebrow")}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-100 sm:text-3xl">
-            {t("title")}
+  // 1. Unauthenticated presentation: strictly public hero and sign-in card.
+  // Shows NO dashboard metrics, NO authenticated navigation, NO household bars, and NO admin copy.
+  if (!session) {
+    return (
+      <div className="mx-auto flex w-full max-w-lg flex-col items-center justify-center gap-8 px-4 py-12 sm:px-6 lg:py-16">
+        <section aria-label={tAccess("publicShell")} className="w-full text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-stone-100">
+            {t("publicHeroTitle")}
           </h1>
-        </div>
-        {householdContext ? (
-          <div className="flex flex-wrap gap-2 text-xs text-stone-400">
-            <span className="rounded-full border border-stone-800 bg-stone-900 px-3 py-1.5">
-              {householdContext.defaultCurrency}
-            </span>
-            <a href="#transaction-list" className="rounded-lg bg-emerald-400 px-3 py-1.5 font-semibold text-stone-950 transition hover:bg-emerald-300">
-              {t("quickActions.viewTransactions")}
-            </a>
-          </div>
-        ) : null}
-      </header>
-
-      {/* Honest Financial Summary Cards */}
-      {serializedOverview ? (
-        <OverviewCards overview={serializedOverview} locale={locale} />
-      ) : (
-        <section
-          aria-label={tAccess("financialSummary")}
-          className="grid gap-4 sm:grid-cols-3"
-        >
-          {placeholderSummaryCards.map((card) => (
-            <article
-              key={card.key}
-              className="rounded-2xl border border-stone-800 bg-stone-900/70 p-5 shadow-xs backdrop-blur-xs transition-colors hover:border-stone-700/80"
-            >
-              <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
-                {card.label}
-              </p>
-              <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-stone-100">
-                —
-              </p>
-              <p className="mt-2 text-xs text-stone-400">
-                {t("noData")}
-              </p>
-            </article>
-          ))}
+          <p className="mt-2 text-sm text-slate-600 dark:text-stone-400">
+            {t("publicHeroSubtitle")}
+          </p>
         </section>
-      )}
 
-      {/* Main flow: Unauthenticated, No Household, Multiple Households Needs Selection, or Authenticated Transactions */}
-      {!session ? (
-        <section aria-label={tAccess("authentication")}>
+        <section aria-label={tAccess("authentication")} className="w-full">
           <SignInCard />
         </section>
-      ) : householdStatus.status === "none" ? (
+      </div>
+    );
+  }
+
+  // 2. Authenticated user status check
+  const householdStatus = await getCurrentUserHouseholdsStatus();
+
+  // 3. User with no household (onboarding)
+  if (householdStatus.status === "none") {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <section aria-label={tAccess("household")}>
           <NoHouseholdCard
             email={session.user.email}
             defaultDisplayName={session.user.name ?? undefined}
           />
         </section>
-      ) : householdStatus.status === "multiple_needs_selection" ? (
+      </div>
+    );
+  }
+
+  // 4. User with multiple households needing selection
+  if (householdStatus.status === "multiple_needs_selection") {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <section aria-label={tAccess("householdSelection")}>
           <HouseholdSelectionCard
             households={householdStatus.households}
             email={session.user.email}
           />
         </section>
-      ) : householdContext && serializedOverview ? (
+      </div>
+    );
+  }
+
+  if (householdStatus.status !== "single" && householdStatus.status !== "multiple_selected") {
+    return null;
+  }
+
+  // 5. User with active household context: load truthful overview and financial data
+  const householdContext = householdStatus.activeContext;
+
+  const [accounts, categories, rawTransactions, overview] = await Promise.all([
+    listAccountsByHousehold(householdContext.householdId, {
+      includeArchived: false,
+    }),
+    listHouseholdCategories(householdContext, {
+      includeArchived: true,
+    }),
+    listManualTransactions(householdContext, {
+      limit: 50,
+      offset: 0,
+      includeVoided: true,
+    }),
+    getHouseholdOverview(householdContext, {
+      month: monthParam,
+      from: fromParam,
+      to: toParam,
+    }),
+  ]);
+
+  const serializedTransactions = rawTransactions.map(serializeTransaction);
+  const serializedOverview = overview ? serializeOverview(overview) : null;
+
+  return (
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5 dark:border-stone-800/80">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400/80">
+            {t("eyebrow")}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-stone-100">
+            {t("title")}
+          </h1>
+        </div>
+
+        <div className="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-stone-400">
+          <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 font-medium text-slate-700 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-300">
+            {householdContext.defaultCurrency}
+          </span>
+          <a
+            href="#transaction-list"
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-400 dark:text-stone-950 dark:hover:bg-emerald-300"
+          >
+            {t("quickActions.viewTransactions")}
+          </a>
+        </div>
+      </header>
+
+      {/* Honest Financial Summary Cards */}
+      {serializedOverview ? (
+        <OverviewCards overview={serializedOverview} locale={locale} />
+      ) : null}
+
+      {/* Authenticated Finance Workspace */}
+      {serializedOverview && (
         <section
           aria-label={tAccess("householdTransactions")}
-          className="flex flex-col gap-8"
+          className="flex flex-col gap-6"
         >
-          {/* Selected Household & Period Header with Add Transaction action */}
+          {/* Selected Period Header with Navigation */}
           <PeriodHeader
             householdContext={householdContext}
             overview={serializedOverview}
@@ -182,15 +185,23 @@ export default async function HomePage({
             locale={locale}
           />
 
+          {/* Focused transaction addition flow */}
           <details
             id="transaction-forms"
-            className="rounded-2xl border border-stone-800 bg-stone-900/50 p-4 shadow-xs"
+            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all dark:border-stone-800 dark:bg-stone-900/50"
           >
-            <summary className="cursor-pointer list-none text-sm font-semibold text-stone-100 marker:hidden">
-              <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 font-bold text-stone-950">+</span>
-              {t("quickActions.addTransaction")}
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-slate-800 dark:text-stone-100">
+              <span className="flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white dark:bg-emerald-400 dark:text-stone-950">
+                  +
+                </span>
+                {t("quickActions.addTransaction")}
+              </span>
+              <span className="text-xs text-slate-500 transition-transform group-open:rotate-180 dark:text-stone-400">
+                ▼
+              </span>
             </summary>
-            <div className="mt-4 border-t border-stone-800 pt-4">
+            <div className="mt-4 border-t border-slate-100 pt-4 dark:border-stone-800">
               <TransactionForms
                 householdId={householdContext.householdId}
                 accounts={accounts}
@@ -218,7 +229,7 @@ export default async function HomePage({
             />
           </div>
         </section>
-      ) : null}
+      )}
     </div>
   );
 }
