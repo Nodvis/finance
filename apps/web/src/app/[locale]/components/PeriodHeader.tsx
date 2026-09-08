@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 
 import type { SerializedHouseholdOverview } from "@/lib/overview/schema";
 import type { AuthorizedHouseholdUserContext } from "@/lib/authorization/household";
-import { SignOutButton } from "./SignOutButton";
 
 type PeriodHeaderProps = {
   householdContext: AuthorizedHouseholdUserContext;
@@ -17,7 +16,7 @@ export async function PeriodHeader({
   locale,
 }: PeriodHeaderProps) {
   const tNav = await getTranslations("Navigation");
-  const tHousehold = await getTranslations("Household");
+
   const tOverview = await getTranslations("Overview");
   const tAccess = await getTranslations("Accessibility");
 
@@ -48,34 +47,14 @@ export async function PeriodHeader({
     <div className="flex flex-col gap-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 shadow-xs backdrop-blur-xs">
       {/* Top row: Household Context Info + Nav actions */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-800/60 pb-3">
-        <div className="flex flex-wrap items-center gap-6 text-sm">
-          <div>
-            <span className="text-stone-400">{tHousehold("label")}: </span>
-            <span className="font-semibold text-stone-100">
-              {householdContext.householdName}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400">{tHousehold("member")}: </span>
-            <span className="font-medium text-stone-200">
-              {householdContext.personDisplayName}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-400">{tHousehold("currency")}: </span>
-            <span className="font-mono font-semibold text-stone-100">
-              {householdContext.defaultCurrency}
-            </span>
-          </div>
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
+            {tOverview("periodLabel")}
+          </p>
+          <p className="mt-1 text-base font-semibold text-stone-100">{periodLabel}</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <a
-            href="#transaction-forms"
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-emerald-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/50"
-          >
-            + {tOverview("addTransactionAction")}
-          </a>
           <Link
             href={`/${locale}/accounts`}
             className="rounded-lg border border-stone-700 bg-stone-800/80 px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:border-stone-600 hover:text-stone-100"
@@ -88,7 +67,6 @@ export async function PeriodHeader({
           >
             {tNav("categories")}
           </Link>
-          <SignOutButton />
         </div>
       </div>
 

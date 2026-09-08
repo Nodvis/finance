@@ -67,6 +67,7 @@ async function createCategory(page: Page, locale: "pl" | "en"): Promise<string> 
 
 async function addExpense(page: Page, locale: "pl" | "en", accountName: string, categoryId: string, payee: string) {
   await page.goto(`/${locale}`);
+  await page.locator("#transaction-forms summary").click();
   await page.locator("#single-account").selectOption({ label: `${accountName} (PLN)` });
   await page.locator("#transaction-category").selectOption(categoryId);
   await page.locator("#amount-input").fill("12.34");

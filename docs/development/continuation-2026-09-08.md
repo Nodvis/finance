@@ -167,3 +167,28 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
   - `apps/web`: `service.test.ts` (10/10 passed), `route.test.ts` (9/9 passed).
   - Independent review correction: `sourceRowIdentityColumn` is never promoted to authoritative identity; source-row value remains provenance. Empty legacy source defaults are omitted from hydrated domain transactions.
   - Independent verification: full `pnpm test` passed (domain 114, DB 60, web 267), `pnpm typecheck`, `pnpm lint`, `pnpm build`, `git diff --check`, and PostgreSQL temporary expression-index syntax check passed.
+
+## Checkpoint: PR #12 merged — stable identity and safe import summary
+
+- PR #12 merged normally; final `origin/main`: `74b69fef65c7492abb88cf922f2bd41e02854bc2`.
+- Delivered source identity, overlapping import dedupe, occurrence/ambiguity handling and safe automatic import summary; no bank-specific adapter or relationship intelligence yet.
+- CI `verify` passed. Private deployment was rebuilt after backup and additive migration; authenticated Polish flow passed 1/1; private HTTP returned 200.
+- Backup: `/home/erza_agent/backups/nodvis-finance-private-20260908T174107Z.dump`, 68110 bytes, `pg_restore --list` passed.
+
+## Next checkpoint: visible authenticated UI redesign
+
+- Branch: `feature/ui-redesign-next`, based on `origin/main` `74b69fef65c7492abb88cf922f2bd41e02854bc2`.
+- Reusable current components: authenticated locale layout, existing overview/accounts/categories/imports/transaction pages, current PL/EN catalogs and exact-money formatters. Do not reimplement identity/import persistence.
+- Scope: compact authenticated shell/sidebar, coherent context/profile/language controls, dense truthful overview, first-class transactions/imports/accounts/categories navigation, focused create flows, responsive states and no fake metrics. Keep routes and server authorization intact; no new migration unless strictly required.
+- Screenshot review: attachments 1–5 were available and inspected; local files for 6–9 were unavailable, so their documented requirements are used without claiming direct visual inspection.
+- Acceptance: component tests, translation parity, typecheck/lint/build, authenticated PL/EN Chromium against isolated Compose, representative mobile viewport screenshots, then private Compose deployment after backup only if no schema migration is needed.
+
+## Checkpoint: compact authenticated shell and dashboard — implementation complete
+
+- Reworked the real authenticated header into a responsive shell: wider content rail, overflow-safe navigation for Overview/Accounts/Categories/Imports, language control, signed-in context and centralized logout; no new dead routes were added.
+- Removed repeated household/member/currency/logout bars from the period panel and removed the giant inline transaction form from the dashboard; the existing transaction history remains a first-class dashboard section with a truthful `View transactions` action.
+- Added PL/EN navigation and quick-action translations; preserved existing authorization, server data loading, exact-money presentation and empty-state behavior.
+- Build regression found and fixed: async shell uses server `getTranslations`, avoiding React prerender suspension failure on `/pl/accounts`.
+- Verification: `pnpm test` passed (domain 115, DB 60, web 267); `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` passed.
+- Remaining before delivery: authenticated PL/EN browser run with screenshots, private Compose rebuild/health check, commit/push and PR/CI integration. No schema migration is involved, so no database change is required.
+- Deployed verification: private web image `sha256:67b78f2de2cd458b625f37a3966e8234ab30ff8f8514cdbff07deb2f7cbc28fc` is healthy and `/pl` returns HTTP 200; authenticated Chromium PL/EN + smoke passed 5/5; visual captures `/tmp/nodvis-redesign-desktop.png` and `/tmp/nodvis-redesign-mobile.png` show the compact shell and responsive collapsed transaction flow.

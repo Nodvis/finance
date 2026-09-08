@@ -9,6 +9,7 @@
     "home": "Overview",
     "accounts": "Accounts",
     "categories": "Categories",
+    "imports": "Imports",
     "skipToContent": "Skip to main content",
     "privateBadge": "Self-hosted"
   },
@@ -24,6 +25,7 @@
     "eyebrow": "Household financial control",
     "title": "Your financial situation without the accounting clutter.",
     "description": "A clear, real-time snapshot of available funds, upcoming obligations, and household debt.",
+    "quickActions": { "viewTransactions": "View transactions", "addTransaction": "Add a transaction" },
     "summaryLabel": "Financial summary",
     "noData": "No data yet — the financial model is being implemented.",
     "cards": {
