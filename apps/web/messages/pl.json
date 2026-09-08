@@ -10,6 +10,7 @@
     "accounts": "Konta",
     "categories": "Kategorie",
     "imports": "Importy",
+    "transfers": "Przelewy",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Prywatne"
   },
@@ -108,6 +109,12 @@
     "emptyArchivedDescription": "Brak zarchiwizowanych kont w tym gospodarstwie domowym.",
     "balanceUnknown": "Nieznane",
     "balanceUnknownHelp": "Brak zarejestrowanego salda",
+    "identifiersLabel": "Identyfikatory rachunku",
+    "noIdentifiers": "Brak zarejestrowanych identyfikatorów",
+    "identifiersModalTitle": "Identyfikatory rachunku",
+    "registeredIdentifiers": "Zarejestrowane numery kont",
+    "addIdentifierTitle": "Dodaj numer rachunku / IBAN",
+    "addIdentifierHelp": "Wprowadź 26-cyfrowy polski numer konta lub międzynarodowy IBAN. Bezpieczne maskowanie jest stosowane we wszystkich standardowych widokach.",
     "types": {
       "checking": "Konto bieżące",
       "savings": "Konto oszczędnościowe",
@@ -125,6 +132,12 @@
     "actions": {
       "addAccount": "Dodaj konto",
       "importStatement": "Importuj CSV",
+      "manageIdentifiers": "Numery kont",
+      "addIdentifier": "Dodaj numer",
+      "adding": "Dodawanie...",
+      "delete": "Usuń",
+      "deleting": "Usuwanie...",
+      "close": "Zamknij",
       "edit": "Edytuj",
       "archive": "Zarchiwizuj",
       "unarchive": "Przywróć",
@@ -146,12 +159,16 @@
       "initialBalancePlaceholder": "np. 1500,50 lub pozostaw puste",
       "initialBalanceHelp": "Pozostaw puste, jeśli saldo jest nieznane. Wartości dziesiętne są parsowane z dokładnymi jednostkami.",
       "creditCardNotice": "W przypadku karty kredytowej wpisz kwotę ujemną przy zadłużeniu (np. -250,00).",
+      "identifierNumber": "Numer rachunku (NRB lub IBAN)",
+      "identifierLabelOptional": "Etykieta / opis (opcjonalnie)",
       "submitAdd": "Utwórz konto",
       "submittingAdd": "Tworzenie konta...",
       "successAdd": "Konto zostało pomyślnie utworzone.",
       "successEdit": "Dane konta zostały pomyślnie zaktualizowane.",
       "successArchive": "Konto zostało zarchiwizowane bez usuwania historii.",
       "successUnarchive": "Konto zostało przywrócone do aktywnych.",
+      "successAddIdentifier": "Numer rachunku został pomyślnie dodany.",
+      "successDeleteIdentifier": "Numer rachunku został usunięty.",
       "errorGeneric": "Wystąpił błąd podczas zapisywania konta.",
       "errorOwnersRequired": "Wybierz co najmniej jednego właściciela.",
       "errorNameRequired": "Podanie nazwy konta jest wymagane."
@@ -450,7 +467,10 @@
     "categoryBreakdown": "Zestawienie wydatków według kategorii",
     "cashFlowSummary": "Podsumowanie przepływów pieniężnych w okresie",
     "accountObservations": "Status obserwacji kont",
-    "transactionHistoryTimeline": "Oś czasu historii zmian transakcji"
+    "transactionHistoryTimeline": "Oś czasu historii zmian transakcji",
+    "transfersList": "Lista kandydatów na przelewy",
+    "transfersTabs": "Kategorie przeglądu przelewów",
+    "accountIdentifiersModal": "Okno dialogowe zarządzania identyfikatorami rachunku"
   },
   "Imports": {
     "title": "Importuj wyciąg CSV",
@@ -480,6 +500,69 @@
     "fileSelected": "Wybrany plik: {name} ({size})",
     "resetFile": "Wybierz inny plik",
     "errors": { "generic": "Nie udało się wykonać importu." }
+  },
+  "Transfers": {
+    "eyebrow": "Uzgodnienia wewnętrzne",
+    "title": "Przelewy wewnętrzne",
+    "description": "Przeglądaj i łącz transfery środków pomiędzy kontami w Twoim gospodarstwie domowym bez podwójnego liczenia wydatków i przychodów.",
+    "tabs": {
+      "readyAuto": "Gotowe do połączenia ({count})",
+      "reviewOnly": "Wymaga weryfikacji ({count})",
+      "oneSidedPending": "Oczekuje na drugą stronę ({count})",
+      "ambiguous": "Niejednoznaczne ({count})",
+      "reconciled": "Historia uzgodnień ({count})"
+    },
+    "badges": {
+      "readyAuto": "Gotowe",
+      "reviewOnly": "Weryfikacja",
+      "oneSidedPending": "Oczekujące",
+      "ambiguous": "Niejednoznaczne",
+      "reconciled": "Uzgodnione"
+    },
+    "actions": {
+      "autoMatchAll": "Połącz automatycznie wszystkie potwierdzone ({count})",
+      "autoMatching": "Łączenie przelewów...",
+      "match": "Połącz przelew",
+      "matching": "Łączenie...",
+      "confirmMatch": "Zatwierdź połączenie",
+      "cancel": "Anuluj",
+      "viewTransaction": "Szczegóły"
+    },
+    "hints": {
+      "readyAuto": "Obie strony przelewu zostały zarejestrowane z tą samą kwotą, walutą oraz potwierdzonym zarejestrowanym numerem konta łączącym Twoje rachunki.",
+      "reviewOnly": "Kwoty i daty są zgodne między rachunkami, jednak brak zarejestrowanego numeru konta potwierdzającego to powiązanie. Wymagana jest manualna weryfikacja.",
+      "oneSidedPending": "Wypływ został wysłany na znany numer konta w gospodarstwie, ale odpowiedni wpływ nie został jeszcze zaimportowany ani zaksięgowany.",
+      "ambiguous": "Znaleziono wielu potencjalnych kandydatów na wpłatę lub waluty transakcji różnią się. Wybierz właściwą wpłatę ręcznie."
+    },
+    "empty": {
+      "readyAutoTitle": "Brak przelewów gotowych do połączenia",
+      "readyAutoDescription": "Wszystkie potwierdzone pary przelewów zostały już połączone.",
+      "reviewOnlyTitle": "Brak przelewów do weryfikacji",
+      "reviewOnlyDescription": "Nie znaleziono niepotwierdzonych przelewów o zbliżonych kwotach i datach.",
+      "oneSidedPendingTitle": "Brak oczekujących przelewów jednostronnych",
+      "oneSidedPendingDescription": "Żaden wypływ na znane konto nie oczekuje obecnie na drugą stronę transakcji.",
+      "ambiguousTitle": "Brak niejednoznacznych kandydatów",
+      "ambiguousDescription": "Brak transakcji z wieloma potencjalnymi dopasowaniami.",
+      "reconciledTitle": "Brak uzgodnionych przelewów",
+      "reconciledDescription": "Połączone przelewy wewnętrzne pojawią się w historii."
+    },
+    "card": {
+      "outflow": "Wypływ (źródło)",
+      "inflow": "Wpływ (cel)",
+      "account": "Konto",
+      "date": "Data",
+      "amount": "Kwota",
+      "description": "Opis",
+      "matchedIdentifier": "Potwierdzony numer konta",
+      "reconciledAt": "Uzgodniono",
+      "selectCounterpart": "Wybierz transakcję po drugiej stronie:"
+    },
+    "feedback": {
+      "successMatch": "Przelew został pomyślnie połączony i uzgodniony.",
+      "successAutoMatch": "Pomyślnie połączono {count} przelewów wewnętrznych.",
+      "noAutoMatched": "Brak przelewów kwalifikujących się do automatycznego połączenia.",
+      "errorGeneric": "Nie udało się połączyć przelewu. Spróbuj ponownie."
+    }
   },
   "Overview": {
     "periodLabel": "Wybrany okres",

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import type { HouseholdAccessSummary } from "@nodvis/finance-db";
 import type { SerializedHouseholdAccount } from "@/lib/accounts/serialization";
+import type { SerializedAccountIdentifier } from "@/lib/account-identifiers/service";
 import type { AuthorizedHouseholdUserContext } from "@/lib/authorization/household";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 
@@ -21,6 +22,7 @@ type AccountsViewProps = {
   householdContext: AuthorizedHouseholdUserContext;
   allHouseholds: HouseholdAccessSummary[];
   initialAccounts: SerializedHouseholdAccount[];
+  initialIdentifiers?: SerializedAccountIdentifier[];
   members: Member[];
   locale: string;
 };
@@ -28,6 +30,7 @@ type AccountsViewProps = {
 export function AccountsView({
   householdContext,
   initialAccounts,
+  initialIdentifiers,
   members,
   locale,
 }: AccountsViewProps) {
@@ -36,9 +39,18 @@ export function AccountsView({
   const router = useRouter();
 
   const [accounts, setAccounts] = useState<SerializedHouseholdAccount[]>(initialAccounts);
+  const [identifiers, setIdentifiers] = useState<SerializedAccountIdentifier[]>(
+    initialIdentifiers ?? [],
+  );
   const [showArchived, setShowArchived] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editingAccount, setEditingAccount] = useState<SerializedHouseholdAccount | null>(null);
+  const [managingAccount, setManagingAccount] = useState<SerializedHouseholdAccount | null>(null);
+  const [newRawIdentifier, setNewRawIdentifier] = useState("");
+  const [newIdentifierLabel, setNewIdentifierLabel] = useState("");
+  const [isSubmittingIdentifier, setIsSubmittingIdentifier] = useState(false);
+  const [identifierError, setIdentifierError] = useState<string | null>(null);
+  const [identifierActionLoadingId, setIdentifierActionLoadingId] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
@@ -278,6 +290,70 @@ export function AccountsView({
     return ownerPersonIds
       .map((id) => members.find((m) => m.personId === id)?.displayName || id)
       .join(", ");
+  };
+
+  const handleAddIdentifierSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!managingAccount) return;
+    setIsSubmittingIdentifier(true);
+    setIdentifierError(null);
+
+    try {
+      const res = await fetch(
+        `/api/households/${householdContext.householdId}/accounts/${managingAccount.id}/identifiers`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rawIdentifier: newRawIdentifier.trim(),
+            label: newIdentifierLabel.trim() || undefined,
+          }),
+        },
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        setIdentifierError(json.error || tAccounts("form.errorGeneric"));
+      } else {
+        setIdentifiers((prev) => [...prev, json.data]);
+        setNewRawIdentifier("");
+        setNewIdentifierLabel("");
+        setStatusMessage({
+          type: "success",
+          text: tAccounts("form.successAddIdentifier"),
+        });
+      }
+    } catch {
+      setIdentifierError(tAccounts("form.errorGeneric"));
+    } finally {
+      setIsSubmittingIdentifier(false);
+    }
+  };
+
+  const handleDeleteIdentifier = async (identifierId: string) => {
+    if (!managingAccount) return;
+    setIdentifierActionLoadingId(identifierId);
+    setIdentifierError(null);
+
+    try {
+      const res = await fetch(
+        `/api/households/${householdContext.householdId}/accounts/${managingAccount.id}/identifiers/${identifierId}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const json = await res.json();
+        setIdentifierError(json.error || tAccounts("form.errorGeneric"));
+      } else {
+        setIdentifiers((prev) => prev.filter((i) => i.id !== identifierId));
+        setStatusMessage({
+          type: "success",
+          text: tAccounts("form.successDeleteIdentifier"),
+        });
+      }
+    } catch {
+      setIdentifierError(tAccounts("form.errorGeneric"));
+    } finally {
+      setIdentifierActionLoadingId(null);
+    }
   };
 
   return (
@@ -618,6 +694,163 @@ export function AccountsView({
         </div>
       )}
 
+      {/* Focused Manage Account Identifiers Modal */}
+      {managingAccount && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${tAccounts("identifiersModalTitle")}: ${managingAccount.name}`}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs overflow-y-auto dark:bg-black/60"
+        >
+          <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-stone-800 dark:bg-stone-900">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-stone-800">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+                  {tAccounts("identifiersModalTitle")}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-stone-400 mt-0.5">
+                  {managingAccount.name} ({managingAccount.currency})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManagingAccount(null)}
+                className="text-xs text-slate-400 hover:text-slate-700 transition-colors focus:outline-none dark:text-stone-400 dark:hover:text-stone-200"
+              >
+                {tAccounts("actions.cancel")}
+              </button>
+            </div>
+
+            {/* Error display inside modal */}
+            {identifierError && (
+              <div
+                role="alert"
+                className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/80 dark:bg-rose-950/60 dark:text-rose-200"
+              >
+                {identifierError}
+              </div>
+            )}
+
+            {/* Existing Identifiers List */}
+            <div className="mt-5 space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
+                {tAccounts("registeredIdentifiers")}
+              </h3>
+              {(() => {
+                const accIdens = identifiers.filter(
+                  (i) => i.accountId === managingAccount.id,
+                );
+                if (accIdens.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 italic dark:text-stone-500 py-2">
+                      {tAccounts("noIdentifiers")}
+                    </p>
+                  );
+                }
+                return (
+                  <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-slate-50/50 dark:divide-stone-800 dark:border-stone-800 dark:bg-stone-900/50">
+                    {accIdens.map((iden) => (
+                      <li
+                        key={iden.id}
+                        className="flex items-center justify-between gap-3 p-3 text-xs"
+                      >
+                        <div>
+                          <div className="font-mono font-semibold text-slate-800 dark:text-stone-200">
+                            {iden.maskedIdentifier}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-stone-400">
+                            <span className="uppercase">{iden.identifierType}</span>
+                            {iden.label && <span>· {iden.label}</span>}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={identifierActionLoadingId === iden.id}
+                          onClick={() => handleDeleteIdentifier(iden.id)}
+                          className="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:text-rose-400 dark:hover:bg-stone-700"
+                        >
+                          {identifierActionLoadingId === iden.id
+                            ? tAccounts("actions.deleting")
+                            : tAccounts("actions.delete")}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
+            </div>
+
+            {/* Add New Identifier Form */}
+            <form onSubmit={handleAddIdentifierSubmit} className="mt-6 border-t border-slate-200 pt-5 dark:border-stone-800 space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-stone-300">
+                {tAccounts("addIdentifierTitle")}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-stone-400">
+                {tAccounts("addIdentifierHelp")}
+              </p>
+
+              <div>
+                <label
+                  htmlFor="new-identifier-input"
+                  className="block text-xs font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {tAccounts("form.identifierNumber")}
+                </label>
+                <input
+                  id="new-identifier-input"
+                  type="text"
+                  required
+                  value={newRawIdentifier}
+                  onChange={(e) => {
+                    setNewRawIdentifier(e.target.value);
+                    setIdentifierError(null);
+                  }}
+                  placeholder="np. PL74 1090 2402 0000 0001 2345 6789 lub 26 cyfr"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-mono text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="new-identifier-label"
+                  className="block text-xs font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {tAccounts("form.identifierLabelOptional")}
+                </label>
+                <input
+                  id="new-identifier-label"
+                  type="text"
+                  maxLength={160}
+                  value={newIdentifierLabel}
+                  onChange={(e) => setNewIdentifierLabel(e.target.value)}
+                  placeholder="np. Główne konto rozliczeniowe"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setManagingAccount(null)}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  {tAccounts("actions.close")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingIdentifier}
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:text-stone-950 dark:hover:bg-emerald-400"
+                >
+                  {isSubmittingIdentifier
+                    ? tAccounts("actions.adding")
+                    : tAccounts("actions.addIdentifier")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Active Accounts List */}
       <section
         aria-label={tAccess("accountsList")}
@@ -737,10 +970,67 @@ export function AccountsView({
                         {getOwnerNames(acc.ownerPersonIds)}
                       </span>
                     </div>
+
+                    {/* Identifiers */}
+                    <div className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-500 dark:border-stone-800/60 dark:text-stone-400">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-slate-600 dark:text-stone-300">
+                          {tAccounts("identifiersLabel")}:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManagingAccount(acc);
+                            setIdentifierError(null);
+                          }}
+                          className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 underline dark:text-emerald-400 dark:hover:text-emerald-300"
+                        >
+                          + {tAccounts("actions.addIdentifier")}
+                        </button>
+                      </div>
+                      {(() => {
+                        const accIdens = identifiers.filter((i) => i.accountId === acc.id);
+                        if (accIdens.length === 0) {
+                          return (
+                            <span className="mt-1 block italic text-[11px] text-slate-400 dark:text-stone-500">
+                              {tAccounts("noIdentifiers")}
+                            </span>
+                          );
+                        }
+                        return (
+                          <div className="mt-1 space-y-1">
+                            {accIdens.map((i) => (
+                              <div
+                                key={i.id}
+                                className="flex items-center justify-between rounded bg-slate-50 px-2 py-1 font-mono text-[11px] text-slate-700 dark:bg-stone-800/60 dark:text-stone-300"
+                              >
+                                <span className="font-medium">{i.maskedIdentifier}</span>
+                                {i.label && (
+                                  <span className="font-sans text-[10px] text-slate-500 dark:text-stone-400 truncate max-w-[120px]">
+                                    {i.label}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
 
-                  {/* Actions (Import, Edit & Archive) */}
-                  <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-stone-800/60">
+                  {/* Actions (Manage Identifiers, Import, Edit & Archive) */}
+                  <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-stone-800/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManagingAccount(acc);
+                        setIdentifierError(null);
+                      }}
+                      aria-label={`${tAccounts("actions.manageIdentifiers")} ${acc.name}`}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
+                    >
+                      {tAccounts("actions.manageIdentifiers")}
+                    </button>
                     <button
                       type="button"
                       onClick={() => router.push(`/${locale}/imports?accountId=${acc.id}`)}
@@ -826,6 +1116,40 @@ export function AccountsView({
                       <span className="text-slate-700 dark:text-stone-300">
                         {getOwnerNames(acc.ownerPersonIds)}
                       </span>
+                    </div>
+
+                    {/* Identifiers */}
+                    <div className="mt-3 border-t border-slate-200/50 pt-2 text-xs text-slate-500 dark:border-stone-800/40 dark:text-stone-400">
+                      <span className="font-medium text-slate-600 dark:text-stone-300">
+                        {tAccounts("identifiersLabel")}:{" "}
+                      </span>
+                      {(() => {
+                        const accIdens = identifiers.filter((i) => i.accountId === acc.id);
+                        if (accIdens.length === 0) {
+                          return (
+                            <span className="italic text-[11px] text-slate-400 dark:text-stone-500">
+                              {tAccounts("noIdentifiers")}
+                            </span>
+                          );
+                        }
+                        return (
+                          <div className="mt-1 space-y-1">
+                            {accIdens.map((i) => (
+                              <div
+                                key={i.id}
+                                className="flex items-center justify-between font-mono text-[11px] text-slate-600 dark:text-stone-400"
+                              >
+                                <span>{i.maskedIdentifier}</span>
+                                {i.label && (
+                                  <span className="font-sans text-[10px] truncate max-w-[120px]">
+                                    {i.label}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 

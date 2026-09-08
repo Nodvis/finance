@@ -27,6 +27,7 @@ export type {
 
 export {
   accountId,
+  accountIdentifierId,
   categoryId,
   householdId,
   personId,
@@ -34,6 +35,7 @@ export {
 } from "./identity";
 export type {
   AccountId,
+  AccountIdentifierId,
   CategoryId,
   HouseholdId,
   PersonId,
@@ -174,3 +176,32 @@ export type {
   StatementImportRowStatus,
   SupportedDateFormat,
 } from "./import";
+
+export {
+  ACCOUNT_IDENTIFIER_TYPES,
+  cleanRawIdentifier,
+  extractAccountIdentifiersFromText,
+  formatAccountIdentifier,
+  maskAccountIdentifier,
+  normalizeAccountIdentifier,
+  validateAccountIdentifier,
+} from "./account-identifier";
+export type {
+  AccountIdentifier,
+  AccountIdentifierType,
+  AccountIdentifierValidationResult,
+} from "./account-identifier";
+
+export {
+  TRANSFER_MATCH_CONFIDENCES,
+  findTransferCandidates,
+  validateTransferMatch,
+} from "./transfer-matching";
+export type {
+  AccountIdentifierInfo,
+  AccountInfo,
+  TransferCandidate,
+  TransferCandidateEvidence,
+  TransferCandidateSide,
+  TransferMatchConfidence,
+} from "./transfer-matching";

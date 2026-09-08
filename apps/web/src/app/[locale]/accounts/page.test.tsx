@@ -24,6 +24,11 @@ vi.mock("@/lib/accounts/serialization", () => ({
   serializeAccount: vi.fn((a) => a),
 }));
 
+vi.mock("@/lib/account-identifiers/service", () => ({
+  listHouseholdAccountIdentifiers: vi.fn().mockResolvedValue([]),
+  serializeAccountIdentifier: vi.fn((a) => a),
+}));
+
 vi.mock("./AccountsView", () => ({
   AccountsView: vi.fn(() => null),
 }));

@@ -220,3 +220,20 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
   - `pnpm -r lint`: passed with zero errors.
   - `pnpm build`: passed with zero errors.
   - Playwright E2E: 4 smoke tests (public shell, localization, light/dark toggling) + 2 full Polish & English authenticated browser flows passed.
+
+## 2026-09-08 — P0 UI/auth correction deployed
+- PR #15 `e57d112` merged as `6a92dab4016017b4275630c5e312dd20296b3cb9`.
+- PR #16 `6293ade` merged as `f1336214aa641130b3657e8f741a5d35ad1274c6`.
+- Public/auth boundary now renders a standalone guest header without authenticated navigation, household context or financial metrics; authenticated shell retains household/user/language/theme/logout context.
+- Overview, Accounts, Categories and Imports use responsive light/dark product surfaces, focused modal create/edit flows and truthful empty states. Transaction workspace was visually reviewed and corrected for light-theme contrast.
+- Deployment: private Compose web healthy, PostgreSQL healthy, `/pl` HTTP 200; deployed image `sha256:68a8b26dbfec8e5f74580b772663ffb5c8fa51eefa9ab4f93941f418cea9fd9c`.
+- Browser evidence: deployed Chromium public PL/EN + theme smoke 4/4; authenticated PL/EN finance flow 2/2; final synthetic visual capture passed and artifacts are `/tmp/nodvis-final-public-login.png`, `/tmp/nodvis-final-public-login-dark.png`, `/tmp/nodvis-final-overview-light.png`, `/tmp/nodvis-final-overview-mobile.png`.
+- P0 remaining limitation: route tree still uses the existing locale page boundary with server session branching; no new financial schema/migration was introduced.
+
+## Remaining scope checklist after P0
+- [ ] P1 automatic safe CSV processing with explicit consent, saved import profiles and review-only uncertainty.
+- [ ] P2 known account identifiers, person/counterparty relationships and safe transfer matching/reconciliation.
+- [ ] P3 liability/loan repayment relationships with unknown principal/interest preserved.
+- [ ] P4 explainable category rules, approved learning, recurring recognition and data-backed analytics.
+- [ ] P5 verified bank-format adapters only where real format semantics can be tested.
+- P2 implementation guardrails: additive migration only; dated verified backup before persistent migration; household-scoped normalized IBAN/domestic identifiers; no ownership inference from name alone; automatic transfer matching requires verified relationship plus compatible evidence; one-sided, ambiguous, cross-currency and conflicting cases remain pending review.

@@ -5,25 +5,20 @@ import { routing } from "@/i18n/routing";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import {
-  listHouseholdAccountsSummary,
-  listMembersInHousehold,
-} from "@/lib/accounts/service";
-import { serializeAccount } from "@/lib/accounts/serialization";
-import {
-  listHouseholdAccountIdentifiers,
-  serializeAccountIdentifier,
-} from "@/lib/account-identifiers/service";
-
+  getHouseholdTransferCandidates,
+  listReconciledTransfers,
+  serializeReconciledTransfer,
+} from "@/lib/transfers/service";
 import { HouseholdSelectionCard } from "../components/HouseholdSelectionCard";
 import { NoHouseholdCard } from "../components/NoHouseholdCard";
 import { SignInCard } from "../components/SignInCard";
-import { AccountsView } from "./AccountsView";
+import { TransfersView } from "./TransfersView";
 
-type AccountsPageProps = {
+type TransfersPageProps = {
   params: Promise<{ locale: string }>;
 };
 
-export default async function AccountsPage({ params }: AccountsPageProps) {
+export default async function TransfersPage({ params }: TransfersPageProps) {
   const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {
@@ -78,19 +73,19 @@ export default async function AccountsPage({ params }: AccountsPageProps) {
             },
           ];
 
-    const rawAccounts = await listHouseholdAccountsSummary(activeContext);
-    const serializedAccounts = rawAccounts.map(serializeAccount);
-    const members = await listMembersInHousehold(activeContext);
-    const rawIdentifiers = await listHouseholdAccountIdentifiers(activeContext);
-    const serializedIdentifiers = rawIdentifiers.map(serializeAccountIdentifier);
+    const [summary, reconciledRecords] = await Promise.all([
+      getHouseholdTransferCandidates(activeContext),
+      listReconciledTransfers(activeContext, { limit: 100 }),
+    ]);
+
+    const serializedReconciled = reconciledRecords.map(serializeReconciledTransfer);
 
     return (
-      <AccountsView
+      <TransfersView
         householdContext={activeContext}
         allHouseholds={allHouseholds}
-        initialAccounts={serializedAccounts}
-        initialIdentifiers={serializedIdentifiers}
-        members={members}
+        initialSummary={summary}
+        initialReconciled={serializedReconciled}
         locale={locale}
       />
     );
