@@ -18,6 +18,7 @@ export async function POST(request: Request, context: RouteContext) {
     let filename = "statement.csv";
     let fileBytes: Uint8Array;
     let mappingRaw: unknown;
+    let autoCommitSafe = false;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
@@ -37,6 +38,10 @@ export async function POST(request: Request, context: RouteContext) {
         );
       }
       mappingRaw = JSON.parse(mappingStr);
+      const autoVal = formData.get("autoCommitSafe") ?? formData.get("autoProcessSafe");
+      if (autoVal === "true" || autoVal === "1") {
+        autoCommitSafe = true;
+      }
     } else {
       const body = await request.json();
       if (!body) {
@@ -54,6 +59,9 @@ export async function POST(request: Request, context: RouteContext) {
         );
       }
       mappingRaw = body.mappingConfig;
+      if (body.autoCommitSafe === true || body.autoProcessSafe === true) {
+        autoCommitSafe = true;
+      }
     }
 
     const mapping = statementImportMappingConfigSchema.parse(mappingRaw);
@@ -64,6 +72,7 @@ export async function POST(request: Request, context: RouteContext) {
       sourceFilename: filename,
       fileBytes,
       mapping,
+      autoCommitSafe,
     });
 
     return NextResponse.json({ data: result });

@@ -5,6 +5,11 @@ import {
   inspectCsvFile,
   parseAndPreviewStatementImport,
   commitStatementImport,
+  createImportProfile,
+  listImportProfiles,
+  getImportProfile,
+  updateImportProfile,
+  deleteImportProfile,
   FileTooLargeError,
   EmptyCsvError,
   ImportBatchAlreadyCommittedError,
@@ -27,6 +32,11 @@ vi.mock("@nodvis/finance-db", async (importOriginal) => {
     findStatementImportBatchById: vi.fn(),
     listStatementImportRowsByBatch: vi.fn(),
     listStatementImportBatchesByAccount: vi.fn(),
+    createStatementImportProfileInDb: vi.fn(),
+    findStatementImportProfileById: vi.fn(),
+    listStatementImportProfilesByHousehold: vi.fn(),
+    updateStatementImportProfileInDb: vi.fn(),
+    deleteStatementImportProfileInDb: vi.fn(),
   };
 });
 
@@ -479,6 +489,222 @@ describe("statement-imports service", () => {
           selectedRowIndices: [0],
         }),
       ).rejects.toThrow(ImportBatchAlreadyCommittedError);
+    });
+
+    it("supports safeOnly commit option without requiring selectedRowIndices", async () => {
+      vi.mocked(dbModule.findAccountInHousehold).mockResolvedValue({
+        id: "acc-1",
+        householdId: "h-1",
+        name: "Main",
+        type: "checking",
+        currency: "PLN",
+      } as any);
+
+      vi.mocked(dbModule.commitStatementImportBatchInDb).mockResolvedValue({
+        batchId: "batch-123",
+        importedCount: 5,
+        skippedCount: 2,
+        committedTransactionIds: ["tx-1", "tx-2", "tx-3", "tx-4", "tx-5"],
+      });
+
+      const res = await commitStatementImport({
+        context: mockContext,
+        accountId: "acc-1",
+        batchId: "batch-123",
+        safeOnly: true,
+      });
+
+      expect(res.importedCount).toBe(5);
+      expect(dbModule.commitStatementImportBatchInDb).toHaveBeenCalledWith(
+        expect.objectContaining({
+          safeOnly: true,
+          batchId: "batch-123",
+        }),
+      );
+    });
+  });
+
+  describe("parseAndPreviewStatementImport with autoCommitSafe", () => {
+    it("auto-commits safe rows when autoCommitSafe is true and safe rows exist", async () => {
+      vi.mocked(dbModule.findAccountInHousehold).mockResolvedValue({
+        id: "acc-1",
+        householdId: "h-1",
+        name: "Main Account",
+        type: "checking",
+        currency: "PLN",
+      } as any);
+
+      vi.mocked(dbModule.createStatementImportBatchInDb).mockResolvedValue({
+        batchId: "batch-auto-1",
+      });
+
+      vi.mocked(dbModule.findExistingImportDedupeHashes).mockResolvedValue(
+        new Set(),
+      );
+      vi.mocked(dbModule.findPossibleManualMatchesInDb).mockResolvedValue(
+        new Map(),
+      );
+
+      vi.mocked(dbModule.commitStatementImportBatchInDb).mockResolvedValue({
+        batchId: "batch-auto-1",
+        importedCount: 1,
+        skippedCount: 0,
+        committedTransactionIds: ["tx-auto-1"],
+      });
+
+      const csv = new TextEncoder().encode("Data,Kwota,Opis\n2026-03-01,-100.00,Store");
+      const preview = await parseAndPreviewStatementImport({
+        context: mockContext,
+        accountId: "acc-1",
+        sourceFilename: "test.csv",
+        fileBytes: csv,
+        mapping: {
+          dateColumn: "Data",
+          dateFormat: "YYYY-MM-DD",
+          timezone: "UTC",
+          amountMode: "signed",
+          amountColumn: "Kwota",
+          invertAmount: false,
+          currencyMode: "account",
+          descriptionColumn: "Opis",
+          delimiter: ",",
+          hasHeader: true,
+          headerRowIndex: 0,
+          skipLeadingRows: 0,
+        },
+        autoCommitSafe: true,
+      });
+
+      expect(preview.safeToCommitCount).toBe(1);
+      expect(preview.autoCommitted).toBeDefined();
+      expect(preview.autoCommitted?.importedCount).toBe(1);
+      expect(dbModule.commitStatementImportBatchInDb).toHaveBeenCalledWith(
+        expect.objectContaining({
+          batchId: "batch-auto-1",
+          safeOnly: true,
+        }),
+      );
+    });
+  });
+
+  describe("mapping profiles operations", () => {
+    const sampleMapping = {
+      dateColumn: "Data",
+      dateFormat: "YYYY-MM-DD" as const,
+      timezone: "UTC",
+      amountMode: "signed" as const,
+      amountColumn: "Kwota",
+      invertAmount: false,
+      currencyMode: "account" as const,
+      descriptionColumn: "Opis",
+      delimiter: ";" as const,
+      hasHeader: true,
+      headerRowIndex: 0,
+      skipLeadingRows: 0,
+    };
+
+    it("creates a mapping profile scoped to account", async () => {
+      vi.mocked(dbModule.findAccountInHousehold).mockResolvedValue({
+        id: "acc-1",
+        householdId: "h-1",
+        name: "Main",
+        type: "checking",
+        currency: "PLN",
+      } as any);
+
+      vi.mocked(dbModule.createStatementImportProfileInDb).mockResolvedValue({
+        id: "prof-1",
+        householdId: "h-1",
+        accountId: "acc-1",
+        name: "mBank Profile",
+        mappingConfig: sampleMapping,
+        autoProcessSafe: true,
+        isDefault: true,
+        createdAt: new Date("2026-03-01T12:00:00Z"),
+        updatedAt: new Date("2026-03-01T12:00:00Z"),
+      });
+
+      const res = await createImportProfile({
+        context: mockContext,
+        name: "mBank Profile",
+        mappingConfig: sampleMapping,
+        autoProcessSafe: true,
+        isDefault: true,
+        accountId: "acc-1",
+      });
+
+      expect(res.id).toBe("prof-1");
+      expect(res.name).toBe("mBank Profile");
+      expect(res.autoProcessSafe).toBe(true);
+      expect(res.isDefault).toBe(true);
+      expect(res.accountId).toBe("acc-1");
+    });
+
+    it("lists profiles for account", async () => {
+      vi.mocked(dbModule.findAccountInHousehold).mockResolvedValue({
+        id: "acc-1",
+        householdId: "h-1",
+        name: "Main",
+        type: "checking",
+        currency: "PLN",
+      } as any);
+
+      vi.mocked(dbModule.listStatementImportProfilesByHousehold).mockResolvedValue([
+        {
+          id: "prof-1",
+          householdId: "h-1",
+          accountId: "acc-1",
+          name: "mBank",
+          mappingConfig: sampleMapping,
+          autoProcessSafe: true,
+          isDefault: true,
+          createdAt: new Date("2026-03-01T12:00:00Z"),
+          updatedAt: new Date("2026-03-01T12:00:00Z"),
+        },
+      ]);
+
+      const res = await listImportProfiles({
+        context: mockContext,
+        accountId: "acc-1",
+      });
+
+      expect(res).toHaveLength(1);
+      expect(res[0]?.name).toBe("mBank");
+    });
+
+    it("updates an existing profile", async () => {
+      vi.mocked(dbModule.updateStatementImportProfileInDb).mockResolvedValue({
+        id: "prof-1",
+        householdId: "h-1",
+        accountId: "acc-1",
+        name: "mBank Updated",
+        mappingConfig: sampleMapping,
+        autoProcessSafe: false,
+        isDefault: false,
+        createdAt: new Date("2026-03-01T12:00:00Z"),
+        updatedAt: new Date("2026-03-01T12:30:00Z"),
+      });
+
+      const res = await updateImportProfile({
+        context: mockContext,
+        profileId: "prof-1",
+        name: "mBank Updated",
+        autoProcessSafe: false,
+      });
+
+      expect(res.name).toBe("mBank Updated");
+      expect(res.autoProcessSafe).toBe(false);
+    });
+
+    it("deletes a profile", async () => {
+      vi.mocked(dbModule.deleteStatementImportProfileInDb).mockResolvedValue(true);
+
+      const res = await deleteImportProfile({
+        context: mockContext,
+        profileId: "prof-1",
+      });
+
+      expect(res).toBe(true);
     });
   });
 });

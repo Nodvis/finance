@@ -217,6 +217,55 @@ describe("Statement import API routes", () => {
       expect(data.data.batchId).toBe(validBatch);
       expect(data.data.rows[0].description).toBe("Coffee");
     });
+
+    it("passes autoCommitSafe flag to parseAndPreviewStatementImport", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      vi.mocked(parseAndPreviewStatementImport).mockResolvedValue({
+        batchId: validBatch,
+        sourceFilename: "statement.csv",
+        fileHash: "hash123",
+        totalRowCount: 1,
+        validRowCount: 1,
+        invalidRowCount: 0,
+        duplicateRowCount: 0,
+        safeToCommitCount: 1,
+        attentionRowCount: 0,
+        rows: [],
+        autoCommitted: {
+          batchId: validBatch,
+          importedCount: 1,
+          skippedCount: 0,
+          committedTransactionIds: ["tx-1"],
+        },
+      });
+
+      const req = new Request("http://localhost/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileText: "Data,Kwota,Opis\n2026-03-01,-10,Coffee",
+          autoCommitSafe: true,
+          mappingConfig: {
+            dateColumn: "Data",
+            descriptionColumn: "Opis",
+          },
+        }),
+      });
+
+      const res = await previewHandler(req, {
+        params: Promise.resolve({
+          householdId: validHousehold,
+          accountId: validAccount,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(parseAndPreviewStatementImport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          autoCommitSafe: true,
+        }),
+      );
+    });
   });
 
   describe("commit route", () => {
@@ -298,6 +347,39 @@ describe("Statement import API routes", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.data.importedCount).toBe(1);
+    });
+
+    it("supports safeOnly commit option without selectedRowIndices", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      vi.mocked(commitStatementImport).mockResolvedValue({
+        batchId: validBatch,
+        importedCount: 3,
+        skippedCount: 1,
+        committedTransactionIds: ["tx-1", "tx-2", "tx-3"],
+      });
+
+      const req = new Request("http://localhost/commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          safeOnly: true,
+        }),
+      });
+
+      const res = await commitHandler(req, {
+        params: Promise.resolve({
+          householdId: validHousehold,
+          accountId: validAccount,
+          batchId: validBatch,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(commitStatementImport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          safeOnly: true,
+        }),
+      );
     });
   });
 

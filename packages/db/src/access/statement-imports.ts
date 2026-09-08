@@ -5,6 +5,7 @@ import {
   createIncome,
   createTransactionAuditSnapshot,
   householdId as toHouseholdId,
+  isSafeToAutoCommitRow,
   money,
   personId as toPersonId,
   transactionId as toTransactionId,
@@ -427,8 +428,9 @@ export async function commitStatementImportBatchInDb(params: {
   householdId: string;
   batchId: string;
   accountId: string;
-  selectedRowIndices: number[];
-  authUserId?: string | null;
+  selectedRowIndices?: number[] | undefined;
+  safeOnly?: boolean | undefined;
+  authUserId?: string | null | undefined;
   personId: string;
 }): Promise<{
   batchId: string;
@@ -481,38 +483,61 @@ export async function commitStatementImportBatchInDb(params: {
         )
         .orderBy(asc(statementImportRows.rowIndex));
 
-      const selectedSet = new Set(params.selectedRowIndices);
+      const selectedSet = new Set(params.selectedRowIndices ?? []);
+      const isSafeRow = (row: (typeof rows)[number]) =>
+        isSafeToAutoCommitRow({
+          valid:
+            row.status !== "error" &&
+            row.normalizedOccurredOn !== null &&
+            row.normalizedAmountMinor !== null &&
+            row.normalizedKind !== null &&
+            row.normalizedCurrency !== null,
+          status: row.status,
+          ambiguityState: row.ambiguityState,
+          errorCode: row.errorCode,
+          normalizedOccurredOn: row.normalizedOccurredOn,
+          normalizedAmountMinor: row.normalizedAmountMinor,
+          normalizedCurrency: row.normalizedCurrency,
+          normalizedKind: row.normalizedKind,
+        });
+
       let importedCount = 0;
       let skippedCount = 0;
       const committedTransactionIds: string[] = [];
       const now = new Date();
 
       for (const row of rows) {
-        if (selectedSet.has(row.rowIndex)) {
-          if (
-            row.status === "error" ||
-            !row.normalizedOccurredOn ||
-            !row.normalizedAmountMinor ||
-            !row.normalizedKind ||
-            !row.normalizedCurrency
-          ) {
-            throw new Error(`Cannot commit invalid row ${row.rowIndex}`);
-          }
+        const shouldCommit = params.safeOnly
+          ? isSafeRow(row)
+          : selectedSet.has(row.rowIndex);
 
-          if (row.ambiguityState === "ambiguous") {
-            throw new AmbiguousImportRowCommitError(
-              `Cannot commit ambiguous import row ${row.rowIndex} without explicit resolution`,
-            );
-          }
+        if (shouldCommit) {
+          if (!params.safeOnly) {
+            if (
+              row.status === "error" ||
+              !row.normalizedOccurredOn ||
+              !row.normalizedAmountMinor ||
+              !row.normalizedKind ||
+              !row.normalizedCurrency
+            ) {
+              throw new Error(`Cannot commit invalid row ${row.rowIndex}`);
+            }
 
-          if (row.status === "duplicate") {
-            throw new DuplicateImportRowError(
-              `Cannot commit duplicate row ${row.rowIndex}`,
-            );
+            if (row.ambiguityState === "ambiguous") {
+              throw new AmbiguousImportRowCommitError(
+                `Cannot commit ambiguous import row ${row.rowIndex} without explicit resolution`,
+              );
+            }
+
+            if (row.status === "duplicate") {
+              throw new DuplicateImportRowError(
+                `Cannot commit duplicate row ${row.rowIndex}`,
+              );
+            }
           }
 
           const newTxId = crypto.randomUUID();
-          const amount = money(row.normalizedAmountMinor, row.normalizedCurrency);
+          const amount = money(row.normalizedAmountMinor!, row.normalizedCurrency!);
           const domainTx =
             row.normalizedKind === "expense"
               ? createExpense({
@@ -522,7 +547,7 @@ export async function commitStatementImportBatchInDb(params: {
                   amount,
                   payee: row.normalizedPayee ?? row.normalizedDescription ?? "Imported expense",
                   paidByPersonId: toPersonId(params.personId),
-                  occurredOn: row.normalizedOccurredOn,
+                  occurredOn: row.normalizedOccurredOn!,
                   categoryId: null,
                   sourceNamespace: row.sourceNamespace,
                   sourceAccountId: row.sourceAccountId,
@@ -535,7 +560,7 @@ export async function commitStatementImportBatchInDb(params: {
                   amount,
                   source: row.normalizedSource ?? row.normalizedDescription ?? "Imported income",
                   receivedByPersonId: toPersonId(params.personId),
-                  occurredOn: row.normalizedOccurredOn,
+                  occurredOn: row.normalizedOccurredOn!,
                   categoryId: null,
                   sourceNamespace: row.sourceNamespace,
                   sourceAccountId: row.sourceAccountId,

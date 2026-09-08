@@ -1014,4 +1014,130 @@ describe("PostgreSQL statement import access integration tests", () => {
       ).rejects.toThrow(AmbiguousImportRowCommitError);
     },
   );
+
+  it.runIf(isPostgresAvailable)(
+    "when safeOnly is true, commits only unambiguous safe rows and skips ambiguous or duplicate rows without throwing",
+    async () => {
+      const db = getDb();
+      const householdId = crypto.randomUUID();
+      const personId = crypto.randomUUID();
+      const accountId = crypto.randomUUID();
+
+      await db.insert(households).values({
+        id: householdId,
+        name: "SafeOnly Test Household",
+        defaultCurrency: "PLN",
+      });
+      await db.insert(persons).values({
+        id: personId,
+        displayName: "SafeOnly Person",
+      });
+      await db.insert(householdMemberships).values({
+        householdId,
+        personId,
+      });
+      await db.insert(accounts).values({
+        id: accountId,
+        householdId,
+        name: "Checking",
+        type: "checking",
+        currency: "PLN",
+      });
+
+      const { batchId } = await createStatementImportBatchInDb({
+        batch: {
+          householdId,
+          accountId,
+          sourceFilename: "mixed.csv",
+          fileHash: "hash-mixed",
+          fileSizeBytes: 150,
+          parserVersion: "1.0.0",
+          mappingConfig: {} as any,
+          status: "preview",
+          totalRowCount: 3,
+          validRowCount: 2,
+          invalidRowCount: 1,
+        },
+        rows: [
+          // Row 0: Strictly safe row
+          {
+            batchId: "" as any,
+            householdId,
+            accountId,
+            rowIndex: 0,
+            identityType: "fallback",
+            ambiguityState: "unambiguous",
+            dedupeHash: "hash-safe-row-0",
+            status: "pending",
+            rawRowContent: "2026-03-01,-100.00,Safe Shop",
+            normalizedOccurredOn: new Date("2026-03-01T00:00:00.000Z"),
+            normalizedKind: "expense",
+            normalizedAmountMinor: 10000n,
+            normalizedCurrency: "PLN",
+            normalizedPayee: "Safe Shop",
+            normalizedDescription: "Safe Shop",
+          },
+          // Row 1: Ambiguous row
+          {
+            batchId: "" as any,
+            householdId,
+            accountId,
+            rowIndex: 1,
+            identityType: "fallback",
+            ambiguityState: "ambiguous",
+            dedupeHash: "hash-ambig-row-1",
+            status: "pending",
+            rawRowContent: "2026-03-01,-200.00,Ambiguous",
+            normalizedOccurredOn: new Date("2026-03-01T00:00:00.000Z"),
+            normalizedKind: "expense",
+            normalizedAmountMinor: 20000n,
+            normalizedCurrency: "PLN",
+            normalizedPayee: "Ambiguous",
+            normalizedDescription: "Ambiguous",
+          },
+          // Row 2: Duplicate row
+          {
+            batchId: "" as any,
+            householdId,
+            accountId,
+            rowIndex: 2,
+            identityType: "fallback",
+            ambiguityState: "unambiguous",
+            dedupeHash: "hash-dupe-row-2",
+            status: "duplicate",
+            errorCode: "DUPLICATE_ROW",
+            rawRowContent: "2026-03-01,-300.00,Duplicate",
+            normalizedOccurredOn: new Date("2026-03-01T00:00:00.000Z"),
+            normalizedKind: "expense",
+            normalizedAmountMinor: 30000n,
+            normalizedCurrency: "PLN",
+            normalizedPayee: "Duplicate",
+            normalizedDescription: "Duplicate",
+          },
+        ],
+      });
+
+      // Calling commit with safeOnly: true
+      const result = await commitStatementImportBatchInDb({
+        householdId,
+        batchId,
+        accountId,
+        safeOnly: true,
+        personId,
+      });
+
+      expect(result.importedCount).toBe(1);
+      expect(result.skippedCount).toBe(2);
+      expect(result.committedTransactionIds).toHaveLength(1);
+
+      // Verify row statuses
+      const updatedRows = await listStatementImportRowsByBatch(
+        householdId,
+        batchId,
+      );
+      expect(updatedRows.find((r) => r.rowIndex === 0)?.status).toBe("imported");
+      expect(updatedRows.find((r) => r.rowIndex === 1)?.status).toBe("skipped");
+      expect(updatedRows.find((r) => r.rowIndex === 2)?.status).toBe("duplicate");
+    },
+  );
 });

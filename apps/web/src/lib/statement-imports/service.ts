@@ -3,22 +3,30 @@ import "server-only";
 import {
   AmbiguousImportRowCommitError,
   DuplicateImportRowError,
+  DuplicateStatementImportProfileNameError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
+  StatementImportProfileNotFoundError,
   commitStatementImportBatchInDb,
   createStatementImportBatchInDb,
+  createStatementImportProfileInDb,
+  deleteStatementImportProfileInDb,
   findAccountInHousehold,
   findExistingAuthoritativeRecordsInDb,
   findExistingFallbackRecordsInDb,
   findExistingImportDedupeHashes,
   findPossibleManualMatchesInDb,
   findStatementImportBatchById,
+  findStatementImportProfileById,
   listStatementImportBatchesByAccount,
+  listStatementImportProfilesByHousehold,
   listStatementImportRowsByBatch,
+  updateStatementImportProfileInDb,
   type ExistingAuthoritativeRecord,
   type ExistingFallbackRecord,
   type NewStatementImportRowRecord,
   type StatementImportBatchRow,
+  type StatementImportProfileRow,
   type StatementImportRowRecord,
 } from "@nodvis/finance-db";
 import {
@@ -43,8 +51,10 @@ import { TransactionAccountNotFoundError } from "@/lib/transactions/service";
 export {
   AmbiguousImportRowCommitError,
   DuplicateImportRowError,
+  DuplicateStatementImportProfileNameError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
+  StatementImportProfileNotFoundError,
 };
 
 export class FileTooLargeError extends Error {
@@ -81,6 +91,7 @@ export type StatementImportPreviewResult = Readonly<{
   safeToCommitCount: number;
   attentionRowCount: number;
   rows: RowPreviewItem[];
+  autoCommitted?: CommitStatementImportResult | undefined;
 }>;
 
 export type CommitStatementImportResult = Readonly<{
@@ -158,8 +169,9 @@ export async function parseAndPreviewStatementImport(params: {
   sourceFilename: string;
   fileBytes: Uint8Array;
   mapping: StatementImportMappingConfig;
+  autoCommitSafe?: boolean;
 }): Promise<StatementImportPreviewResult> {
-  const { context, accountId, sourceFilename, fileBytes, mapping } = params;
+  const { context, accountId, sourceFilename, fileBytes, mapping, autoCommitSafe } = params;
 
   if (fileBytes.length === 0) {
     throw new EmptyCsvError();
@@ -450,6 +462,18 @@ export async function parseAndPreviewStatementImport(params: {
     rows: dbRowsToInsert,
   });
 
+  let autoCommitted: CommitStatementImportResult | undefined;
+  if (autoCommitSafe && safeToCommitCount > 0) {
+    autoCommitted = await commitStatementImportBatchInDb({
+      householdId: context.householdId,
+      batchId,
+      accountId,
+      safeOnly: true,
+      authUserId: context.authUserId,
+      personId: context.personId,
+    });
+  }
+
   return {
     batchId,
     sourceFilename,
@@ -461,6 +485,7 @@ export async function parseAndPreviewStatementImport(params: {
     safeToCommitCount,
     attentionRowCount,
     rows: previewItems,
+    autoCommitted,
   };
 }
 
@@ -468,9 +493,10 @@ export async function commitStatementImport(params: {
   context: AuthorizedHouseholdContext;
   accountId: string;
   batchId: string;
-  selectedRowIndices: number[];
+  selectedRowIndices?: number[] | undefined;
+  safeOnly?: boolean | undefined;
 }): Promise<CommitStatementImportResult> {
-  const { context, accountId, batchId, selectedRowIndices } = params;
+  const { context, accountId, batchId, selectedRowIndices, safeOnly } = params;
 
   const account = await findAccountInHousehold(context.householdId, accountId);
   if (!account) {
@@ -484,6 +510,7 @@ export async function commitStatementImport(params: {
     batchId,
     accountId,
     selectedRowIndices,
+    safeOnly,
     authUserId: context.authUserId,
     personId: context.personId,
   });
@@ -532,4 +559,156 @@ export async function listStatementImportBatchesForAccount(params: {
     params.context.householdId,
     params.accountId,
   );
+}
+
+export type StatementImportProfileDto = Readonly<{
+  id: string;
+  householdId: string;
+  accountId: string | null;
+  name: string;
+  mappingConfig: StatementImportMappingConfig;
+  autoProcessSafe: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}>;
+
+function mapProfileRowToDto(
+  row: StatementImportProfileRow,
+): StatementImportProfileDto {
+  return {
+    id: row.id,
+    householdId: row.householdId,
+    accountId: row.accountId,
+    name: row.name,
+    mappingConfig: row.mappingConfig,
+    autoProcessSafe: row.autoProcessSafe,
+    isDefault: row.isDefault,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export async function createImportProfile(params: {
+  context: AuthorizedHouseholdContext;
+  name: string;
+  mappingConfig: StatementImportMappingConfig;
+  autoProcessSafe?: boolean;
+  isDefault?: boolean;
+  accountId?: string | null;
+}): Promise<StatementImportProfileDto> {
+  const { context, name, mappingConfig, autoProcessSafe, isDefault, accountId } =
+    params;
+
+  if (accountId) {
+    const account = await findAccountInHousehold(context.householdId, accountId);
+    if (!account) {
+      throw new TransactionAccountNotFoundError(
+        `Account ${accountId} not found in household`,
+      );
+    }
+  }
+
+  const row = await createStatementImportProfileInDb({
+    profile: {
+      householdId: context.householdId,
+      accountId: accountId ?? null,
+      name: name.trim(),
+      mappingConfig,
+      autoProcessSafe: autoProcessSafe ?? false,
+      isDefault: isDefault ?? false,
+    },
+  });
+
+  return mapProfileRowToDto(row);
+}
+
+export async function listImportProfiles(params: {
+  context: AuthorizedHouseholdContext;
+  accountId?: string | null;
+}): Promise<StatementImportProfileDto[]> {
+  const { context, accountId } = params;
+  if (accountId) {
+    const account = await findAccountInHousehold(context.householdId, accountId);
+    if (!account) {
+      throw new TransactionAccountNotFoundError(
+        `Account ${accountId} not found in household`,
+      );
+    }
+  }
+
+  const rows = await listStatementImportProfilesByHousehold(
+    context.householdId,
+    accountId,
+  );
+  return rows.map(mapProfileRowToDto);
+}
+
+export async function getImportProfile(params: {
+  context: AuthorizedHouseholdContext;
+  profileId: string;
+}): Promise<StatementImportProfileDto> {
+  const row = await findStatementImportProfileById(
+    params.context.householdId,
+    params.profileId,
+  );
+  if (!row) {
+    throw new StatementImportProfileNotFoundError();
+  }
+  return mapProfileRowToDto(row);
+}
+
+export async function updateImportProfile(params: {
+  context: AuthorizedHouseholdContext;
+  profileId: string;
+  name?: string | undefined;
+  mappingConfig?: StatementImportMappingConfig | undefined;
+  autoProcessSafe?: boolean | undefined;
+  isDefault?: boolean | undefined;
+  accountId?: string | null | undefined;
+}): Promise<StatementImportProfileDto> {
+  const {
+    context,
+    profileId,
+    name,
+    mappingConfig,
+    autoProcessSafe,
+    isDefault,
+    accountId,
+  } = params;
+
+  if (accountId) {
+    const account = await findAccountInHousehold(context.householdId, accountId);
+    if (!account) {
+      throw new TransactionAccountNotFoundError(
+        `Account ${accountId} not found in household`,
+      );
+    }
+  }
+
+  const row = await updateStatementImportProfileInDb({
+    householdId: context.householdId,
+    profileId,
+    name,
+    mappingConfig,
+    autoProcessSafe,
+    isDefault,
+    accountId,
+  });
+
+  return mapProfileRowToDto(row);
+}
+
+export async function deleteImportProfile(params: {
+  context: AuthorizedHouseholdContext;
+  profileId: string;
+}): Promise<boolean> {
+  const deleted = await deleteStatementImportProfileInDb(
+    params.context.householdId,
+    params.profileId,
+  );
+  if (!deleted) {
+    throw new StatementImportProfileNotFoundError();
+  }
+  return true;
 }
