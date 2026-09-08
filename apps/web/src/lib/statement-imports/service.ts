@@ -78,6 +78,8 @@ export type StatementImportPreviewResult = Readonly<{
   validRowCount: number;
   invalidRowCount: number;
   duplicateRowCount: number;
+  safeToCommitCount: number;
+  attentionRowCount: number;
   rows: RowPreviewItem[];
 }>;
 
@@ -279,6 +281,8 @@ export async function parseAndPreviewStatementImport(params: {
   let validRowCount = 0;
   let invalidRowCount = 0;
   let duplicateRowCount = 0;
+  let safeToCommitCount = 0;
+  let attentionRowCount = 0;
 
   const dbRowsToInsert: NewStatementImportRowRecord[] = [];
   const previewItems: RowPreviewItem[] = [];
@@ -389,6 +393,8 @@ export async function parseAndPreviewStatementImport(params: {
     });
 
     const isSelected = pr.valid && !isDuplicate && ambiguityState !== "ambiguous" && !possibleMatch;
+    if (isSelected) safeToCommitCount++;
+    if (pr.valid && !isSelected && !isDuplicate) attentionRowCount++;
 
     previewItems.push({
       rowIndex: pr.rowIndex,
@@ -452,6 +458,8 @@ export async function parseAndPreviewStatementImport(params: {
     validRowCount,
     invalidRowCount,
     duplicateRowCount,
+    safeToCommitCount,
+    attentionRowCount,
     rows: previewItems,
   };
 }

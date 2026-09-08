@@ -171,6 +171,8 @@ describe("Statement import API routes", () => {
         validRowCount: 1,
         invalidRowCount: 0,
         duplicateRowCount: 0,
+        safeToCommitCount: 1,
+        attentionRowCount: 0,
         rows: [
           {
             rowIndex: 0,
