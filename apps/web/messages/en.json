@@ -1,17 +1,24 @@
 {
   "Metadata": {
     "title": "Nodvis Finance",
-    "description": "A private, self-hosted household finance control center."
+    "description": "Clear and secure household finance management."
   },
   "Navigation": {
     "brand": "Nodvis Finance",
-    "tagline": "Private household finance",
+    "tagline": "Personal finance",
     "home": "Overview",
     "accounts": "Accounts",
     "categories": "Categories",
     "imports": "Imports",
     "skipToContent": "Skip to main content",
-    "privateBadge": "Self-hosted"
+    "privateBadge": "Private"
+  },
+  "Theme": {
+    "toggle": "Toggle theme",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "light": "Light",
+    "dark": "Dark"
   },
   "LanguageSwitcher": {
     "label": "Select language",
@@ -25,6 +32,8 @@
     "eyebrow": "Household financial control",
     "title": "Your financial situation without the accounting clutter.",
     "description": "A clear, real-time snapshot of available funds, upcoming obligations, and household debt.",
+    "publicHeroTitle": "Your household finances in clear order",
+    "publicHeroSubtitle": "Effortlessly manage accounts, spending, and savings in one clear place.",
     "quickActions": { "viewTransactions": "View transactions", "addTransaction": "Add a transaction" },
     "summaryLabel": "Financial summary",
     "noData": "No data yet — the financial model is being implemented.",
@@ -39,8 +48,8 @@
     }
   },
   "Auth": {
-    "signInTitle": "Sign in to your household",
-    "signInDescription": "Enter your email and password to access household transactions.",
+    "signInTitle": "Sign in to your finances",
+    "signInDescription": "Enter your email and password to access your finances.",
     "emailLabel": "Email address",
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Password",
@@ -50,7 +59,16 @@
     "signedInAs": "Signed in as",
     "errorInvalidCredentials": "Invalid email or password.",
     "noHouseholdTitle": "No household linked",
-    "noHouseholdDescription": "This user account is not linked to any household in the system yet."
+    "noHouseholdDescription": "This user account is not linked to any household in the system yet.",
+    "tabSignIn": "Sign in",
+    "tabSignUp": "Create account",
+    "signUpTitle": "Create user account",
+    "signUpDescription": "Create an account to start managing your household finances.",
+    "nameLabel": "Your name",
+    "namePlaceholder": "e.g. Alice",
+    "signUpButton": "Sign up",
+    "signingUp": "Creating account...",
+    "errorSignUp": "Failed to create account. Please check your details."
   },
   "Onboarding": {
     "title": "Create your household",
@@ -395,12 +413,15 @@
     }
   },
   "Footer": {
-    "tagline": "Nodvis Finance — private, self-hosted household finance control center.",
-    "privacyNote": "All financial data and operations remain under your exclusive control on your local server."
+    "tagline": "Nodvis Finance — simple and secure personal finance.",
+    "privacyNote": "All your financial data remains confidential and fully protected."
   },
   "Accessibility": {
     "mainContent": "Main content",
     "mainNavigation": "Main navigation",
+    "publicNavigation": "Public navigation",
+    "publicShell": "Authentication and registration page",
+    "themeToggle": "Color theme toggle",
     "languageNavigation": "Interface language selection",
     "financialSummary": "Financial metrics summary",
     "transactionForms": "Transaction entry forms",
@@ -452,6 +473,12 @@
     "working": "Working…",
     "success": "Imported {count} transactions.",
     "selectHousehold": "Select a household before importing.",
+    "noAccountsTitle": "No accounts available for import",
+    "noAccountsDescription": "You must create at least one household account before importing a CSV statement.",
+    "createAccountAction": "Go to accounts",
+    "dropzoneHint": "Drag and drop your CSV statement file here, or click to browse.",
+    "fileSelected": "Selected file: {name} ({size})",
+    "resetFile": "Choose different file",
     "errors": { "generic": "The import could not be completed." }
   },
   "Overview": {

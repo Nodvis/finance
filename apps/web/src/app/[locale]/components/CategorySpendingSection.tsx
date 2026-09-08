@@ -35,28 +35,28 @@ export async function CategorySpendingSection({
       className="flex flex-col gap-4"
     >
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold tracking-tight text-stone-100 sm:text-xl">
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl dark:text-stone-100">
           {t("categorySpending.title")}
         </h2>
-        <p className="text-xs text-stone-400">
+        <p className="text-xs text-slate-500 dark:text-stone-400">
           {t("categorySpending.description")}
         </p>
       </div>
 
       {!hasSpending ? (
-        <div className="rounded-2xl border border-stone-800 bg-stone-900/40 p-8 text-center">
-          <p className="text-sm font-semibold text-stone-300">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-stone-800 dark:bg-stone-900/40">
+          <p className="text-sm font-semibold text-slate-700 dark:text-stone-300">
             {t("categorySpending.emptyTitle")}
           </p>
-          <p className="mt-1 text-xs text-stone-500">
+          <p className="mt-1 text-xs text-slate-400 dark:text-stone-500">
             {t("categorySpending.emptyDescription", { period: formattedPeriod })}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-stone-800 bg-stone-900/60 shadow-xs backdrop-blur-xs">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-stone-800 dark:bg-stone-900/60">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-stone-800 bg-stone-950/40 text-xs font-medium uppercase tracking-wider text-stone-400">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-stone-800 dark:bg-stone-950/40 dark:text-stone-400">
                 <tr>
                   <th scope="col" className="px-5 py-3.5">
                     {t("categorySpending.colCategory")}
@@ -72,21 +72,21 @@ export async function CategorySpendingSection({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-800/60">
+              <tbody className="divide-y divide-slate-100 dark:divide-stone-800/60">
                 {categorySpending.map((cat, idx) => {
                   const isUncategorized = cat.categoryId === null;
                   return (
                     <tr
                       key={`${cat.currency}:::${cat.categoryId ?? `uncat-${idx}`}`}
-                      className="transition-colors hover:bg-stone-800/30"
+                      className="transition-colors hover:bg-slate-50/80 dark:hover:bg-stone-800/30"
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <span
                             className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
                               isUncategorized
-                                ? "bg-stone-800 text-stone-400 italic"
-                                : "bg-stone-800/80 text-stone-200"
+                                ? "bg-slate-100 text-slate-500 italic dark:bg-stone-800 dark:text-stone-400"
+                                : "bg-slate-100 text-slate-800 dark:bg-stone-800/80 dark:text-stone-200"
                             }`}
                           >
                             {isUncategorized
@@ -95,7 +95,7 @@ export async function CategorySpendingSection({
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right font-mono font-medium text-stone-100">
+                      <td className="px-5 py-3.5 text-right font-mono font-medium text-slate-900 dark:text-stone-100">
                         {formatAmountPresentation(
                           cat.amountMinor,
                           cat.currency,
@@ -104,7 +104,7 @@ export async function CategorySpendingSection({
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-stone-800">
+                          <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-slate-100 dark:bg-stone-800">
                             <div
                               className="h-full rounded-full bg-emerald-500 transition-all duration-300"
                               style={{
@@ -115,12 +115,12 @@ export async function CategorySpendingSection({
                               }}
                             />
                           </div>
-                          <span className="font-mono text-xs text-stone-400 min-w-[3rem]">
+                          <span className="font-mono text-xs text-slate-500 min-w-[3rem] dark:text-stone-400">
                             {cat.percentage.toFixed(1)}%
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right font-mono text-xs text-stone-400">
+                      <td className="px-5 py-3.5 text-right font-mono text-xs text-slate-500 dark:text-stone-400">
                         {cat.transactionCount}
                       </td>
                     </tr>

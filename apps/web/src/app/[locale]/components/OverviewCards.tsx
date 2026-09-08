@@ -16,9 +16,6 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
   const { availableCash } = overview;
   const hasFresh = availableCash.freshAccountsCount > 0;
   const isComplete = availableCash.isFullyKnown;
-  const hasMissingOrStale =
-    availableCash.missingAccounts.length > 0 ||
-    availableCash.staleAccounts.length > 0;
 
   return (
     <section
@@ -26,13 +23,13 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
       className="grid gap-4 sm:grid-cols-3"
     >
       {/* 1. Observed Available Cash Card */}
-      <article className="flex flex-col justify-between rounded-2xl border border-stone-800 bg-stone-900/70 p-5 shadow-xs backdrop-blur-xs transition-colors hover:border-stone-700/80">
+      <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
         <div>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
               {t("availableCash.title")}
             </p>
-            <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-stone-400 bg-stone-800">
+            <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 dark:text-stone-400 dark:bg-stone-800">
               {t("availableCash.creditCardsExcluded")}
             </span>
           </div>
@@ -42,7 +39,7 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
               availableCash.byCurrency.map((curr) => (
                 <p
                   key={curr.currency}
-                  className="font-mono text-2xl font-semibold tracking-tight text-emerald-400 sm:text-3xl"
+                  className="font-mono text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-3xl"
                 >
                   {formatAmountPresentation(
                     curr.amountMinor,
@@ -52,27 +49,27 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
                 </p>
               ))
             ) : (
-              <p className="font-mono text-3xl font-semibold tracking-tight text-stone-100">
+              <p className="font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
                 —
               </p>
             )}
           </div>
         </div>
 
-        <div className="mt-4 border-t border-stone-800/80 pt-3 text-xs">
+        <div className="mt-4 border-t border-slate-100 pt-3 text-xs dark:border-stone-800/80">
           {!hasFresh ? (
-            <p className="text-stone-400">
+            <p className="text-slate-500 dark:text-stone-400">
               {t("availableCash.noSnapshots")}
             </p>
           ) : isComplete ? (
-            <p className="text-emerald-500/90">
+            <p className="text-emerald-600 font-medium dark:text-emerald-500/90">
               {t("availableCash.allFresh", {
                 count: availableCash.freshAccountsCount,
               })}
             </p>
           ) : (
             <div className="flex flex-col gap-1">
-              <p className="text-amber-400/90 font-medium">
+              <p className="text-amber-600 font-medium dark:text-amber-400/90">
                 {t("availableCash.partialWarning", {
                   count:
                     availableCash.missingAccounts.length +
@@ -81,7 +78,7 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
               </p>
               <Link
                 href={`/${locale}/accounts`}
-                className="text-stone-400 hover:text-stone-200 underline underline-offset-2"
+                className="text-slate-500 hover:text-slate-800 underline underline-offset-2 dark:text-stone-400 dark:hover:text-stone-200"
               >
                 {t("availableCash.updateAccountsPrompt")} →
               </Link>
@@ -91,40 +88,40 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
       </article>
 
       {/* 2. Upcoming Obligations Card (Preserving INV-014, not fabricating obligations) */}
-      <article className="flex flex-col justify-between rounded-2xl border border-stone-800 bg-stone-900/70 p-5 shadow-xs backdrop-blur-xs transition-colors hover:border-stone-700/80">
+      <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
             {t("upcoming.title")}
           </p>
-          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-stone-100">
+          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
             —
           </p>
         </div>
-        <div className="mt-4 border-t border-stone-800/80 pt-3 text-xs text-stone-400">
-          <p className="font-medium text-stone-300">
+        <div className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-stone-800/80 dark:text-stone-400">
+          <p className="font-medium text-slate-700 dark:text-stone-300">
             {t("upcoming.notModeled")}
           </p>
-          <p className="mt-0.5 text-stone-400 text-[11px] leading-relaxed">
+          <p className="mt-0.5 text-slate-400 text-[11px] leading-relaxed dark:text-stone-500">
             {t("upcoming.note")}
           </p>
         </div>
       </article>
 
       {/* 3. Debt & Liabilities Card (Preserving INV-013, not fabricating debts) */}
-      <article className="flex flex-col justify-between rounded-2xl border border-stone-800 bg-stone-900/70 p-5 shadow-xs backdrop-blur-xs transition-colors hover:border-stone-700/80">
+      <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
             {t("debt.title")}
           </p>
-          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-stone-100">
+          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
             —
           </p>
         </div>
-        <div className="mt-4 border-t border-stone-800/80 pt-3 text-xs text-stone-400">
-          <p className="font-medium text-stone-300">
+        <div className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-stone-800/80 dark:text-stone-400">
+          <p className="font-medium text-slate-700 dark:text-stone-300">
             {t("debt.notModeled")}
           </p>
-          <p className="mt-0.5 text-stone-400 text-[11px] leading-relaxed">
+          <p className="mt-0.5 text-slate-400 text-[11px] leading-relaxed dark:text-stone-500">
             {t("debt.note")}
           </p>
         </div>

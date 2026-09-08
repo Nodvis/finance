@@ -30,24 +30,24 @@ export async function ObservationWarnings({
   return (
     <aside
       aria-label={tAccess("accountObservations")}
-      className="rounded-2xl border border-amber-800/40 bg-amber-950/20 p-5 shadow-xs backdrop-blur-xs"
+      className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 shadow-xs dark:border-amber-800/40 dark:bg-amber-950/20"
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-amber-300">
+        <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-300">
           {t("observations.title")}
         </h3>
         <Link
           href={`/${locale}/accounts`}
-          className="text-xs font-medium text-amber-400 hover:text-amber-300 underline underline-offset-2"
+          className="text-xs font-medium text-amber-700 hover:text-amber-800 underline underline-offset-2 dark:text-amber-400 dark:hover:text-amber-300"
         >
           {t("availableCash.updateAccountsPrompt")} →
         </Link>
       </div>
 
-      <ul className="mt-3 flex flex-col gap-1.5 text-xs text-stone-300">
+      <ul className="mt-3 flex flex-col gap-1.5 text-xs text-slate-700 dark:text-stone-300">
         {missingAccounts.map((acc) => (
           <li key={acc.id} className="flex items-start gap-2">
-            <span className="text-amber-400 font-bold">•</span>
+            <span className="text-amber-500 font-bold">•</span>
             <span>
               {t("observations.missingAccount", {
                 name: acc.name,
@@ -58,7 +58,7 @@ export async function ObservationWarnings({
         ))}
         {staleAccounts.map((acc) => (
           <li key={acc.id} className="flex items-start gap-2">
-            <span className="text-amber-400 font-bold">•</span>
+            <span className="text-amber-500 font-bold">•</span>
             <span>
               {t("observations.staleAccount", {
                 name: acc.name,
