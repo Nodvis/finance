@@ -104,6 +104,7 @@
     "capturedAtLabel": "Saldo na dzień",
     "actions": {
       "addAccount": "Dodaj konto",
+      "importStatement": "Importuj CSV",
       "edit": "Edytuj",
       "archive": "Zarchiwizuj",
       "unarchive": "Przywróć",
@@ -262,6 +263,58 @@
       "voidReason": "Powód anulowania",
       "auditTrailNotice": "Ten wpis transakcji jest zachowany na stałe w celach audytowych."
     },
+    "history": {
+      "tabDetails": "Szczegóły",
+      "tabHistory": "Historia zmian",
+      "title": "Historia zmian",
+      "description": "Niezmienna i godna zaufania ścieżka audytu wszystkich zarejestrowanych modyfikacji tej transakcji.",
+      "loading": "Ładowanie historii zmian...",
+      "loadError": "Nie udało się załadować historii zmian. Spróbuj ponownie.",
+      "empty": "Brak historii zmian.",
+      "revisionLabel": "Rewizja {revision}",
+      "baselineNotice": "Stan początkowy sprzed wprowadzenia śledzenia zmian",
+      "initialStateNotice": "Wpis początkowy utworzenia",
+      "noChanges": "Żadne wartości pól nie uległy zmianie.",
+      "fields": {
+        "fieldAmount": "Kwota",
+        "fieldDate": "Data",
+        "fieldAccount": "Konto",
+        "fieldFromAccount": "Konto źródłowe",
+        "fieldToAccount": "Konto docelowe",
+        "fieldCategory": "Kategoria",
+        "fieldPayee": "Odbiorca / sklep",
+        "fieldSource": "Źródło przychodu",
+        "fieldPayer": "Zapłacone przez",
+        "fieldBeneficiary": "Otrzymane przez",
+        "fieldStatus": "Status",
+        "fieldVoidReason": "Powód anulowania"
+      },
+      "operations": {
+        "create": "Utworzono",
+        "correction": "Skorygowano",
+        "void": "Anulowano",
+        "baseline": "Stan bazowy"
+      },
+      "sources": {
+        "manual": "Wpis ręczny",
+        "system": "System",
+        "import": "Import CSV",
+        "legacy": "Wpis archiwalny"
+      },
+      "actor": {
+        "by": "przez: {name}",
+        "unknown": "System / nieznany autor"
+      },
+      "diff": {
+        "from": "z",
+        "to": "na",
+        "set": "ustawiono na"
+      },
+      "status": {
+        "active": "Aktywna",
+        "voided": "Anulowana"
+      }
+    },
     "edit": {
       "titleExpense": "Korekta wydatku",
       "titleIncome": "Korekta przychodu",
@@ -373,7 +426,30 @@
     "periodNavigation": "Nawigacja po okresach",
     "categoryBreakdown": "Zestawienie wydatków według kategorii",
     "cashFlowSummary": "Podsumowanie przepływów pieniężnych w okresie",
-    "accountObservations": "Status obserwacji kont"
+    "accountObservations": "Status obserwacji kont",
+    "transactionHistoryTimeline": "Oś czasu historii zmian transakcji"
+  },
+  "Imports": {
+    "title": "Importuj wyciąg CSV",
+    "description": "Podejrzyj i zweryfikuj wiersze przed utworzeniem transakcji. Obsługiwany jest generyczny CSV; transfery wymagają ręcznej weryfikacji.",
+    "account": "Konto docelowe",
+    "file": "Plik CSV",
+    "inspect": "Sprawdź plik",
+    "mapping": "Mapowanie kolumn",
+    "detected": "Wykryto separator: {delimiter}; kodowanie: {encoding}; wierszy: {count}",
+    "date": "Data",
+    "amount": "Kwota",
+    "descriptionColumn": "Opis",
+    "preview": "Podgląd wierszy",
+    "review": "Weryfikacja importu",
+    "counts": "{total} wierszy: {valid} poprawnych, {invalid} błędnych, {duplicates} duplikatów",
+    "select": "Importuj",
+    "status": "Status",
+    "commit": "Importuj {count} zaznaczonych wierszy",
+    "working": "Przetwarzanie…",
+    "success": "Zaimportowano {count} transakcji.",
+    "selectHousehold": "Wybierz gospodarstwo przed importem.",
+    "errors": { "generic": "Nie udało się wykonać importu." }
   },
   "Overview": {
     "periodLabel": "Wybrany okres",

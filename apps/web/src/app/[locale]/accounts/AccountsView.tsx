@@ -818,6 +818,13 @@ export function AccountsView({
                   <div className="mt-5 flex items-center justify-end gap-2 border-t border-stone-800/60 pt-3">
                     <button
                       type="button"
+                      onClick={() => router.push(`/${locale}/imports?accountId=${acc.id}`)}
+                      className="rounded-lg border border-amber-700/80 bg-amber-950/30 px-2.5 py-1 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-900/40 focus:outline-none"
+                    >
+                      {tAccounts("actions.importStatement")}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => startEdit(acc)}
                       className="rounded-lg border border-stone-700 bg-stone-800 px-2.5 py-1 text-xs font-medium text-stone-200 transition-colors hover:bg-stone-700 focus:outline-none"
                     >

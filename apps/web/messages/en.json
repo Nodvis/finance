@@ -104,6 +104,7 @@
     "capturedAtLabel": "Snapshot as of",
     "actions": {
       "addAccount": "Add account",
+      "importStatement": "Import CSV",
       "edit": "Edit",
       "archive": "Archive",
       "unarchive": "Restore",
@@ -262,6 +263,58 @@
       "voidReason": "Reason for voiding",
       "auditTrailNotice": "This transaction record is permanently preserved for audit integrity."
     },
+    "history": {
+      "tabDetails": "Details",
+      "tabHistory": "Change history",
+      "title": "Change history",
+      "description": "Trustworthy immutable audit trail of all recorded modifications to this transaction.",
+      "loading": "Loading change history...",
+      "loadError": "Failed to load change history. Please try again.",
+      "empty": "No change history available.",
+      "revisionLabel": "Revision {revision}",
+      "baselineNotice": "Initial baseline prior to change tracking",
+      "initialStateNotice": "Initial creation record",
+      "noChanges": "No field values were changed.",
+      "fields": {
+        "fieldAmount": "Amount",
+        "fieldDate": "Date",
+        "fieldAccount": "Account",
+        "fieldFromAccount": "Source account",
+        "fieldToAccount": "Destination account",
+        "fieldCategory": "Category",
+        "fieldPayee": "Payee / Merchant",
+        "fieldSource": "Income source",
+        "fieldPayer": "Paid by",
+        "fieldBeneficiary": "Received by",
+        "fieldStatus": "Status",
+        "fieldVoidReason": "Void reason"
+      },
+      "operations": {
+        "create": "Created",
+        "correction": "Corrected",
+        "void": "Voided",
+        "baseline": "Baseline"
+      },
+      "sources": {
+        "manual": "Manual entry",
+        "system": "System",
+        "import": "CSV import",
+        "legacy": "Legacy"
+      },
+      "actor": {
+        "by": "by {name}",
+        "unknown": "System / Unknown actor"
+      },
+      "diff": {
+        "from": "from",
+        "to": "to",
+        "set": "set to"
+      },
+      "status": {
+        "active": "Active",
+        "voided": "Voided"
+      }
+    },
     "edit": {
       "titleExpense": "Correct expense",
       "titleIncome": "Correct income",
@@ -373,7 +426,30 @@
     "periodNavigation": "Period navigation",
     "categoryBreakdown": "Category spending breakdown",
     "cashFlowSummary": "Period cash flow summary",
-    "accountObservations": "Account observations status"
+    "accountObservations": "Account observations status",
+    "transactionHistoryTimeline": "Transaction change history timeline"
+  },
+  "Imports": {
+    "title": "Import a CSV statement",
+    "description": "Preview and review rows before creating transactions. Generic CSV only; transfers require manual review.",
+    "account": "Target account",
+    "file": "CSV file",
+    "inspect": "Inspect file",
+    "mapping": "Map columns",
+    "detected": "Detected delimiter: {delimiter}; encoding: {encoding}; rows: {count}",
+    "date": "Date",
+    "amount": "Amount",
+    "descriptionColumn": "Description",
+    "preview": "Preview rows",
+    "review": "Review import",
+    "counts": "{total} rows: {valid} valid, {invalid} invalid, {duplicates} duplicates",
+    "select": "Import",
+    "status": "Status",
+    "commit": "Import {count} selected rows",
+    "working": "Working…",
+    "success": "Imported {count} transactions.",
+    "selectHousehold": "Select a household before importing.",
+    "errors": { "generic": "The import could not be completed." }
   },
   "Overview": {
     "periodLabel": "Selected period",

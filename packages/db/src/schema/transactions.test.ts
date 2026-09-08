@@ -154,3 +154,61 @@ describe("transactions schema", () => {
     expect(transactions.submissionId.notNull).toBe(false);
   });
 });
+
+describe("transaction_audit_entries schema", () => {
+  it("uses domain audit operations and sources as PostgreSQL enums", async () => {
+    const {
+      transactionAuditOperationEnum,
+      transactionAuditSourceEnum,
+    } = await import("./index");
+    const {
+      TRANSACTION_AUDIT_OPERATIONS,
+      TRANSACTION_AUDIT_SOURCES,
+    } = await import("@nodvis/finance-domain");
+
+    expect(transactionAuditOperationEnum.enumValues).toEqual(
+      TRANSACTION_AUDIT_OPERATIONS,
+    );
+    expect(transactionAuditSourceEnum.enumValues).toEqual(
+      TRANSACTION_AUDIT_SOURCES,
+    );
+  });
+
+  it("configures required audit columns, positive revision check, and unique revision per transaction", async () => {
+    const { transactionAuditEntries, households, transactions } = await import(
+      "./index"
+    );
+    const config = getTableConfig(transactionAuditEntries);
+
+    expect(transactionAuditEntries.transactionId.notNull).toBe(true);
+    expect(transactionAuditEntries.householdId.notNull).toBe(true);
+    expect(transactionAuditEntries.revision.notNull).toBe(true);
+    expect(transactionAuditEntries.operation.notNull).toBe(true);
+    expect(transactionAuditEntries.source.notNull).toBe(true);
+    expect(transactionAuditEntries.recordedAt.notNull).toBe(true);
+    expect(transactionAuditEntries.afterState.notNull).toBe(true);
+    expect(transactionAuditEntries.beforeState.notNull).toBe(false);
+
+    const checks = config.checks.map((c) => c.name);
+    expect(checks).toContain("transaction_audit_revision_positive");
+
+    const uniqueIndexes = config.indexes.filter((idx) => idx.config.unique);
+    const uniqueNames = uniqueIndexes.map((idx) => idx.config.name);
+    expect(uniqueNames).toContain("transaction_audit_tx_revision_unique");
+
+    const foreignKeys = config.foreignKeys;
+    const householdFk = foreignKeys.find(
+      (fk) => fk.getName() === "transaction_audit_household_fk",
+    );
+    expect(householdFk).toBeDefined();
+    expect(householdFk?.reference().foreignTable).toBe(households);
+    expect(householdFk?.onDelete).toBe("restrict");
+
+    const txFk = foreignKeys.find(
+      (fk) => fk.getName() === "transaction_audit_transaction_fk",
+    );
+    expect(txFk).toBeDefined();
+    expect(txFk?.reference().foreignTable).toBe(transactions);
+    expect(txFk?.onDelete).toBe("restrict");
+  });
+});

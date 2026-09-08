@@ -37,6 +37,7 @@ export {
   countTransactionsByHousehold,
   findTransactionById,
   insertTransaction,
+  listTransactionAuditEntries,
   listTransactionsByHousehold,
   mapRowToTransaction,
   queryTransactionsByHousehold,
@@ -45,9 +46,13 @@ export {
 } from "./access/transactions";
 export type {
   ListTransactionsParams,
+  NewTransactionAuditRow,
   NewTransactionRow,
+  TransactionAuditActor,
+  TransactionAuditRow,
   TransactionRow,
 } from "./access/transactions";
+
 export {
   CategoryNotFoundError,
   archiveHouseholdCategory,
@@ -73,4 +78,23 @@ export type {
   DbCategorySpendingRow,
   DbPeriodCashFlowRow,
 } from "./access/overview";
+export {
+  DuplicateImportRowError,
+  ImportBatchAlreadyCommittedError,
+  ImportBatchNotFoundError,
+  commitStatementImportBatchInDb,
+  createStatementImportBatchInDb,
+  findExistingImportDedupeHashes,
+  findPossibleManualMatchesInDb,
+  findStatementImportBatchById,
+  listStatementImportBatchesByAccount,
+  listStatementImportRowsByBatch,
+} from "./access/statement-imports";
+export type {
+  NewStatementImportBatchRow,
+  NewStatementImportRowRecord,
+  StatementImportBatchRow,
+  StatementImportRowRecord,
+} from "./access/statement-imports";
+
 export * from "./schema/index";

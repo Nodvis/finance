@@ -98,6 +98,46 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   const [main, savings] = await createAccounts(page, household);
   const categoryId = await createCategory(page, locale);
 
+  await page.goto(`/${locale}/imports?accountId=${main.id}`);
+  await page.locator('input[type="file"]').setInputFiles({
+    name: `synthetic-${locale}.csv`,
+    mimeType: "text/csv",
+    buffer: (globalThis as unknown as { Buffer: { from(value: string): unknown } }).Buffer.from(
+      "Date,Amount,Description\n2026-03-10,-12.34,Imported expense " +
+        locale +
+        "\nnot-a-date,-5.00,Rejected row " +
+        locale +
+        "\n",
+    ) as never,
+  });
+  await page.getByRole("button", { name: /Inspect file|Sprawdź plik/ }).click();
+  await expect(page.getByText(/Detected delimiter|Wykryto separator/)).toBeVisible();
+  await page.getByRole("button", { name: /Preview rows|Podgląd wierszy/ }).click();
+  await expect(page.getByText(/2 rows: 1 valid, 1 invalid|2 wierszy: 1 poprawnych, 1 błędnych/)).toBeVisible();
+  await expect(page.getByText(`Imported expense ${locale}`, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Import 1 selected row|Importuj 1 zaznaczonych wierszy/ }).click();
+  await expect(page.getByText(/Imported 1 transactions|Zaimportowano 1 transakcji\./)).toBeVisible();
+
+  await page.goto(`/${locale}/imports?accountId=${main.id}`);
+  await page.locator('input[type="file"]').setInputFiles({
+    name: `synthetic-${locale}.csv`,
+    mimeType: "text/csv",
+    buffer: (globalThis as unknown as { Buffer: { from(value: string): unknown } }).Buffer.from(
+      "Date,Amount,Description\n2026-03-10,-12.34,Imported expense " + locale + "\nnot-a-date,-5.00,Rejected row " + locale + "\n",
+    ) as never,
+  });
+  await page.getByRole("button", { name: /Inspect file|Sprawdź plik/ }).click();
+  await page.getByRole("button", { name: /Preview rows|Podgląd wierszy/ }).click();
+  await expect(page.getByText(/1 duplicates|1 duplikat/)).toBeVisible();
+
+  const importedList = await page.request.get(`/api/households/${household.householdId}/transactions?status=all`);
+  expect(importedList.ok()).toBeTruthy();
+  const imported = ((await importedList.json()).data as Array<Record<string, unknown>>).find(
+    (tx) => tx.payee === `Imported expense ${locale}`,
+  );
+  expect(imported).toBeTruthy();
+  expect((imported!.amount as { amountMinor: string }).amountMinor).toBe("1234");
+
   await addExpense(page, locale, main.name, categoryId, `E2E expense ${locale}`);
   await addIncome(page, locale, main.name, `E2E income ${locale}`);
   await addTransfer(page, locale, main.name, savings.name);
@@ -149,6 +189,25 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   expect(correctedIncome.source).toBe(`E2E corrected income ${locale}`);
   expect(correctedTransfer.amount).toEqual({ amountMinor: "666", currency: "PLN" });
 
+  const historyResponse = await page.request.get(
+    `/api/households/${household.householdId}/transactions/${expense.id}/history`,
+  );
+  expect(historyResponse.ok()).toBeTruthy();
+  const history = (await historyResponse.json()).data.history as Array<Record<string, unknown>>;
+  expect(history.map((entry) => entry.revision)).toEqual([1, 2, 3]);
+  expect(history.map((entry) => entry.operation)).toEqual(["create", "correction", "void"]);
+  expect((history[2]!.voidReason as string)).toBe("E2E correction test");
+
+  await page.goto(`/${locale}?status=all`);
+  await page.getByRole("button", {
+    name: new RegExp(`Details.*E2E corrected expense ${locale}|Szczegóły.*E2E corrected expense ${locale}`),
+  }).click();
+  await page.getByRole("dialog").getByRole("button", {
+    name: /Change history|Historia zmian/,
+  }).click();
+  await expect(page.getByText(/Revision 3|Rewizja 3/)).toBeVisible();
+  await expect(page.getByText("E2E correction test", { exact: true })).toBeVisible();
+
   const overview = await page.request.get(`/api/households/${household.householdId}/overview?month=${new Date().toISOString().slice(0, 7)}`);
   expect(overview.ok()).toBeTruthy();
   expect((await overview.json()).data.cashFlow.byCurrency).toBeTruthy();
@@ -175,11 +234,8 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   await expect(page.getByText(/(?:Showing|Wyświetlanie)\s+1[–-]10/)).toBeVisible();
   const nextPage = page.getByRole("button", { name: /^(Next|Następna)$/ });
   await expect(nextPage).toBeEnabled();
-  await Promise.all([
-    page.waitForResponse((response) => response.url().includes("/transactions?") && response.request().method() === "GET"),
-    nextPage.click(),
-  ]);
-  await expect(page.getByText(/Page 2|Strona 2/)).toBeVisible();
+  await nextPage.click();
+  await expect(page.getByText(/Page 2 of 2|Strona 2 z 2/)).toBeVisible();
   await expect(page.locator('a[download]')).toHaveAttribute("href", /\/transactions\/export\?/);
 
   await page.goto(`/${locale}/categories`);

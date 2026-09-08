@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   desc,
   eq,
   gte,
@@ -17,6 +18,7 @@ import {
   createExpense,
   createIncome,
   createMonthPeriod,
+  createTransactionAuditSnapshot,
   createTransfer,
   householdId,
   money,
@@ -26,18 +28,31 @@ import {
 } from "@nodvis/finance-domain";
 import type {
   Transaction,
+  TransactionAuditSource,
 } from "@nodvis/finance-domain";
 
 import { getDb } from "../client";
-import { transactions } from "../schema/transactions";
+import {
+  transactionAuditEntries,
+  transactions,
+} from "../schema/transactions";
 
 export type TransactionRow = typeof transactions.$inferSelect;
 export type NewTransactionRow = typeof transactions.$inferInsert;
+export type TransactionAuditRow = typeof transactionAuditEntries.$inferSelect;
+export type NewTransactionAuditRow = typeof transactionAuditEntries.$inferInsert;
+
+export type TransactionAuditActor = {
+  authUserId?: string | null;
+  personId?: string | null;
+  source?: TransactionAuditSource;
+};
 
 export class TransactionNotFoundError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "TransactionNotFoundError";
+
   }
 }
 
@@ -127,7 +142,10 @@ export function mapRowToTransaction(row: TransactionRow): Transaction {
 
 export async function insertTransaction(
   tx: Transaction,
-  options?: { submissionId?: string | undefined },
+  options?: {
+    submissionId?: string | undefined;
+    audit?: TransactionAuditActor | undefined;
+  },
 ): Promise<Transaction> {
   const baseValues = {
     id: tx.id,
@@ -182,23 +200,47 @@ export async function insertTransaction(
   }
 
   try {
-    const [inserted] = await getDb()
-      .insert(transactions)
-      .values(values)
-      .returning();
+    return await getDb().transaction(async (dbTx) => {
+      const [inserted] = await dbTx
+        .insert(transactions)
+        .values(values)
+        .returning();
 
-    if (!inserted) {
-      throw new Error("Failed to insert transaction");
-    }
+      if (!inserted) {
+        throw new Error("Failed to insert transaction");
+      }
 
-    return mapRowToTransaction(inserted);
+      const snapshot = createTransactionAuditSnapshot(tx);
+
+      await dbTx.insert(transactionAuditEntries).values({
+        transactionId: inserted.id,
+        householdId: inserted.householdId,
+        revision: inserted.version,
+        operation: "create",
+        source: options?.audit?.source ?? "manual",
+        authUserId: options?.audit?.authUserId ?? null,
+        personId: options?.audit?.personId ?? null,
+        beforeState: null,
+        afterState: snapshot,
+        voidReason: null,
+        recordedAt: inserted.createdAt,
+      });
+
+      return mapRowToTransaction(inserted);
+    });
   } catch (error) {
+    const pgError = (
+      error && typeof error === "object" && "cause" in error && error.cause
+        ? error.cause
+        : error
+    ) as { code?: string; detail?: string } | undefined;
+
     if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code: string }).code === "23505" &&
-      String((error as { detail?: string }).detail ?? "").includes("submission_id")
+      pgError &&
+      typeof pgError === "object" &&
+      "code" in pgError &&
+      pgError.code === "23505" &&
+      String(pgError.detail ?? "").includes("submission_id")
     ) {
       throw new DuplicateSubmissionError(
         `Duplicate submission rejected: submissionId ${options?.submissionId} already processed`,
@@ -206,6 +248,7 @@ export async function insertTransaction(
     }
     throw error;
   }
+
 }
 
 export async function updateTransactionInDb(params: {
@@ -213,6 +256,7 @@ export async function updateTransactionInDb(params: {
   id: string;
   expectedVersion: number;
   transaction: Transaction;
+  audit?: TransactionAuditActor | undefined;
 }): Promise<Transaction> {
   const tx = params.transaction;
   const baseValues = {
@@ -265,41 +309,72 @@ export async function updateTransactionInDb(params: {
     };
   }
 
-  const [updated] = await getDb()
-    .update(transactions)
-    .set(values)
-    .where(
-      and(
-        eq(transactions.householdId, params.householdId),
-        eq(transactions.id, params.id),
-        eq(transactions.version, params.expectedVersion),
-        isNull(transactions.voidedAt),
-      ),
-    )
-    .returning();
+  return await getDb().transaction(async (dbTx) => {
+    const [existing] = await dbTx
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.householdId, params.householdId),
+          eq(transactions.id, params.id),
+        ),
+      )
+      .limit(1);
 
-  if (updated) {
+    if (!existing) {
+      throw new TransactionNotFoundError(
+        `Transaction ${params.id} not found in household`,
+      );
+    }
+    if (existing.voidedAt !== null) {
+      throw new TransactionAlreadyVoidedError(
+        `Transaction ${params.id} is voided and cannot be edited`,
+      );
+    }
+    if (existing.version !== params.expectedVersion) {
+      throw new TransactionVersionConflictError(
+        `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
+      );
+    }
+
+    const [updated] = await dbTx
+      .update(transactions)
+      .set(values)
+      .where(
+        and(
+          eq(transactions.householdId, params.householdId),
+          eq(transactions.id, params.id),
+          eq(transactions.version, params.expectedVersion),
+          isNull(transactions.voidedAt),
+        ),
+      )
+      .returning();
+
+    if (!updated) {
+      throw new TransactionVersionConflictError(
+        `Transaction was modified concurrently (expected version ${params.expectedVersion})`,
+      );
+    }
+
+    const beforeSnapshot = createTransactionAuditSnapshot(mapRowToTransaction(existing));
+    const afterSnapshot = createTransactionAuditSnapshot(params.transaction);
+
+    await dbTx.insert(transactionAuditEntries).values({
+      transactionId: updated.id,
+      householdId: updated.householdId,
+      revision: updated.version,
+      operation: "correction",
+      source: params.audit?.source ?? "manual",
+      authUserId: params.audit?.authUserId ?? null,
+      personId: params.audit?.personId ?? null,
+      beforeState: beforeSnapshot,
+      afterState: afterSnapshot,
+      voidReason: null,
+      recordedAt: updated.updatedAt,
+    });
+
     return mapRowToTransaction(updated);
-  }
-
-  const existing = await findTransactionById(params.householdId, params.id);
-  if (!existing) {
-    throw new TransactionNotFoundError(
-      `Transaction ${params.id} not found in household`,
-    );
-  }
-  if (existing.voidedAt !== null) {
-    throw new TransactionAlreadyVoidedError(
-      `Transaction ${params.id} is voided and cannot be edited`,
-    );
-  }
-  if (existing.version !== params.expectedVersion) {
-    throw new TransactionVersionConflictError(
-      `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
-    );
-  }
-
-  throw new Error(`Failed to update transaction ${params.id}`);
+  });
 }
 
 export async function voidTransactionInDb(params: {
@@ -308,48 +383,101 @@ export async function voidTransactionInDb(params: {
   expectedVersion: number;
   voidReason?: string | null | undefined;
   voidedAt?: Date | undefined;
+  audit?: TransactionAuditActor | undefined;
 }): Promise<Transaction> {
-  const [voided] = await getDb()
-    .update(transactions)
-    .set({
-      voidedAt: params.voidedAt ?? new Date(),
-      voidReason: params.voidReason?.trim() || null,
-      version: params.expectedVersion + 1,
-      updatedAt: new Date(),
-    })
+  const effectiveVoidedAt = params.voidedAt ?? new Date();
+  const effectiveVoidReason = params.voidReason?.trim() || null;
+
+  return await getDb().transaction(async (dbTx) => {
+    const [existing] = await dbTx
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.householdId, params.householdId),
+          eq(transactions.id, params.id),
+        ),
+      )
+      .limit(1);
+
+    if (!existing) {
+      throw new TransactionNotFoundError(
+        `Transaction ${params.id} not found in household`,
+      );
+    }
+    if (existing.voidedAt !== null) {
+      throw new TransactionAlreadyVoidedError(
+        `Transaction ${params.id} is already voided`,
+      );
+    }
+    if (existing.version !== params.expectedVersion) {
+      throw new TransactionVersionConflictError(
+        `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
+      );
+    }
+
+    const [voided] = await dbTx
+      .update(transactions)
+      .set({
+        voidedAt: effectiveVoidedAt,
+        voidReason: effectiveVoidReason,
+        version: params.expectedVersion + 1,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(transactions.householdId, params.householdId),
+          eq(transactions.id, params.id),
+          eq(transactions.version, params.expectedVersion),
+          isNull(transactions.voidedAt),
+        ),
+      )
+      .returning();
+
+    if (!voided) {
+      throw new TransactionVersionConflictError(
+        `Transaction was modified concurrently (expected version ${params.expectedVersion})`,
+      );
+    }
+
+    const beforeSnapshot = createTransactionAuditSnapshot(mapRowToTransaction(existing));
+    const voidedTx = mapRowToTransaction(voided);
+    const afterSnapshot = createTransactionAuditSnapshot(voidedTx);
+
+    await dbTx.insert(transactionAuditEntries).values({
+      transactionId: voided.id,
+      householdId: voided.householdId,
+      revision: voided.version,
+      operation: "void",
+      source: params.audit?.source ?? "manual",
+      authUserId: params.audit?.authUserId ?? null,
+      personId: params.audit?.personId ?? null,
+      beforeState: beforeSnapshot,
+      afterState: afterSnapshot,
+      voidReason: effectiveVoidReason,
+      recordedAt: voided.updatedAt,
+    });
+
+    return voidedTx;
+  });
+}
+
+export async function listTransactionAuditEntries(
+  householdId: string,
+  transactionId: string,
+): Promise<TransactionAuditRow[]> {
+  return await getDb()
+    .select()
+    .from(transactionAuditEntries)
     .where(
       and(
-        eq(transactions.householdId, params.householdId),
-        eq(transactions.id, params.id),
-        eq(transactions.version, params.expectedVersion),
-        isNull(transactions.voidedAt),
+        eq(transactionAuditEntries.householdId, householdId),
+        eq(transactionAuditEntries.transactionId, transactionId),
       ),
     )
-    .returning();
-
-  if (voided) {
-    return mapRowToTransaction(voided);
-  }
-
-  const existing = await findTransactionById(params.householdId, params.id);
-  if (!existing) {
-    throw new TransactionNotFoundError(
-      `Transaction ${params.id} not found in household`,
-    );
-  }
-  if (existing.voidedAt !== null) {
-    throw new TransactionAlreadyVoidedError(
-      `Transaction ${params.id} is already voided`,
-    );
-  }
-  if (existing.version !== params.expectedVersion) {
-    throw new TransactionVersionConflictError(
-      `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
-    );
-  }
-
-  throw new Error(`Failed to void transaction ${params.id}`);
+    .orderBy(asc(transactionAuditEntries.revision));
 }
+
 
 export type ListTransactionsParams = {
   householdId: string;

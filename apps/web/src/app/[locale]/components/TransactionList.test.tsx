@@ -203,4 +203,189 @@ describe("TransactionList Component", () => {
     expect(html).toContain("Transactions.list.badgeVoided");
     expect(html).toContain("line-through");
   });
+
+  it("renders details modal with tabs for Details and Change history", () => {
+    const html = renderToStaticMarkup(
+      <TransactionList
+        transactions={mockTransactions}
+        accounts={mockAccounts}
+        categories={mockCategories}
+        locale="en"
+        householdId="hh-1"
+        initialInspectTx={mockTransactions[0]!}
+        initialActiveInspectTab="details"
+      />,
+    );
+
+    expect(html).toContain("Transactions.details.title");
+    expect(html).toContain("Transactions.history.tabDetails");
+    expect(html).toContain("Transactions.history.tabHistory");
+    expect(html).toContain("Transactions.details.auditTrailNotice");
+  });
+
+  it("renders change history timeline with operation badges, actor, field diffs, and void reason", () => {
+    const sampleHistory = [
+      {
+        id: "hist-1",
+        revision: 1,
+        operation: "create" as const,
+        source: "manual" as const,
+        recordedAt: "2026-09-05T12:00:00.000Z",
+        actor: {
+          authUserId: "auth-user-1",
+          personId: "person-1",
+          displayName: "Alice",
+        },
+        voidReason: null,
+        isBaseline: false,
+        changes: [
+          {
+            field: "amount" as const,
+            fieldLabelKey: "fieldAmount",
+            before: null,
+            after: "125.50 PLN",
+          },
+        ],
+        summary: {
+          kind: "expense" as const,
+          amountFormatted: "125.50 PLN",
+          occurredOn: "2026-09-05",
+          accountName: "Checking Account (PLN)",
+          fromAccountName: null,
+          toAccountName: null,
+          categoryName: "Groceries",
+          counterparty: "Local Market",
+          personName: "Alice",
+          status: "active" as const,
+        },
+      },
+      {
+        id: "hist-2",
+        revision: 2,
+        operation: "correction" as const,
+        source: "manual" as const,
+        recordedAt: "2026-09-06T10:00:00.000Z",
+        actor: {
+          authUserId: "auth-user-2",
+          personId: "person-2",
+          displayName: "Bob",
+        },
+        voidReason: null,
+        isBaseline: false,
+        changes: [
+          {
+            field: "amount" as const,
+            fieldLabelKey: "fieldAmount",
+            before: "125.50 PLN",
+            after: "150.00 PLN",
+          },
+        ],
+        summary: {
+          kind: "expense" as const,
+          amountFormatted: "150.00 PLN",
+          occurredOn: "2026-09-05",
+          accountName: "Checking Account (PLN)",
+          fromAccountName: null,
+          toAccountName: null,
+          categoryName: "Groceries",
+          counterparty: "Local Market",
+          personName: "Alice",
+          status: "active" as const,
+        },
+      },
+      {
+        id: "hist-3",
+        revision: 3,
+        operation: "void" as const,
+        source: "manual" as const,
+        recordedAt: "2026-09-07T08:00:00.000Z",
+        actor: {
+          authUserId: "auth-user-1",
+          personId: "person-1",
+          displayName: "Alice",
+        },
+        voidReason: "Returned item",
+        isBaseline: false,
+        changes: [
+          {
+            field: "status" as const,
+            fieldLabelKey: "fieldStatus",
+            before: "active",
+            after: "voided",
+          },
+          {
+            field: "voidReason" as const,
+            fieldLabelKey: "fieldVoidReason",
+            before: null,
+            after: "Returned item",
+          },
+        ],
+        summary: {
+          kind: "expense" as const,
+          amountFormatted: "150.00 PLN",
+          occurredOn: "2026-09-05",
+          accountName: "Checking Account (PLN)",
+          fromAccountName: null,
+          toAccountName: null,
+          categoryName: "Groceries",
+          counterparty: "Local Market",
+          personName: "Alice",
+          status: "voided" as const,
+        },
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <TransactionList
+        transactions={mockTransactions}
+        accounts={mockAccounts}
+        categories={mockCategories}
+        locale="en"
+        householdId="hh-1"
+        initialInspectTx={mockTransactions[0]!}
+        initialActiveInspectTab="history"
+        initialHistoryData={sampleHistory}
+      />,
+    );
+
+    // History title and timeline
+    expect(html).toContain("Transactions.history.title");
+    expect(html).toContain('aria-label="Accessibility.transactionHistoryTimeline"');
+
+    // Operation badges
+    expect(html).toContain("Transactions.history.operations.create");
+    expect(html).toContain("Transactions.history.operations.correction");
+    expect(html).toContain("Transactions.history.operations.void");
+
+    // Source badges
+    expect(html).toContain("Transactions.history.sources.manual");
+
+    // Actors
+    expect(html).toContain("Alice");
+    expect(html).toContain("Bob");
+
+    // Changes & diffs
+    expect(html).toContain("125.50 PLN");
+    expect(html).toContain("150.00 PLN");
+    expect(html).toContain("→");
+
+    // Void reason
+    expect(html).toContain("Transactions.history.fields.fieldVoidReason");
+    expect(html).toContain("Returned item");
+
+    // Guaranteed ZERO internal raw UUIDs in history view
+    const historySection = html.slice(
+      html.indexOf('aria-label="Accessibility.transactionHistoryTimeline"'),
+    );
+    expect(historySection).not.toContain("auth-user-1");
+    expect(historySection).not.toContain("auth-user-2");
+    expect(historySection).not.toContain("person-1");
+    expect(historySection).not.toContain("person-2");
+    expect(historySection).not.toContain("account-1");
+    expect(historySection).not.toContain("cat-1");
+
+    // Guaranteed ZERO raw JSON in history view
+    expect(historySection).not.toContain('{"amountMinor"');
+    expect(historySection).not.toContain('"paidByPersonId"');
+  });
 });
