@@ -104,6 +104,7 @@
     "capturedAtLabel": "Saldo na dzień",
     "actions": {
       "addAccount": "Dodaj konto",
+      "importStatement": "Importuj CSV",
       "edit": "Edytuj",
       "archive": "Zarchiwizuj",
       "unarchive": "Przywróć",
@@ -427,6 +428,28 @@
     "cashFlowSummary": "Podsumowanie przepływów pieniężnych w okresie",
     "accountObservations": "Status obserwacji kont",
     "transactionHistoryTimeline": "Oś czasu historii zmian transakcji"
+  },
+  "Imports": {
+    "title": "Importuj wyciąg CSV",
+    "description": "Podejrzyj i zweryfikuj wiersze przed utworzeniem transakcji. Obsługiwany jest generyczny CSV; transfery wymagają ręcznej weryfikacji.",
+    "account": "Konto docelowe",
+    "file": "Plik CSV",
+    "inspect": "Sprawdź plik",
+    "mapping": "Mapowanie kolumn",
+    "detected": "Wykryto separator: {delimiter}; kodowanie: {encoding}; wierszy: {count}",
+    "date": "Data",
+    "amount": "Kwota",
+    "descriptionColumn": "Opis",
+    "preview": "Podgląd wierszy",
+    "review": "Weryfikacja importu",
+    "counts": "{total} wierszy: {valid} poprawnych, {invalid} błędnych, {duplicates} duplikatów",
+    "select": "Importuj",
+    "status": "Status",
+    "commit": "Importuj {count} zaznaczonych wierszy",
+    "working": "Przetwarzanie…",
+    "success": "Zaimportowano {count} transakcji.",
+    "selectHousehold": "Wybierz gospodarstwo przed importem.",
+    "errors": { "generic": "Nie udało się wykonać importu." }
   },
   "Overview": {
     "periodLabel": "Wybrany okres",

@@ -123,6 +123,15 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
 - `pnpm test`: 356/356 passed; `pnpm typecheck`, `pnpm lint`, `git diff --check`: passed.
 - `pnpm build` pozostaje wymaganym końcowym checkiem przed push.
 
+## Checkpoint: generic CSV statement import
+
+- Dodano bounded generic CSV workflow: encoding/delimiter detection, exact signed amounts, date/currency validation, column mapping, preview, invalid-row rejection, explicit commit and deterministic deduplication.
+- Dodano provenance: import batch, file hash/metadata, parser version, source row identity, normalized values, row status and linked transaction.
+- Imported mutations reuse transaction invariants and append audit history with source `import`; observed balance snapshots are untouched.
+- Added PL/EN `/imports` UI reachable from account cards and authorized preview/commit/inspect API endpoints.
+- Verification: fresh PostgreSQL migration 0001–0006 applied twice; focused domain/DB/web tests passed; Chromium authenticated PL/EN + smoke passed 5/5 against isolated Compose PostgreSQL; exact minor-unit read-back and same-file re-import dedupe verified.
+- Known limitation: generic CSV only; no bank-specific adapters, transfer auto-classification, OCR, bank sync or reconciliation engine.
+
 ## Checkpoint: immutable transaction history — review in progress
 
 - Dodano append-only `transaction_audit_entries` z operacją, źródłem manual/system/import, aktorem auth user/person, rewizją i dokładnymi snapshotami before/after.

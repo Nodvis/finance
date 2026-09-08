@@ -43,6 +43,13 @@
       "when": 1788867413552,
       "tag": "0005_careless_richard_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788869833396,
+      "tag": "0006_outstanding_karnak",
+      "breakpoints": true
     }
   ]
 }
