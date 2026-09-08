@@ -57,6 +57,13 @@
       "when": 1788885692875,
       "tag": "0007_silent_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788896962127,
+      "tag": "0008_lame_proemial_gods",
+      "breakpoints": true
     }
   ]
 }
