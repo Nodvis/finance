@@ -90,18 +90,26 @@ export default async function HomePage({
   ] as const;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Calm, professional dashboard overview header */}
-      <header className="flex max-w-3xl flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400">
-          {t("eyebrow")}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-100 sm:text-3xl">
-          {t("title")}
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-stone-400 sm:text-base">
-          {t("description")}
-        </p>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-stone-800/80 pb-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400/80">
+            {t("eyebrow")}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-100 sm:text-3xl">
+            {t("title")}
+          </h1>
+        </div>
+        {householdContext ? (
+          <div className="flex flex-wrap gap-2 text-xs text-stone-400">
+            <span className="rounded-full border border-stone-800 bg-stone-900 px-3 py-1.5">
+              {householdContext.defaultCurrency}
+            </span>
+            <a href="#transaction-list" className="rounded-lg bg-emerald-400 px-3 py-1.5 font-semibold text-stone-950 transition hover:bg-emerald-300">
+              {t("quickActions.viewTransactions")}
+            </a>
+          </div>
+        ) : null}
       </header>
 
       {/* Honest Financial Summary Cards */}
@@ -174,25 +182,33 @@ export default async function HomePage({
             locale={locale}
           />
 
+          <details
+            id="transaction-forms"
+            className="rounded-2xl border border-stone-800 bg-stone-900/50 p-4 shadow-xs"
+          >
+            <summary className="cursor-pointer list-none text-sm font-semibold text-stone-100 marker:hidden">
+              <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 font-bold text-stone-950">+</span>
+              {t("quickActions.addTransaction")}
+            </summary>
+            <div className="mt-4 border-t border-stone-800 pt-4">
+              <TransactionForms
+                householdId={householdContext.householdId}
+                accounts={accounts}
+                categories={categories}
+                defaultCurrency={householdContext.defaultCurrency}
+                locale={locale}
+              />
+            </div>
+          </details>
+
           {/* Truthful Period Spending by Category Breakdown */}
           <CategorySpendingSection
             overview={serializedOverview}
             locale={locale}
           />
 
-          {/* Transaction Creation Forms (Expense, Income, Transfer) with anchor */}
-          <div id="transaction-forms" aria-label={tAccess("transactionForms")}>
-            <TransactionForms
-              householdId={householdContext.householdId}
-              accounts={accounts}
-              categories={categories}
-              defaultCurrency={householdContext.defaultCurrency}
-              locale={locale}
-            />
-          </div>
-
           {/* Transaction List and Empty State */}
-          <div aria-label={tAccess("transactionList")}>
+          <div id="transaction-list" aria-label={tAccess("transactionList")}>
             <TransactionList
               transactions={serializedTransactions}
               accounts={accounts}

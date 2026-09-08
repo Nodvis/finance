@@ -1,12 +1,16 @@
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
+import { getCurrentSession } from "@/lib/auth/session";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SignOutButton } from "./SignOutButton";
 
-export function AppHeader() {
-  const tNav = useTranslations("Navigation");
-  const tAccess = useTranslations("Accessibility");
+export async function AppHeader() {
+  const tNav = await getTranslations("Navigation");
+  const tAccess = await getTranslations("Accessibility");
+  const tAuth = await getTranslations("Auth");
+  const session = await getCurrentSession();
 
   return (
     <header
@@ -21,7 +25,7 @@ export function AppHeader() {
         {tNav("skipToContent")}
       </a>
 
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
         {/* Brand identity */}
         <div className="flex items-center gap-3">
           <Link
@@ -61,7 +65,7 @@ export function AppHeader() {
 
         {/* Navigation links */}
         <nav
-          className="flex items-center gap-1 sm:gap-2"
+          className="order-3 flex w-full items-center gap-1 overflow-x-auto border-t border-stone-800/70 pt-3 sm:order-none sm:w-auto sm:border-t-0 sm:pt-0"
           aria-label={tAccess("mainNavigation")}
         >
           <Link
@@ -82,11 +86,17 @@ export function AppHeader() {
           >
             {tNav("categories")}
           </Link>
+          <Link
+            href="/imports"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-800/80 hover:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-400"
+          >
+            {tNav("imports")}
+          </Link>
         </nav>
 
         {/* Global actions: Language Switcher */}
         <div
-          className="flex items-center gap-3"
+          className="ml-auto flex items-center gap-2"
           role="region"
           aria-label={tAccess("languageNavigation")}
         >
@@ -97,6 +107,14 @@ export function AppHeader() {
           >
             <LanguageSwitcher />
           </Suspense>
+          {session ? (
+            <div className="hidden items-center gap-3 border-l border-stone-800 pl-3 sm:flex">
+              <span className="max-w-40 truncate text-xs text-stone-400" title={session.user.email}>
+                {tAuth("signedInAs")}: {session.user.name ?? session.user.email}
+              </span>
+              <SignOutButton />
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

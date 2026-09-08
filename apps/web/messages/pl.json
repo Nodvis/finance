@@ -9,6 +9,7 @@
     "home": "Podsumowanie",
     "accounts": "Konta",
     "categories": "Kategorie",
+    "imports": "Importy",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Self-hosted"
   },
@@ -24,6 +25,7 @@
     "eyebrow": "Centrum kontroli finansowej",
     "title": "Twoja sytuacja finansowa bez księgowego chaosu.",
     "description": "Zestawienie dostępnych środków, bieżących zobowiązań oraz długu gospodarstwa domowego w czasie rzeczywistym.",
+    "quickActions": { "viewTransactions": "Zobacz transakcje", "addTransaction": "Dodaj transakcję" },
     "summaryLabel": "Podsumowanie finansowe",
     "noData": "Brak danych — model finansowy jest dopiero wdrażany.",
     "cards": {
