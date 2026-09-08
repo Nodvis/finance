@@ -102,3 +102,12 @@ Weryfikacja Phase 4:
 - `git diff --check`: passed.
 
 E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts` sprawdza wycofane marketingowe teksty i nie pokrywa nowych przepływów.
+
+## Deployment prywatny
+
+- backup: `/home/erza_agent/backups/nodvis-finance-private-20260908T095608Z.dump`, 35,685 bajtów; `pg_restore --list` w obrazie PostgreSQL passed;
+- `docker compose ... build migrate web` passed;
+- migracja prywatna uruchomiona dwukrotnie, oba przebiegi passed;
+- web odtworzony przez `up -d --force-recreate web`, bez usuwania volume;
+- PostgreSQL i web healthy; LAN `http://192.168.1.119:3000/pl` zwrócił HTTP 200;
+- E2E z prawdziwym loginem nie wykonano w tej sesji.
