@@ -20,6 +20,13 @@ export const auth = betterAuth({
   trustedOrigins,
   rateLimit: {
     enabled: true,
+    ...(process.env.CI === "true"
+      ? {
+          customRules: {
+            "/sign-up/email": { window: 60, max: 100 },
+          },
+        }
+      : {}),
   },
   advanced: {
     database: {
