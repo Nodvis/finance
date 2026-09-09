@@ -28,7 +28,9 @@ export type {
 export {
   accountId,
   accountIdentifierId,
+  bnplPurchaseId,
   categoryId,
+  creditFacilityId,
   householdId,
   liabilityId,
   liabilityRepaymentId,
@@ -39,7 +41,9 @@ export {
 export type {
   AccountId,
   AccountIdentifierId,
+  BnplPurchaseId,
   CategoryId,
+  CreditFacilityId,
   HouseholdId,
   LiabilityId,
   LiabilityRepaymentId,
@@ -272,3 +276,26 @@ export type {
   CreditFacility,
   CreditFacilityKind,
 } from "./credit-facility";
+
+export {
+  BNPL_PAYMENT_MODELS,
+  BNPL_PURCHASE_STATUSES,
+  createBnplPurchase,
+  isBnplPaymentModel,
+  isBnplPurchaseStatus,
+  isBnplPurchaseVoided,
+  updateBnplPurchase,
+  validateBnplAllocation,
+  validateBnplObservedOutstanding,
+  validateBnplOptionalString,
+  validateBnplString,
+  validateBnplVoidReason,
+  voidBnplPurchase,
+} from "./bnpl";
+export type {
+  BnplPaymentModel,
+  BnplPurchase,
+  BnplPurchaseStatus,
+  CreateBnplPurchaseInput,
+  UpdateBnplPurchaseInput,
+} from "./bnpl";

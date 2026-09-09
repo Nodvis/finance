@@ -24,15 +24,29 @@ type SerializedCreditFacility = {
   version: number;
 };
 
+type SerializedBnplPurchase = {
+  id: string;
+  provider: string;
+  product: string;
+  merchant: string;
+  description: string | null;
+  financedAmountMinor: string;
+  observedOutstandingMinor: string | null;
+  currency: string;
+  status: string;
+  dueDate: string | null;
+};
+
 type Props = {
   householdContext: AuthorizedHouseholdUserContext;
   initialLiabilities: SerializedHouseholdLiability[];
   accounts: SerializedHouseholdAccount[];
   initialFacilities: SerializedCreditFacility[];
+  initialBnplPurchases: SerializedBnplPurchase[];
   locale: string;
 };
 
-export function LiabilitiesView({ householdContext, initialLiabilities, accounts, initialFacilities, locale }: Props) {
+export function LiabilitiesView({ householdContext, initialLiabilities, accounts, initialFacilities, initialBnplPurchases, locale }: Props) {
   const t = useTranslations("Liabilities");
   const router = useRouter();
   const [items, setItems] = useState(initialLiabilities);
@@ -111,6 +125,14 @@ export function LiabilitiesView({ householdContext, initialLiabilities, accounts
           ))}
         </section>
       )}
+
+      {initialBnplPurchases.length > 0 && <section className="grid gap-3">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-stone-300">{t("bnplPurchases")}</h2>
+        {initialBnplPurchases.map((purchase) => <article key={purchase.id} className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5 dark:border-violet-900/60 dark:bg-violet-950/20">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-900 dark:text-stone-100">{purchase.merchant}</h3><p className="text-sm text-slate-500 dark:text-stone-400">{purchase.provider} · {purchase.product}{purchase.description ? ` · ${purchase.description}` : ""}</p></div><span className="rounded-full bg-white/70 px-2 py-1 text-xs dark:bg-stone-900/70">{purchase.status}</span></div>
+          <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3"><p><span className="block text-xs text-slate-500 dark:text-stone-400">{t("bnplFinanced")}</span><strong>{formatAmountPresentation(purchase.financedAmountMinor, purchase.currency, locale)}</strong></p><p><span className="block text-xs text-slate-500 dark:text-stone-400">{t("bnplOutstanding")}</span><strong>{purchase.observedOutstandingMinor === null ? t("balance.unknown") : formatAmountPresentation(purchase.observedOutstandingMinor, purchase.currency, locale)}</strong></p><p><span className="block text-xs text-slate-500 dark:text-stone-400">{t("bnplDueDate")}</span><strong>{purchase.dueDate ? new Intl.DateTimeFormat(locale).format(new Date(purchase.dueDate)) : t("balance.unknown")}</strong></p></div>
+        </article>)}
+      </section>}
 
       <section className="grid gap-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-stone-300">{t("activeLiabilities")}</h2>
