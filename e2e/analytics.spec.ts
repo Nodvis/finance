@@ -4,21 +4,21 @@ const password = "LocalOnly-E2E-Password-123!";
 
 test("PL and EN show data-backed analytics without combining currencies", async ({ page }) => {
   const email = `analytics-${Date.now()}@example.test`;
-  await page.goto("/pl/auth/sign-up");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByLabel("Confirm password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/pl/);
+  const signup = await page.request.post("/api/auth/sign-up/email", { data: { name: "Analytics household", email, password } });
+  expect(signup.ok(), await signup.text()).toBeTruthy();
+  await page.goto("/pl");
   await page.locator("#onboarding-name").fill("Analytics household");
-  await page.locator("form").filter({ has: page.locator("#onboarding-name") }).getByRole("button").click();
-  await page.waitForResponse((r) => r.url().endsWith("/api/households/current") && r.status() === 200);
+  await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith("/api/households") && r.request().method() === "POST" && r.status() === 201),
+    page.locator("form").filter({ has: page.locator("#onboarding-name") }).getByRole("button").click(),
+  ]);
+  await page.reload();
   const current = await page.request.get("/api/households/current");
   const household = (await current.json()).data as { householdId: string; personId: string };
-  const accounts = await page.request.get(`/api/households/${household.householdId}/accounts`);
-  const account = (await accounts.json()).data[0] as { id: string };
-  const categoryResponse = await page.request.post(`/api/households/${household.householdId}/categories`, { data: { name: "Housing", kind: "expense" } });
+  const categoryResponse = await page.request.post(`/api/households/${household.householdId}/categories`, { data: { name: "Housing", applicability: "expense" } });
   const category = (await categoryResponse.json()).data as { id: string };
+  const accountResponse = await page.request.post(`/api/households/${household.householdId}/accounts`, { data: { name: "Analytics checking", type: "checking", currency: "PLN", ownerPersonIds: [household.personId], initialBalance: { amountNatural: "1000", capturedAt: new Date().toISOString() } } });
+  const account = (await accountResponse.json()).data as { id: string };
   for (const item of [
     { amountMinor: "12000", currency: "PLN", occurredOn: "2026-01-05T12:00:00.000Z" },
     { amountMinor: "8000", currency: "PLN", occurredOn: "2026-02-05T12:00:00.000Z" },
