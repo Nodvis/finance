@@ -16,7 +16,7 @@ import { financeSchema } from "./namespace";
 
 export const ruleMatchFieldEnum = financeSchema.enum("categorization_rule_match_field", ["counterparty"]);
 export const ruleMatchModeEnum = financeSchema.enum("categorization_rule_match_mode", ["contains", "exact", "starts_with"]);
-export const ruleApplicationStatusEnum = financeSchema.enum("categorization_rule_application_status", ["applied", "skipped_conflict"]);
+export const ruleApplicationStatusEnum = financeSchema.enum("categorization_rule_application_status", ["applied", "skipped_conflict", "skipped_stale"]);
 
 export const categorizationRules = financeSchema.table(
   "categorization_rules",

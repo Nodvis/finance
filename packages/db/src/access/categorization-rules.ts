@@ -67,7 +67,7 @@ export async function recordCategorizationRuleApplication(input: {
   transactionId: string;
   beforeCategoryId: string | null;
   afterCategoryId: string | null;
-  status: "applied" | "skipped_conflict";
+  status: "applied" | "skipped_conflict" | "skipped_stale";
   explanation: string;
 }): Promise<CategorizationRuleApplicationRow> {
   const [row] = await getDb().insert(categorizationRuleApplications).values(input).returning();

@@ -1,0 +1,1 @@
+ALTER TYPE "finance"."categorization_rule_application_status" ADD VALUE 'skipped_stale';
