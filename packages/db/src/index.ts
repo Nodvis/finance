@@ -141,4 +141,32 @@ export type {
   TransferMatchRecord,
 } from "./access/transfer-matching";
 
+export {
+  LiabilityDestinationAccountCurrencyMismatchError,
+  LiabilityDestinationAccountInvalidHouseholdError,
+  LiabilityDestinationAccountNotFoundError,
+  LiabilityNotFoundError,
+  LiabilityRepaymentAlreadyVoidedError,
+  LiabilityRepaymentNotFoundError,
+  LiabilityRepaymentVersionConflictError,
+  LiabilityVersionConflictError,
+  archiveLiabilityInDb,
+  findLiabilityById,
+  findLiabilityRepaymentById,
+  insertLiabilityInDb,
+  listLiabilitiesByHousehold,
+  listLiabilityRepaymentsByHousehold,
+  mapRowToLiability,
+  mapRowToLiabilityRepayment,
+  recordLiabilityRepaymentInDb,
+  unarchiveLiabilityInDb,
+  updateLiabilityInDb,
+  voidLiabilityRepaymentInDb,
+} from "./access/liabilities";
+export type {
+  HouseholdLiabilitySummary,
+  LiabilityRepaymentRow,
+  LiabilityRow,
+} from "./access/liabilities";
+
 export * from "./schema/index";

@@ -7,3 +7,4 @@ export * from "./statement-import-profiles";
 export * from "./statement-imports";
 export * from "./transactions";
 export * from "./transfer-matches";
+export * from "./liabilities";

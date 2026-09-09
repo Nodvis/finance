@@ -11,6 +11,7 @@
     "categories": "Categories",
     "imports": "Imports",
     "transfers": "Transfers",
+    "liabilities": "Liabilities",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private"
   },
@@ -223,6 +224,33 @@
       "errorNameRequired": "Category name is required.",
       "errorDuplicateName": "A category with this name already exists in this household."
     }
+  },
+  "Liabilities": {
+    "eyebrow": "Household liabilities",
+    "title": "Liabilities",
+    "description": "Track loans, mortgages, installments, and credit lines with exact balances and repayment history.",
+    "activeLiabilities": "Active liabilities",
+    "archivedLiabilities": "Archived liabilities",
+    "showArchived": "Show archived ({count})",
+    "hideArchived": "Hide archived",
+    "emptyActiveTitle": "No active liabilities",
+    "emptyActiveDescription": "Add your first loan, mortgage, or installment plan below.",
+    "emptyArchivedDescription": "No archived liabilities in this household.",
+    "kinds": { "loan": "Loan", "mortgage": "Mortgage", "installment": "Installment", "credit_line": "Credit line", "other": "Other" },
+    "allocationStates": { "full": "Full allocation", "partial": "Partial allocation", "unknown": "Unknown allocation" },
+    "balance": { "unknown": "Unknown balance", "observedAt": "As of {date}", "outstanding": "Outstanding" },
+    "detail": {
+      "backToList": "Back to liabilities", "overview": "Liability overview", "repaymentsTitle": "Repayment history", "noRepayments": "No repayments recorded yet.", "recordRepayment": "Record repayment", "lender": "Lender", "responsible": "Responsible person", "destinationAccount": "Linked destination account", "noDestinationAccount": "None (external obligation)", "notes": "Notes", "unassigned": "Unassigned", "principal": "Principal", "interest": "Interest", "fee": "Fee", "linkedTransaction": "Linked cash transaction", "voided": "Voided", "voidedAt": "Voided on {date}", "voidReason": "Reason: {reason}", "voidAction": "Void"
+    },
+    "actions": { "addLiability": "Add liability", "edit": "Edit", "archive": "Archive", "unarchive": "Restore", "cancel": "Cancel", "save": "Save changes", "saving": "Saving...", "archiving": "Archiving...", "unarchiving": "Restoring...", "details": "Details & Repayments" },
+    "archiveConfirm": "Archive this liability? Historical repayments will be preserved.",
+    "form": {
+      "titleAdd": "Add liability", "titleEdit": "Edit liability", "name": "Liability name", "namePlaceholder": "e.g. Home Mortgage, Auto Loan, Laptop Installments", "kind": "Type of liability", "currency": "Currency", "lender": "Lender / Institution (optional)", "lenderPlaceholder": "e.g. PKO BP, Santander, Allegro Pay", "responsiblePerson": "Responsible person (optional)", "selectPerson": "Select person...", "destinationAccount": "Repayment destination account (optional)", "destinationAccountHelp": "Select a household account (e.g. credit card) if repayments should transfer directly to it.", "noAccount": "None / External obligation", "observedOutstanding": "Observed outstanding balance (optional)", "observedOutstandingPlaceholder": "e.g. 50000.00 or leave empty", "observedOutstandingHelp": "Leave empty if current balance is unknown. Parsed with exact minor units.", "observedOutstandingAt": "Balance snapshot date", "notes": "Notes (optional)", "notesPlaceholder": "e.g. Fixed rate until 2028, monthly payment ~1200 PLN", "submitAdd": "Create liability", "submittingAdd": "Creating liability...", "submitEdit": "Save changes", "submittingEdit": "Saving changes...", "successAdd": "Liability created successfully.", "successEdit": "Liability updated successfully.", "successArchive": "Liability archived successfully.", "successUnarchive": "Liability restored successfully.", "errorGeneric": "An error occurred while saving the liability.", "errorNameRequired": "Liability name is required.", "errorSnapshotDateRequired": "Observation date is required when entering an outstanding balance."
+    },
+    "repaymentForm": {
+      "title": "Record repayment", "paidAt": "Repayment date", "amount": "Total repayment amount", "amountPlaceholder": "e.g. 623.00", "allocationHelp": "Principal, interest, and fees can be left blank if unknown. When all three are provided, they must sum exactly to the total repayment.", "principal": "Principal reduction (optional)", "principalPlaceholder": "Leave empty if unknown", "interest": "Interest / Financing cost (optional)", "interestPlaceholder": "Leave empty if unknown", "fee": "Fee / Commission (optional)", "feePlaceholder": "Leave empty if unknown", "sourceAccount": "Pay from account (optional)", "sourceAccountHelp": "If selected, automatically records a cash movement (transfer or expense) with full audit trail.", "noSourceAccount": "Do not create cash transaction", "notes": "Notes (optional)", "notesPlaceholder": "e.g. Regular monthly installment", "submit": "Save repayment", "submitting": "Saving repayment...", "success": "Repayment recorded successfully.", "errorGeneric": "An error occurred while recording the repayment.", "errorAmountRequired": "Repayment amount is required and must be greater than zero.", "errorAllocationExceeded": "Sum of principal, interest, and fee cannot exceed total repayment amount.", "errorAllocationMismatch": "When principal, interest, and fees are all supplied, their sum must exactly equal total amount."
+    },
+    "voidForm": { "title": "Void repayment", "description": "Voiding will mark this repayment as void and also void any linked cash transaction with an audit log.", "reason": "Reason for voiding (optional)", "reasonPlaceholder": "e.g. Bank correction, erroneous duplicate entry", "submit": "Confirm void", "submitting": "Voiding...", "success": "Repayment voided successfully.", "errorGeneric": "An error occurred while voiding the repayment." }
   },
   "Transactions": {
     "sectionTitle": "Manual transactions",
