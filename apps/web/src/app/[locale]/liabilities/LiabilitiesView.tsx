@@ -11,14 +11,28 @@ import type { SerializedHouseholdLiability } from "@/lib/liabilities/schema";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 import { LIABILITY_KINDS, type LiabilityKind } from "@nodvis/finance-domain";
 
+type SerializedCreditFacility = {
+  id: string;
+  kind: "overdraft" | "revolving" | "credit_card" | "bnpl";
+  name: string;
+  currency: string;
+  approvedLimitMinor: string | null;
+  observedUsedMinor: string | null;
+  observedAvailableMinor: string | null;
+  observedAt: string | null;
+  archivedAt: string | null;
+  version: number;
+};
+
 type Props = {
   householdContext: AuthorizedHouseholdUserContext;
   initialLiabilities: SerializedHouseholdLiability[];
   accounts: SerializedHouseholdAccount[];
+  initialFacilities: SerializedCreditFacility[];
   locale: string;
 };
 
-export function LiabilitiesView({ householdContext, initialLiabilities, accounts, locale }: Props) {
+export function LiabilitiesView({ householdContext, initialLiabilities, accounts, initialFacilities, locale }: Props) {
   const t = useTranslations("Liabilities");
   const router = useRouter();
   const [items, setItems] = useState(initialLiabilities);
@@ -85,6 +99,18 @@ export function LiabilitiesView({ householdContext, initialLiabilities, accounts
         {observedOutstandingNatural && <label className="grid gap-1 text-sm font-medium">{t("form.observedOutstandingAt")}<input required type="date" value={observedOutstandingAt} onChange={(event) => setObservedOutstandingAt(event.target.value)} className="rounded-lg border px-3 py-2 font-normal" /></label>}
         <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" onClick={() => setOpen(false)} className="rounded-lg border px-3 py-2 text-sm">{t("actions.cancel")}</button><button disabled={pending} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{pending ? t("form.submittingAdd") : t("form.submitAdd")}</button></div>
       </form>}
+
+      {initialFacilities.filter((facility) => facility.kind === "revolving" || facility.kind === "bnpl").length > 0 && (
+        <section className="grid gap-3">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-stone-300">{t("independentFacilities")}</h2>
+          {initialFacilities.filter((facility) => facility.kind === "revolving" || facility.kind === "bnpl").map((facility) => (
+            <article key={facility.id} className="rounded-2xl border border-sky-200 bg-sky-50/60 p-5 dark:border-sky-900/60 dark:bg-sky-950/20">
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-900 dark:text-stone-100">{facility.name}</h3><p className="text-sm text-slate-500 dark:text-stone-400">{facility.kind === "revolving" ? t("facilityRevolving") : t("facilityBnpl")}</p></div><span className="rounded-full bg-white/70 px-2 py-1 text-xs dark:bg-stone-900/70">{facility.currency}</span></div>
+              <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3"><p><span className="block text-xs text-slate-500 dark:text-stone-400">{t("facilityLimit")}</span><strong>{facility.approvedLimitMinor === null ? t("balance.unknown") : formatAmountPresentation(facility.approvedLimitMinor, facility.currency, locale)}</strong></p><p><span className="block text-xs text-slate-500 dark:text-stone-400">{facility.observedUsedMinor === null ? t("balance.unknown") : t("facilityUsed")}</span><strong>{facility.observedUsedMinor === null ? "—" : formatAmountPresentation(facility.observedUsedMinor, facility.currency, locale)}</strong></p><p><span className="block text-xs text-slate-500 dark:text-stone-400">{facility.observedAvailableMinor === null ? t("balance.unknown") : t("facilityAvailable")}</span><strong>{facility.observedAvailableMinor === null ? "—" : formatAmountPresentation(facility.observedAvailableMinor, facility.currency, locale)}</strong></p></div>
+            </article>
+          ))}
+        </section>
+      )}
 
       <section className="grid gap-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-stone-300">{t("activeLiabilities")}</h2>

@@ -82,4 +82,26 @@ test.describe("overdraft management", () => {
     await expect(card).toContainText("Credit limit");
     await expect(card).toContainText("Available credit");
   });
+
+  test("creates and reads an independent revolving facility", async ({ page }) => {
+    const email = `e2e-revolving-${Date.now()}@example.test`;
+    const signup = await page.request.post("/api/auth/sign-up/email", { data: { name: "Revolving User", email, password } });
+    expect(signup.ok(), await signup.text()).toBeTruthy();
+    await page.goto("/en");
+    await page.locator("#onboarding-name").fill("Revolving Household");
+    await page.locator("#onboarding-person").fill("Revolving User");
+    const [householdResponse] = await Promise.all([
+      page.waitForResponse((response) => response.url().endsWith("/api/households") && response.request().method() === "POST" && response.status() === 201),
+      page.locator("form").filter({ has: page.locator("#onboarding-name") }).getByRole("button").click(),
+    ]);
+    const household = await householdResponse.json();
+    const facilityResponse = await page.request.post(`/api/households/${household.data.householdId}/credit-facilities`, { data: { kind: "revolving", name: "Household revolving line", currency: "PLN", approvedLimitMinor: "1000000", observedUsedMinor: "250000", observedAvailableMinor: "750000", observedAt: "2026-09-09T00:00:00.000Z" } });
+    expect(facilityResponse.ok(), await facilityResponse.text()).toBeTruthy();
+    const readBack = await page.request.get(`/api/households/${household.data.householdId}/credit-facilities`);
+    expect(readBack.ok()).toBeTruthy();
+    await page.goto("/en/liabilities");
+    await expect(page.getByText("Independent credit facilities")).toBeVisible();
+    await expect(page.getByText("Household revolving line")).toBeVisible();
+    await expect(page.getByText("PLN 10,000.00")).toBeVisible();
+  });
 });

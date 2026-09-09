@@ -214,12 +214,12 @@
       "debt": "Zadłużenie karty",
       "available": "Dostępny kredyt",
       "overpayment": "Dodatnie saldo karty",
-      "edit": "Edytuj facility karty",
-      "editTitle": "Aktualizuj facility karty",
-      "archive": "Zarchiwizuj facility karty",
-      "updated": "Dane facility karty zostały zaktualizowane.",
-      "archiveConfirm": "Zarchiwizować facility karty? Historia zostanie zachowana.",
-      "archivedSuccess": "Facility karty została zarchiwizowana."
+      "edit": "Edytuj limit karty",
+      "editTitle": "Aktualizuj limit karty",
+      "archive": "Zarchiwizuj limit karty",
+      "updated": "Limit karty został zaktualizowany.",
+      "archiveConfirm": "Zarchiwizować limit karty? Historia zostanie zachowana.",
+      "archivedSuccess": "Limit karty został zarchiwizowany."
     }
   },
   "Categories": {
@@ -273,7 +273,10 @@
     }
   },
   "Liabilities": {
-    "eyebrow": "Zobowiązania gospodarstwa", "title": "Zobowiązania", "description": "Zarządzaj kredytami, pożyczkami, ratami i limitami zadłużenia z dokładnymi saldami i historią spłat.", "activeLiabilities": "Aktywne zobowiązania", "archivedLiabilities": "Zarchiwizowane zobowiązania", "showArchived": "Pokaż zarchiwizowane ({count})", "hideArchived": "Ukryj zarchiwizowane", "emptyActiveTitle": "Brak aktywnych zobowiązań", "emptyActiveDescription": "Dodaj swój pierwszy kredyt, pożyczkę lub raty poniżej.", "emptyArchivedDescription": "Brak zarchiwizowanych zobowiązań w tym gospodarstwie domowym.",
+    "eyebrow": "Zobowiązania gospodarstwa", "title": "Zobowiązania", "description": "Zarządzaj kredytami, pożyczkami, ratami i limitami zadłużenia z dokładnymi saldami i historią spłat.", "activeLiabilities": "Aktywne zobowiązania",
+ "independentFacilities": "Niezależne limity kredytowe",
+ "facilityObserved": "Zaobserwowano: wykorzystano {used}, dostępne {available}",
+ "facilityUnknown": "Brak aktualnych obserwacji kredytu.", "facilityRevolving": "Kredyt odnawialny", "facilityBnpl": "Kup teraz, zapłać później", "facilityLimit": "Limit kredytowy", "facilityUsed": "Wykorzystany kredyt", "facilityAvailable": "Dostępny kredyt", "archivedLiabilities": "Zarchiwizowane zobowiązania", "showArchived": "Pokaż zarchiwizowane ({count})", "hideArchived": "Ukryj zarchiwizowane", "emptyActiveTitle": "Brak aktywnych zobowiązań", "emptyActiveDescription": "Dodaj swój pierwszy kredyt, pożyczkę lub raty poniżej.", "emptyArchivedDescription": "Brak zarchiwizowanych zobowiązań w tym gospodarstwie domowym.",
     "kinds": { "loan": "Kredyt gotówkowy", "mortgage": "Kredyt hipoteczny", "installment": "Raty", "credit_line": "Limit w koncie", "other": "Inne" }, "allocationStates": { "full": "Pełny podział", "partial": "Częściowy podział", "unknown": "Nieznany podział" }, "balance": { "unknown": "Nieznane saldo", "observedAt": "Stan na {date}", "outstanding": "Zadłużenie" },
     "detail": { "backToList": "Powrót do listy", "overview": "Podsumowanie zobowiązania", "repaymentsTitle": "Historia spłat", "noRepayments": "Brak zarejestrowanych spłat.", "recordRepayment": "Zarejestruj spłatę", "lender": "Wierzyciel / Pożyczkodawca", "responsible": "Osoba odpowiedzialna", "destinationAccount": "Powiązane konto docelowe", "noDestinationAccount": "Brak (zewnętrzny wierzyciel)", "notes": "Notatki", "unassigned": "Nieprzypisano", "principal": "Kapitał", "interest": "Odsetki", "fee": "Prowizja / Opłaty", "linkedTransaction": "Powiązana transakcja gotówkowa", "voided": "Anulowana", "voidedAt": "Anulowano dnia {date}", "voidReason": "Powód: {reason}", "voidAction": "Anuluj" },
     "actions": { "addLiability": "Dodaj zobowiązanie", "edit": "Edytuj", "archive": "Zarchiwizuj", "unarchive": "Przywróć", "cancel": "Anuluj", "save": "Zapisz zmiany", "saving": "Zapisywanie...", "archiving": "Archiwizowanie...", "unarchiving": "Przywracanie...", "details": "Szczegóły i spłaty" }, "archiveConfirm": "Zarchiwizować to zobowiązanie? Dotychczasowa historia spłat zostanie zachowana.",
