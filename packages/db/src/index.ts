@@ -163,6 +163,7 @@ export {
   updateLiabilityInDb,
   voidLiabilityRepaymentInDb,
 } from "./access/liabilities";
+export * from "./access/categorization-rules";
 export type {
   HouseholdLiabilitySummary,
   LiabilityRepaymentRow,

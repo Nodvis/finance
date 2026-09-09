@@ -12,6 +12,7 @@
     "imports": "Imports",
     "transfers": "Transfers",
     "liabilities": "Liabilities",
+    "rules": "Rules",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private"
   },
@@ -668,5 +669,25 @@
       "missingAccount": "Account “{name}” ({currency}) has no balance snapshot.",
       "staleAccount": "Account “{name}” ({currency}) snapshot was taken on {date} (stale, >30 days)."
     }
+  },
+  "Rules": {
+    "eyebrow": "Explainable automation",
+    "title": "Categorization rules",
+    "description": "Create narrow rules that suggest categories without replacing an existing manual classification.",
+    "createTitle": "Add a rule",
+    "name": "Rule name",
+    "matchText": "Merchant or source contains",
+    "category": "Category",
+    "priority": "Priority",
+    "save": "Save rule",
+    "saving": "Saving...",
+    "created": "Rule saved.",
+    "error": "The rule could not be saved.",
+    "empty": "No rules yet. Start with one specific merchant or income source.",
+    "explanation": "Matches when the counterparty {mode} “{text}”; priority {priority}.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable"
   }
 }
