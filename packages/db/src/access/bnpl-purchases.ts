@@ -22,6 +22,20 @@ import type { Money } from "@nodvis/finance-domain";
 import { getDb } from "../client";
 import { bnplPurchases } from "../schema/bnpl-purchases";
 import { creditFacilities } from "../schema/credit-facilities";
+import { transactions } from "../schema/transactions";
+
+type DbTransaction = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
+
+// The link identifies an economic purchase, never income or a repayment.
+async function validatePurchaseTransaction(db: DbTransaction, household: string, id: string | null, currency: string, amount: bigint) {
+  if (id === null) return;
+  const [row] = await db.select().from(transactions).where(and(
+    eq(transactions.id, id), eq(transactions.householdId, household),
+  )).for("share");
+  if (!row || row.voidedAt !== null || row.kind !== "expense" || row.currency !== currency || row.amountMinor !== amount) {
+    throw new BnplPurchaseFacilityError("BNPL purchase transaction is invalid");
+  }
+}
 
 export class BnplPurchaseNotFoundError extends Error {
   constructor() {
@@ -118,6 +132,7 @@ export async function createBnplPurchaseRecord(input: CreateBnplPurchaseRecordIn
     const facility = await getFacility(tx, input.householdId, input.creditFacilityId);
     if (facility.currency !== input.currency) throw new BnplPurchaseFacilityError("BNPL purchase currency must match facility currency");
     const domain = toDomainInput(input, facility.currency);
+    await validatePurchaseTransaction(tx, input.householdId, domain.transactionId, domain.currency, domain.originalAmount.amountMinor);
     const [row] = await tx.insert(bnplPurchases).values({
       id: domain.id,
       householdId: input.householdId,
@@ -150,7 +165,11 @@ export async function createBnplPurchaseRecord(input: CreateBnplPurchaseRecordIn
 }
 
 export async function updateBnplPurchaseRecord(householdIdValue: string, purchaseIdValue: string, version: number, input: Omit<UpdateBnplPurchaseInput, "originalAmount" | "financedAmount" | "observedOutstanding"> & { originalAmountMinor?: bigint; financedAmountMinor?: bigint; observedOutstanding?: bigint | null }) {
-  const existing = await getBnplPurchase(householdIdValue, purchaseIdValue);
+  return getDb().transaction(async (db) => {
+  const [existing] = await db.select().from(bnplPurchases).where(and(
+    eq(bnplPurchases.householdId, householdIdValue), eq(bnplPurchases.id, purchaseIdValue),
+  )).for("update");
+  if (!existing) throw new BnplPurchaseNotFoundError();
   if (existing.version !== version) throw new BnplPurchaseVersionConflictError();
   if (existing.voidedAt) throw new BnplPurchaseFacilityError("Voided BNPL purchase cannot be updated");
   const domainUpdate = { ...input } as unknown as {
@@ -189,7 +208,7 @@ export async function updateBnplPurchaseRecord(householdIdValue: string, purchas
     feeAmount: existing.feeMinor === null ? null : money(existing.feeMinor, existing.currency),
     transactionId: existing.transactionId === null ? null : transactionId(existing.transactionId),
   }, domainUpdate);
-  const db = getDb();
+  await validatePurchaseTransaction(db, householdIdValue, domain.transactionId, domain.currency, domain.originalAmount.amountMinor);
   const [row] = await db.update(bnplPurchases).set({
     provider: domain.provider, product: domain.product, merchant: domain.merchant, description: domain.description,
     purchaseDate: domain.purchaseDate, financingDate: domain.financingDate,
@@ -202,6 +221,7 @@ export async function updateBnplPurchaseRecord(householdIdValue: string, purchas
   }).where(and(eq(bnplPurchases.id, purchaseIdValue), eq(bnplPurchases.householdId, householdIdValue), eq(bnplPurchases.version, version), isNull(bnplPurchases.voidedAt))).returning();
   if (!row) throw new BnplPurchaseVersionConflictError();
   return row;
+  });
 }
 
 export async function voidBnplPurchaseRecord(householdIdValue: string, purchaseIdValue: string, version: number, reason: string | null) {
