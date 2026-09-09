@@ -14,6 +14,7 @@
     "liabilities": "Zobowiązania",
     "rules": "Reguły",
     "recurring": "Powtarzalne",
+    "analytics": "Analiza",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Prywatne"
   },
@@ -707,5 +708,22 @@
     "confirm": "Potwierdź wzorzec",
     "dismiss": "Nie dotyczy",
     "error": "Nie udało się zaktualizować wzorca."
+  },
+  "Analytics": {
+    "title": "Analiza gospodarstwa",
+    "subtitle": "Zobacz, na co idą pieniądze i jak zmienia się przepływ gotówki na podstawie zapisanych transakcji.",
+    "empty": "Nie ma jeszcze zapisanych transakcji do analizy.",
+    "income": "Wpływy",
+    "spending": "Wydatki",
+    "net": "Przepływ netto",
+    "uncategorized": "Bez kategorii",
+    "byCategory": "Wydatki według kategorii",
+    "byCounterparty": "Wydatki według sprzedawcy",
+    "largest": "Największe wydatki",
+    "monthly": "Porównanie miesięczne",
+    "month": "Miesiąc",
+    "noCategories": "Brak wydatków z przypisaną kategorią.",
+    "noCounterparties": "Brak danych o sprzedawcach.",
+    "noExpenses": "Brak wydatków."
   }
 }

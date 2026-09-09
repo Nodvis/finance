@@ -14,6 +14,7 @@
     "liabilities": "Liabilities",
     "rules": "Rules",
     "recurring": "Recurring",
+    "analytics": "Analytics",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private"
   },
@@ -725,5 +726,22 @@
     "confirm": "Confirm pattern",
     "dismiss": "Not relevant",
     "error": "The recurring pattern could not be updated."
+  },
+  "Analytics": {
+    "title": "Household analytics",
+    "subtitle": "See where money goes and how your cash flow changes, using recorded transactions only.",
+    "empty": "There are no recorded transactions for analysis yet.",
+    "income": "Income",
+    "spending": "Spending",
+    "net": "Net cash flow",
+    "uncategorized": "Uncategorized",
+    "byCategory": "Spending by category",
+    "byCounterparty": "Spending by merchant",
+    "largest": "Largest expenses",
+    "monthly": "Monthly comparison",
+    "month": "Month",
+    "noCategories": "No categorized spending yet.",
+    "noCounterparties": "No merchant data yet.",
+    "noExpenses": "No expenses yet."
   }
 }
