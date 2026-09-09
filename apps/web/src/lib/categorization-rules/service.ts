@@ -8,6 +8,7 @@ import {
   listCategorizationRules,
   listTransactionsByHousehold,
   recordCategorizationRuleApplication,
+  TransactionVersionConflictError,
   updateCategorizationRule,
   updateTransactionInDb,
 } from "@nodvis/finance-db";
@@ -129,7 +130,13 @@ export async function applyCategorizationRules(context: AuthorizedHouseholdConte
     const corrected = transaction.kind === "expense"
       ? correctExpense(transaction, { accountId: transaction.accountId, amount: transaction.amount, payee: transaction.payee, paidByPersonId: transaction.paidByPersonId, occurredOn: transaction.occurredOn, categoryId: category })
       : correctIncome(transaction, { accountId: transaction.accountId, amount: transaction.amount, source: transaction.source, receivedByPersonId: transaction.receivedByPersonId, occurredOn: transaction.occurredOn, categoryId: category });
-    await updateTransactionInDb({ householdId: context.householdId, id: transaction.id, expectedVersion: transaction.version, transaction: corrected, audit: { authUserId: context.authUserId, personId: context.personId, source: "system" } });
+    try {
+      await updateTransactionInDb({ householdId: context.householdId, id: transaction.id, expectedVersion: transaction.version, transaction: corrected, audit: { authUserId: context.authUserId, personId: context.personId, source: "system" } });
+    } catch (error) {
+      if (!(error instanceof TransactionVersionConflictError)) throw error;
+      await recordCategorizationRuleApplication({ householdId: context.householdId, ruleId: item.ruleId, transactionId: item.transactionId, beforeCategoryId: item.currentCategoryId, afterCategoryId: item.proposedCategoryId, status: "skipped_stale", explanation: "Transaction changed after preview; no category was applied" });
+      continue;
+    }
     await recordCategorizationRuleApplication({ householdId: context.householdId, ruleId: item.ruleId, transactionId: item.transactionId, beforeCategoryId: null, afterCategoryId: item.proposedCategoryId, status: "applied", explanation: item.explanation });
     applied.push(item);
   }

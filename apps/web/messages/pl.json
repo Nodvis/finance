@@ -670,6 +670,20 @@
     "enabled": "Włączona",
     "disabled": "Wyłączona",
     "enable": "Włącz",
-    "disable": "Wyłącz"
+    "disable": "Wyłącz",
+    "selectionTitle": "Przejrzyj nieskategoryzowane transakcje",
+    "selectionDescription": "Wybierz transakcje, zobacz proponowane zmiany i zatwierdź tylko te, które zostały sprawdzone.",
+    "noUncategorized": "Nie ma nieskategoryzowanych transakcji do przejrzenia.",
+    "selected": "Wybrano: {count}",
+    "preview": "Podejrzyj zmiany",
+    "apply": "Zastosuj sprawdzone zmiany",
+    "previewed": "Podgląd jest gotowy. Sprawdź propozycje przed zastosowaniem.",
+    "applied": "Sprawdzone zmiany zostały zastosowane.",
+    "transfer": "Przelew",
+    "chooseCategory": "Wybierz kategorię",
+    "learn": "Użyj dla podobnych",
+    "learnCategory": "Kategoria dla {description}",
+    "learned": "Zapisano regułę dla tego kontrahenta. Sprawdź ją poniżej przed użyciem.",
+    "learnedRuleName": "Wyuczona reguła dla {matchText}"
   }
 }

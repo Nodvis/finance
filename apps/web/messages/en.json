@@ -688,6 +688,20 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "enable": "Enable",
-    "disable": "Disable"
+    "disable": "Disable",
+    "selectionTitle": "Review uncategorized transactions",
+    "selectionDescription": "Select transactions, preview the proposed changes, then apply only after reviewing the explanations.",
+    "noUncategorized": "There are no uncategorized transactions to review.",
+    "selected": "{count} selected",
+    "preview": "Preview changes",
+    "apply": "Apply reviewed changes",
+    "previewed": "Preview ready. Review each proposed change before applying.",
+    "applied": "Reviewed changes applied.",
+    "transfer": "Transfer",
+    "chooseCategory": "Choose category",
+    "learn": "Use for similar",
+    "learnCategory": "Category for {description}",
+    "learned": "A rule was saved for this counterparty. Review it below before relying on it.",
+    "learnedRuleName": "Learned rule for {matchText}"
   }
 }
