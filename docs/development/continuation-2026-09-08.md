@@ -280,4 +280,13 @@ E2E Playwright nie został oznaczony jako passed: istniejący `e2e/smoke.spec.ts
   - Fresh migrator applied 0009 on private PostgreSQL; repeat migration was idempotent. Private read-back confirmed 10 journal rows and `finance.statement_import_profiles`; no existing financial rows were removed.
   - Private web rebuilt/recreated healthy with image `sha256:f8a5edc94fd9848bb0ebe12d95c244892c733c5763075d0bc328bb92b0e69297`; `/pl` returned HTTP 200.
   - Synthetic deployed P1 browser flow passed 1/1: save profile, API read-back, reload/reuse saved mapping, and safe auto-processing of a later CSV.
-  - Final authenticated Chromium regression on this exact image passed 7/7: PL/EN public shell, language/theme, finance flows and transfer reconciliation.
+  - **Final authenticated Chromium regression on this exact image passed 7/7**: PL/EN public shell, language/theme, finance flows and transfer reconciliation.
+
+## Recovery: AGY Playwright driver and rejected P3 partial — 2026-09-09
+
+  - Installed AGY version: `1.1.28`. Its binary still contains the legacy Playwright Go driver path and attempts `playwright-1.57.0-linux.zip` from the retired Azure Edge CDNs. AGY changelog `1.1.28` contains no Playwright driver update; no unrelated AGY upgrade was applied.
+  - Root cause confirmed from the previous logs: all three legacy CDN URLs returned HTTP 404 for Playwright 1.57.0. Authentication and Gemini model selection succeeded independently.
+  - Applied the documented reversible cache workaround from official sources only: `playwright-core@1.57.0` from `registry.npmjs.org`, plus the existing system Node binary, under `~/.cache/ms-playwright-go/1.57.0`. The assembled CLI reported `Version 1.57.0`; tarball SHA-256 was `8d2942f575e1b772bae8bd2c4d71f9055bf6581bc79d7001b2b277335b89ef2a`.
+  - Bounded browser verification passed: AGY opened `https://example.com` and reported title and `<h1>` both `Example Domain`. Separate model-only verification returned exactly `MODEL_STREAM_OK` without tools. This distinguishes the repaired browser initialization from later implementation-worker response hangs.
+  - One P3 worker produced partial domain/schema/access/API artifacts, but independent typecheck found 19 errors and there was no complete accepted UI flow. The artifacts were archived at `/home/erza_agent/backups/nodvis-finance-p3-partial-20260909T073500Z.tar.gz` (SHA-256 `aa9ae9d2f09900eb657f459195ff80551d54e73504a3aaeea1aa603184574dff`) and rejected; the verified P1/P2 HEAD was restored. No P3 migration was applied to the private database.
+  - The worker's later stream showed repeated successful `streamGenerateContent` calls but no final response or coherent completion; it was stopped after bounded waiting. This is a model/CLI response-completion blocker, distinct from the fixed Playwright 404.
