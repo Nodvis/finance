@@ -61,6 +61,7 @@ export type {
   RecurringObservationRow,
   RecurringPatternStatus,
 } from "./access/recurring";
+export { listHouseholdAnalyticsTransactions } from "./access/analytics";
 
 export {
   CategoryNotFoundError,
