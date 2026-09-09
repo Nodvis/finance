@@ -15,6 +15,7 @@ import {
   householdMemberships,
   persons,
 } from "../schema/foundation";
+import { creditFacilities } from "../schema/credit-facilities";
 
 export class AccountNotFoundError extends Error {
   constructor(message: string = "Account not found in household") {
@@ -165,6 +166,7 @@ export type CreateHouseholdAccountInput = {
   ownerPersonIds: string[];
   balanceSnapshotMinor?: bigint | null | undefined;
   balanceSnapshotAt?: Date | null | undefined;
+  overdraft?: { name: string; approvedLimitMinor: bigint };
 };
 
 export async function createHouseholdAccount(
@@ -238,6 +240,23 @@ export async function createHouseholdAccount(
         householdId: input.householdId,
         accountId: domainAccount.id,
         personId: ownerId,
+      });
+    }
+
+    if (input.overdraft) {
+      if (domainAccount.type !== "checking") {
+        throw new Error("An overdraft can only be created for a checking account");
+      }
+      if (input.overdraft.approvedLimitMinor < 0n) {
+        throw new Error("Overdraft limit cannot be negative");
+      }
+      await tx.insert(creditFacilities).values({
+        householdId: input.householdId,
+        accountId: domainAccount.id,
+        kind: "overdraft",
+        name: input.overdraft.name,
+        currency: domainAccount.currency,
+        approvedLimitMinor: input.overdraft.approvedLimitMinor,
       });
     }
 

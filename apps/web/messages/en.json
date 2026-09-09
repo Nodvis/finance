@@ -175,7 +175,34 @@
       "successDeleteIdentifier": "Account identifier removed.",
       "errorGeneric": "An error occurred while saving the account.",
       "errorOwnersRequired": "Please select at least one owner.",
-      "errorNameRequired": "Account name is required."
+      "errorNameRequired": "Account name is required.",
+      "overdraftLimitInvalid": "Enter a valid non-negative overdraft limit."
+    },
+    "overdraft": {
+      "title": "Overdraft facility",
+      "enable": "This checking account has an agreed overdraft",
+      "limit": "Approved overdraft limit",
+      "limitPlaceholder": "e.g. 2000.00",
+      "help": "This is borrowing capacity, not your own money. It can remain unused.",
+      "defaultName": "Checking account overdraft",
+      "ownFunds": "Own funds",
+      "available": "Available overdraft",
+      "limitValue": "Overdraft limit",
+      "used": "Currently used",
+      "overLimit": "Overdraft limit exceeded",
+      "inconsistent": "Reported usage and availability do not reconcile",
+      "combined": "Available including overdraft",
+      "edit": "Edit overdraft",
+      "archive": "Archive overdraft",
+      "editTitle": "Update overdraft",
+      "observedAt": "Observation date",
+      "unknownPlaceholder": "Leave empty if unknown",
+      "save": "Save overdraft",
+      "saving": "Saving overdraft...",
+      "updated": "Overdraft details updated.",
+      "archiveConfirm": "Archive this overdraft? Its history will remain preserved.",
+      "archivedSuccess": "Overdraft archived.",
+      "overdraftObservationDateInvalid": "Enter a valid observation date."
     }
   },
   "Categories": {

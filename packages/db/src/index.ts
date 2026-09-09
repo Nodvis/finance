@@ -29,6 +29,21 @@ export type {
   UpdateHouseholdAccountMetadataInput,
 } from "./access/accounts";
 export {
+  archiveCreditFacility,
+  CreditFacilityAccountError,
+  CreditFacilityNotFoundError,
+  createCreditFacility,
+  findCreditFacilityForAccount,
+  listCreditFacilitiesByHousehold,
+  serializeCreditFacility,
+  updateCreditFacility,
+} from "./access/credit-facilities";
+export type {
+  CreateCreditFacilityInput,
+  HouseholdCreditFacilitySummary,
+  UpdateCreditFacilityInput,
+} from "./access/credit-facilities";
+export {
   DuplicateSubmissionError,
   TransactionAlreadyVoidedError,
   TransactionNotFoundError,

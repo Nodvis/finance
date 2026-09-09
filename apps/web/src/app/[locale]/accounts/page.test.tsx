@@ -29,6 +29,11 @@ vi.mock("@/lib/account-identifiers/service", () => ({
   serializeAccountIdentifier: vi.fn((a) => a),
 }));
 
+vi.mock("@nodvis/finance-db", () => ({
+  listCreditFacilitiesByHousehold: vi.fn().mockResolvedValue([]),
+  serializeCreditFacility: vi.fn((facility) => facility),
+}));
+
 vi.mock("./AccountsView", () => ({
   AccountsView: vi.fn(() => null),
 }));

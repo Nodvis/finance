@@ -13,6 +13,7 @@ import {
   listHouseholdAccountIdentifiers,
   serializeAccountIdentifier,
 } from "@/lib/account-identifiers/service";
+import { listCreditFacilitiesByHousehold, serializeCreditFacility } from "@nodvis/finance-db";
 
 import { HouseholdSelectionCard } from "../components/HouseholdSelectionCard";
 import { NoHouseholdCard } from "../components/NoHouseholdCard";
@@ -83,6 +84,7 @@ export default async function AccountsPage({ params }: AccountsPageProps) {
     const members = await listMembersInHousehold(activeContext);
     const rawIdentifiers = await listHouseholdAccountIdentifiers(activeContext);
     const serializedIdentifiers = rawIdentifiers.map(serializeAccountIdentifier);
+    const serializedFacilities = (await listCreditFacilitiesByHousehold(activeContext.householdId)).map(serializeCreditFacility);
 
     return (
       <AccountsView
@@ -90,6 +92,7 @@ export default async function AccountsPage({ params }: AccountsPageProps) {
         allHouseholds={allHouseholds}
         initialAccounts={serializedAccounts}
         initialIdentifiers={serializedIdentifiers}
+        initialFacilities={serializedFacilities}
         members={members}
         locale={locale}
       />

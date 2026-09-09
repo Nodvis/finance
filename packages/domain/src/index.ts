@@ -260,3 +260,14 @@ export type {
   RepaymentAllocationState,
   UpdateLiabilityInput,
 } from "./liability";
+export {
+  CREDIT_FACILITY_KINDS,
+  computeOverdraftCapacity,
+  creditMoney,
+  validateCreditSnapshot,
+} from "./credit-facility";
+export type {
+  CreditCapacity,
+  CreditFacility,
+  CreditFacilityKind,
+} from "./credit-facility";

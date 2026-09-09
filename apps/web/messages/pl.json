@@ -175,7 +175,34 @@
       "successDeleteIdentifier": "Numer rachunku został usunięty.",
       "errorGeneric": "Wystąpił błąd podczas zapisywania konta.",
       "errorOwnersRequired": "Wybierz co najmniej jednego właściciela.",
-      "errorNameRequired": "Podanie nazwy konta jest wymagane."
+      "errorNameRequired": "Podanie nazwy konta jest wymagane.",
+      "overdraftLimitInvalid": "Wpisz poprawny, nieujemny limit debetu."
+    },
+    "overdraft": {
+      "title": "Debet w koncie",
+      "enable": "To konto bieżące ma uzgodniony debet",
+      "limit": "Uzgodniony limit debetu",
+      "limitPlaceholder": "np. 2000,00",
+      "help": "To jest dostępne finansowanie, a nie własne środki. Limit może pozostać niewykorzystany.",
+      "defaultName": "Debet w koncie bieżącym",
+      "ownFunds": "Własne środki",
+      "available": "Dostępny debet",
+      "limitValue": "Limit debetu",
+      "used": "Wykorzystany debet",
+      "overLimit": "Przekroczony limit debetu",
+      "inconsistent": "Zgłoszone użycie i dostępność są niespójne",
+      "combined": "Dostępne razem z debetem",
+      "edit": "Edytuj debet",
+      "archive": "Zarchiwizuj debet",
+      "editTitle": "Aktualizuj debet",
+      "observedAt": "Data obserwacji",
+      "unknownPlaceholder": "Pozostaw puste, jeśli nieznane",
+      "save": "Zapisz debet",
+      "saving": "Zapisywanie debetu...",
+      "updated": "Dane debetu zostały zaktualizowane.",
+      "archiveConfirm": "Zarchiwizować ten debet? Historia zostanie zachowana.",
+      "archivedSuccess": "Debet został zarchiwizowany.",
+      "overdraftObservationDateInvalid": "Wpisz poprawną datę obserwacji."
     }
   },
   "Categories": {

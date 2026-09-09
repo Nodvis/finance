@@ -27,6 +27,12 @@ export const createAccountInputSchema = z.object({
     })
     .optional()
     .nullable(),
+  overdraft: z
+    .object({
+      enabled: z.literal(true),
+      approvedLimitNatural: z.string().trim().min(1),
+    })
+    .optional(),
 });
 
 export type CreateAccountInput = z.infer<typeof createAccountInputSchema>;

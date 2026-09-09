@@ -66,6 +66,18 @@ export async function createHouseholdAccountEntry(
     }
   }
 
+  let overdraftLimitMinor: bigint | undefined;
+  if (input.overdraft?.enabled) {
+    const parsedLimit = parseAccountBalanceToMinor(
+      input.overdraft.approvedLimitNatural,
+      input.currency,
+    );
+    if (!parsedLimit.success || parsedLimit.amountMinor === null || parsedLimit.amountMinor < 0n) {
+      throw new Error("Invalid overdraft limit format");
+    }
+    overdraftLimitMinor = parsedLimit.amountMinor;
+  }
+
   return await createHouseholdAccount({
     householdId: context.householdId,
     name: input.name,
@@ -74,6 +86,9 @@ export async function createHouseholdAccountEntry(
     ownerPersonIds: input.ownerPersonIds,
     balanceSnapshotMinor: snapshotMinor,
     balanceSnapshotAt: snapshotAt,
+    ...(overdraftLimitMinor === undefined
+      ? {}
+      : { overdraft: { name: "Overdraft facility", approvedLimitMinor: overdraftLimitMinor } }),
   });
 }
 

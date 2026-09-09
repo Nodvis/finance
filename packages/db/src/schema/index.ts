@@ -10,3 +10,4 @@ export * from "./transfer-matches";
 export * from "./liabilities";
 export * from "./categorization-rules";
 export * from "./recurring-patterns";
+export * from "./credit-facilities";
