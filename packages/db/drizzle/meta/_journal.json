@@ -71,6 +71,13 @@
       "when": 1788902264144,
       "tag": "0009_quiet_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788938097593,
+      "tag": "0010_lying_nightcrawler",
+      "breakpoints": true
     }
   ]
 }
