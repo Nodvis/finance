@@ -105,7 +105,6 @@ describe("AppHeader Component", () => {
     expect(html).toContain('href="/categories"');
     expect(html).toContain('href="/imports"');
     expect(html).toContain("Nasze Gospodarstwo");
-    expect(html).toContain("PLN");
     expect(html).toContain('data-testid="theme-toggle"');
     expect(html).toContain('href="/settings"');
     expect(html).toContain("Alice");

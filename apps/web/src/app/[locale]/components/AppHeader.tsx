@@ -15,15 +15,12 @@ export async function AppHeader() {
   const tProfile = await getTranslations("ProfileMenu");
   const session = await getCurrentSession();
 
-  let activeHousehold: { householdName: string; defaultCurrency: string } | null = null;
+  let activeHousehold: { householdName: string } | null = null;
   if (session) {
     try {
       const status = await getCurrentUserHouseholdsStatus();
       if (status.status === "single" || status.status === "multiple_selected") {
-        activeHousehold = {
-          householdName: status.activeContext.householdName,
-          defaultCurrency: status.activeContext.defaultCurrency,
-        };
+        activeHousehold = { householdName: status.activeContext.householdName };
       }
     } catch {
       // The shell remains useful if the optional household context is unavailable.
@@ -47,7 +44,6 @@ export async function AppHeader() {
             {activeHousehold ? (
               <div className="hidden min-w-0 border-l border-slate-200 pl-3 dark:border-stone-800 sm:block">
                 <p className="truncate text-sm font-medium text-slate-800 dark:text-stone-200">{activeHousehold.householdName}</p>
-                <p className="text-[11px] text-slate-500 dark:text-stone-400">{activeHousehold.defaultCurrency}</p>
               </div>
             ) : null}
           </div>
