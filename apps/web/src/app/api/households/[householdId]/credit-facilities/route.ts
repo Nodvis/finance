@@ -40,6 +40,13 @@ export async function POST(request: Request, context: RouteContext) {
     if (input.kind === "overdraft" || input.kind === "credit_card") {
       return NextResponse.json({ error: "This facility kind must be created through its linked account" }, { status: 400 });
     }
+    const existing = (await listCreditFacilitiesByHousehold(householdId, true)).find(
+      (facility) => facility.accountId === null && facility.kind === input.kind && facility.name === input.name && facility.currency === input.currency,
+    );
+    if (existing) {
+      if (existing.archivedAt) return NextResponse.json({ error: "An archived facility with this identity already exists" }, { status: 409 });
+      return NextResponse.json({ data: serializeCreditFacility(existing) }, { status: 200 });
+    }
     const facility = await createCreditFacility({
       householdId,
       accountId: null,

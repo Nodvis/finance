@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "credit_facilities_independent_identity_unique" ON "finance"."credit_facilities" USING btree ("household_id","kind","name") WHERE "finance"."credit_facilities"."account_id" is null;

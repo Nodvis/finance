@@ -6,6 +6,7 @@ import {
   integer,
   bigint,
   unique,
+  uniqueIndex,
   varchar,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -48,6 +49,9 @@ export const creditFacilities = financeSchema.table(
       table.accountId,
       table.kind,
     ),
+    uniqueIndex("credit_facilities_independent_identity_unique")
+      .on(table.householdId, table.kind, table.name)
+      .where(sql`${table.accountId} is null`),
     foreignKey({
       name: "credit_facilities_household_account_fk",
       columns: [table.householdId, table.accountId],

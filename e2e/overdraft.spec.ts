@@ -95,10 +95,19 @@ test.describe("overdraft management", () => {
       page.locator("form").filter({ has: page.locator("#onboarding-name") }).getByRole("button").click(),
     ]);
     const household = await householdResponse.json();
-    const facilityResponse = await page.request.post(`/api/households/${household.data.householdId}/credit-facilities`, { data: { kind: "revolving", name: "Household revolving line", currency: "PLN", approvedLimitMinor: "1000000", observedUsedMinor: "250000", observedAvailableMinor: "750000", observedAt: "2026-09-09T00:00:00.000Z" } });
-    expect(facilityResponse.ok(), await facilityResponse.text()).toBeTruthy();
+    const facilityPayload = { kind: "revolving", name: "Household revolving line", currency: "PLN", approvedLimitMinor: "1000000", observedUsedMinor: "250000", observedAvailableMinor: "750000", observedAt: "2026-09-09T00:00:00.000Z" } as const;
+    const facilityResponse = await page.request.post(`/api/households/${household.data.householdId}/credit-facilities`, { data: facilityPayload });
+    expect(facilityResponse.status()).toBe(201);
+    const created = await facilityResponse.json();
+    const duplicateResponse = await page.request.post(`/api/households/${household.data.householdId}/credit-facilities`, { data: facilityPayload });
+    expect(duplicateResponse.status()).toBe(200);
+    const duplicate = await duplicateResponse.json();
+    expect(duplicate.data.id).toBe(created.data.id);
+    expect(duplicate.data.approvedLimitMinor).toBe("1000000");
     const readBack = await page.request.get(`/api/households/${household.data.householdId}/credit-facilities`);
     expect(readBack.ok()).toBeTruthy();
+    const readBackJson = await readBack.json();
+    expect(readBackJson.data).toHaveLength(1);
     await page.goto("/en/liabilities");
     await expect(page.getByText("Independent credit facilities")).toBeVisible();
     await expect(page.getByText("Household revolving line")).toBeVisible();
