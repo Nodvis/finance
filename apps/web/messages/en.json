@@ -13,6 +13,7 @@
     "transfers": "Transfers",
     "liabilities": "Liabilities",
     "rules": "Rules",
+    "recurring": "Recurring",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private"
   },
@@ -703,5 +704,26 @@
     "learnCategory": "Category for {description}",
     "learned": "A rule was saved for this counterparty. Review it below before relying on it.",
     "learnedRuleName": "Learned rule for {matchText}"
+  },
+  "Recurring": {
+    "eyebrow": "Observed patterns",
+    "title": "Recurring payments and income",
+    "description": "These suggestions are based on repeated real transactions. They are not future transactions or guarantees.",
+    "sectionLabel": "Recurring suggestions",
+    "empty": "There is not enough regular transaction history yet.",
+    "income": "Income",
+    "expense": "Expense",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "typicalAmount": "Typical amount",
+    "observations": "Observed payments",
+    "lastObserved": "Last observed",
+    "nextExpected": "Next expected",
+    "suggested": "Suggested",
+    "confirmed": "Confirmed",
+    "dismissed": "Dismissed",
+    "confirm": "Confirm pattern",
+    "dismiss": "Not relevant",
+    "error": "The recurring pattern could not be updated."
   }
 }

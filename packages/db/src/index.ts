@@ -52,6 +52,15 @@ export type {
   TransactionAuditRow,
   TransactionRow,
 } from "./access/transactions";
+export {
+  listRecurringObservations,
+  listSavedRecurringPatterns,
+  saveRecurringPatternStatus,
+} from "./access/recurring";
+export type {
+  RecurringObservationRow,
+  RecurringPatternStatus,
+} from "./access/recurring";
 
 export {
   CategoryNotFoundError,

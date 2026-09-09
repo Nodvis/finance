@@ -103,6 +103,13 @@ export type {
   TransferTransaction,
 } from "./transaction";
 
+export { detectRecurringPatterns, normalizeRecurringCounterparty } from "./recurring";
+export type {
+  RecurringObservation,
+  RecurringObservationKind,
+  RecurringPattern,
+} from "./recurring";
+
 export {
   DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS,
   DEFAULT_STALE_SNAPSHOT_THRESHOLD_MS,

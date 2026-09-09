@@ -133,6 +133,12 @@ export async function AppHeader() {
             >
               {tNav("rules")}
             </Link>
+            <Link
+              href="/recurring"
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-stone-300 dark:hover:bg-stone-800/80 dark:hover:text-stone-100"
+            >
+              {tNav("recurring")}
+            </Link>
           </nav>
         ) : null}
 

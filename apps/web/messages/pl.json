@@ -13,6 +13,7 @@
     "transfers": "Przelewy",
     "liabilities": "Zobowiązania",
     "rules": "Reguły",
+    "recurring": "Powtarzalne",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Prywatne"
   },
@@ -685,5 +686,26 @@
     "learnCategory": "Kategoria dla {description}",
     "learned": "Zapisano regułę dla tego kontrahenta. Sprawdź ją poniżej przed użyciem.",
     "learnedRuleName": "Wyuczona reguła dla {matchText}"
+  },
+  "Recurring": {
+    "eyebrow": "Zaobserwowane wzorce",
+    "title": "Powtarzalne płatności i wpływy",
+    "description": "Sugestie wynikają z rzeczywistych, powtarzających się transakcji. Nie są przyszłymi transakcjami ani gwarancją.",
+    "sectionLabel": "Sugestie powtarzalności",
+    "empty": "Brakuje jeszcze wystarczającej historii regularnych transakcji.",
+    "income": "Wpływ",
+    "expense": "Wydatek",
+    "weekly": "Co tydzień",
+    "monthly": "Co miesiąc",
+    "typicalAmount": "Typowa kwota",
+    "observations": "Zaobserwowane płatności",
+    "lastObserved": "Ostatnio zaobserwowano",
+    "nextExpected": "Najbliższy oczekiwany termin",
+    "suggested": "Sugestia",
+    "confirmed": "Potwierdzone",
+    "dismissed": "Odrzucone",
+    "confirm": "Potwierdź wzorzec",
+    "dismiss": "Nie dotyczy",
+    "error": "Nie udało się zaktualizować wzorca."
   }
 }
