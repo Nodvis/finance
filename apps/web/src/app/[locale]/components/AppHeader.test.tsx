@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 vi.mock("@/i18n/navigation", () => ({
+  usePathname: () => "/",
   Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
     <a href={href} {...props}>
       {children}
@@ -56,16 +57,16 @@ describe("AppHeader Component", () => {
     vi.clearAllMocks();
   });
 
-  it("renders public header with theme toggle and language switcher, and NO authenticated links, nav or sign-out when unauthenticated", async () => {
+  it("keeps the authenticated header empty when unauthenticated", async () => {
     vi.mocked(getCurrentSession).mockResolvedValue(null);
 
     const header = await AppHeader();
     const html = renderToStaticMarkup(header);
 
-    // Public brand and controls are present
+    // Public controls are rendered by PublicAuthHeader, not AppHeader.
     expect(html).toContain("Nodvis Finance");
-    expect(html).toContain('data-testid="theme-toggle"');
-    expect(html).toContain('data-testid="language-switcher"');
+    expect(html).not.toContain('data-testid="theme-toggle"');
+    expect(html).not.toContain('data-testid="language-switcher"');
 
     // Authenticated navigation and controls are strictly ABSENT
     expect(html).not.toContain("<nav");
@@ -77,7 +78,7 @@ describe("AppHeader Component", () => {
     expect(html).not.toContain("Gospodarstwo domowe");
   });
 
-  it("renders authenticated navigation, active household pill, theme toggle, and sign out when session exists", async () => {
+  it("renders the calm authenticated navigation and account controls when session exists", async () => {
     vi.mocked(getCurrentSession).mockResolvedValue({
       user: { id: "u-1", email: "alice@example.test", name: "Alice" } as any,
       session: { id: "s-1", userId: "u-1" } as any,
@@ -104,9 +105,9 @@ describe("AppHeader Component", () => {
     expect(html).toContain('href="/categories"');
     expect(html).toContain('href="/imports"');
     expect(html).toContain("Nasze Gospodarstwo");
-    expect(html).toContain("PLN");
     expect(html).toContain('data-testid="theme-toggle"');
-    expect(html).toContain('data-testid="language-switcher"');
-    expect(html).toContain('data-testid="sign-out-button"');
+    expect(html).toContain('href="/settings"');
+    expect(html).toContain("Alice");
+    expect(html).toContain('aria-haspopup="menu"');
   });
 });

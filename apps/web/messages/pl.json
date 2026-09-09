@@ -725,5 +725,23 @@
     "noCategories": "Brak wydatków z przypisaną kategorią.",
     "noCounterparties": "Brak danych o sprzedawcach.",
     "noExpenses": "Brak wydatków."
+  },
+  "ProfileMenu": {
+    "open": "Otwórz menu konta użytkownika {name}",
+    "account": "Twoje konto",
+    "profile": "Szczegóły konta"
+  },
+  "Settings": {
+    "eyebrow": "Preferencje",
+    "title": "Ustawienia",
+    "description": "Wybierz, jak Nodvis Finance ma wyglądać i działać dla Ciebie.",
+    "appearance": "Wygląd",
+    "theme": "Motyw kolorystyczny",
+    "themeDescription": "Przełącz interfejs między jasnym i ciemnym wyglądem.",
+    "language": "Język",
+    "languageLabel": "Język interfejsu",
+    "languageDescription": "Wybierz język używany w całej przestrzeni finansów.",
+    "account": "Twoje konto",
+    "openSettings": "Otwórz ustawienia"
   }
 }
