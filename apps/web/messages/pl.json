@@ -213,7 +213,13 @@
       "limitValue": "Limit kredytowy",
       "debt": "Zadłużenie karty",
       "available": "Dostępny kredyt",
-      "overpayment": "Dodatnie saldo karty"
+      "overpayment": "Dodatnie saldo karty",
+      "edit": "Edytuj facility karty",
+      "editTitle": "Aktualizuj facility karty",
+      "archive": "Zarchiwizuj facility karty",
+      "updated": "Dane facility karty zostały zaktualizowane.",
+      "archiveConfirm": "Zarchiwizować facility karty? Historia zostanie zachowana.",
+      "archivedSuccess": "Facility karty została zarchiwizowana."
     }
   },
   "Categories": {

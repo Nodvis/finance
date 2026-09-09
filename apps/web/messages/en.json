@@ -213,7 +213,13 @@
       "limitValue": "Credit limit",
       "debt": "Outstanding card debt",
       "available": "Available credit",
-      "overpayment": "Positive card balance"
+      "overpayment": "Positive card balance",
+      "edit": "Edit card facility",
+      "editTitle": "Update credit card facility",
+      "archive": "Archive card facility",
+      "updated": "Credit card facility updated.",
+      "archiveConfirm": "Archive this card facility? Its history will remain preserved.",
+      "archivedSuccess": "Credit card facility archived."
     }
   },
   "Categories": {

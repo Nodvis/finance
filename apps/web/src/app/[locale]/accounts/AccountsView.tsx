@@ -289,7 +289,7 @@ export function AccountsView({
       if (!response.ok) throw new Error(json.error || tAccounts("form.errorGeneric"));
       setFacilities((prev) => prev.map((item) => item.id === editingFacility.id ? json.data : item));
       setEditingFacility(null);
-      setStatusMessage({ type: "success", text: tAccounts("overdraft.updated") });
+      setStatusMessage({ type: "success", text: tAccounts(editingFacility.kind === "credit_card" ? "creditCardFacility.updated" : "overdraft.updated") });
       router.refresh();
     } catch (error) {
       setStatusMessage({ type: "error", text: error instanceof Error ? error.message : tAccounts("form.errorGeneric") });
@@ -299,14 +299,14 @@ export function AccountsView({
   };
 
   const handleFacilityArchive = async (facility: SerializedCreditFacility) => {
-    if (!window.confirm(tAccounts("overdraft.archiveConfirm"))) return;
+    if (!window.confirm(tAccounts(facility.kind === "credit_card" ? "creditCardFacility.archiveConfirm" : "overdraft.archiveConfirm"))) return;
     setIsSubmittingFacility(true);
     try {
       const response = await fetch(`/api/households/${householdContext.householdId}/accounts/${facility.accountId}/credit-facility`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: facility.version }) });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || tAccounts("form.errorGeneric"));
       setFacilities((prev) => prev.map((item) => item.id === facility.id ? json.data : item));
-      setStatusMessage({ type: "success", text: tAccounts("overdraft.archivedSuccess") });
+      setStatusMessage({ type: "success", text: tAccounts(facility.kind === "credit_card" ? "creditCardFacility.archivedSuccess" : "overdraft.archivedSuccess") });
       router.refresh();
     } catch (error) {
       setStatusMessage({ type: "error", text: error instanceof Error ? error.message : tAccounts("form.errorGeneric") });
@@ -499,11 +499,11 @@ export function AccountsView({
       {editingFacility && (
         <form onSubmit={handleFacilitySubmit} className="grid gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
           <div className="flex items-center justify-between gap-3">
-            <div><h2 className="font-semibold text-slate-900 dark:text-stone-100">{tAccounts("overdraft.editTitle")}</h2><p className="text-xs text-slate-500 dark:text-stone-400">{editingFacility.name} · {editingFacility.currency}</p></div>
+            <div><h2 className="font-semibold text-slate-900 dark:text-stone-100">{tAccounts(editingFacility.kind === "credit_card" ? "creditCardFacility.editTitle" : "overdraft.editTitle")}</h2><p className="text-xs text-slate-500 dark:text-stone-400">{editingFacility.name} · {editingFacility.currency}</p></div>
             <button type="button" onClick={() => setEditingFacility(null)} className="text-xs underline">{tAccounts("actions.cancel")}</button>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label htmlFor="facility-limit" className="grid gap-1 text-xs font-medium"><span>{tAccounts("overdraft.limitValue")}</span><input id="facility-limit" value={facilityLimit} onChange={(event) => setFacilityLimit(event.target.value)} inputMode="decimal" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-900" /></label>
+            <label htmlFor="facility-limit" className="grid gap-1 text-xs font-medium"><span>{tAccounts(editingFacility.kind === "credit_card" ? "creditCardFacility.limitValue" : "overdraft.limitValue")}</span><input id="facility-limit" value={facilityLimit} onChange={(event) => setFacilityLimit(event.target.value)} inputMode="decimal" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-900" /></label>
             <label htmlFor="facility-used" className="grid gap-1 text-xs font-medium"><span>{tAccounts("overdraft.used")}</span><input id="facility-used" value={facilityUsed} onChange={(event) => setFacilityUsed(event.target.value)} inputMode="decimal" placeholder={tAccounts("overdraft.unknownPlaceholder")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-900" /></label>
             <label htmlFor="facility-available" className="grid gap-1 text-xs font-medium"><span>{tAccounts("overdraft.available")}</span><input id="facility-available" value={facilityAvailable} onChange={(event) => setFacilityAvailable(event.target.value)} inputMode="decimal" placeholder={tAccounts("overdraft.unknownPlaceholder")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-900" /></label>
           </div>
@@ -1150,10 +1150,10 @@ export function AccountsView({
                         <div className="flex justify-between gap-3"><span>{tAccounts("creditCardFacility.available")}</span><strong>{creditCardCapacity.availableCreditMinor === null ? tAccounts("balanceUnknown") : formatAmountPresentation(creditCardCapacity.availableCreditMinor.toString(), acc.currency, locale)}</strong></div>
                         <div className="flex justify-between gap-3"><span>{tAccounts("creditCardFacility.overpayment")}</span><strong>{creditCardCapacity.overpaymentMinor === null ? tAccounts("balanceUnknown") : formatAmountPresentation(creditCardCapacity.overpaymentMinor.toString(), acc.currency, locale)}</strong></div>
                         {creditCardCapacity.warning && <p className="rounded-md bg-rose-100 px-2 py-1 text-[11px] font-medium text-rose-800 dark:bg-rose-950/50 dark:text-rose-200">{tAccounts(`overdraft.${creditCardCapacity.warning === "over_limit" ? "overLimit" : "inconsistent"}`)}</p>}
+                        <div className="flex flex-wrap gap-2 border-t border-sky-200/70 pt-2 dark:border-sky-900/60"><button type="button" onClick={() => startFacilityEdit(creditCard)} className="text-[11px] font-semibold text-sky-900 underline dark:text-sky-200">{tAccounts("creditCardFacility.edit")}</button><button type="button" disabled={isSubmittingFacility} onClick={() => handleFacilityArchive(creditCard)} className="text-[11px] font-semibold text-rose-700 underline disabled:opacity-50 dark:text-rose-300">{tAccounts("creditCardFacility.archive")}</button></div>
                       </div>
                     )}
 
-                    {/* Owners */}
                     <div className="mt-3 text-xs text-slate-500 dark:text-stone-400">
                       <span>{tAccounts("ownersLabel")}: </span>
                       <span className="font-medium text-slate-700 dark:text-stone-300">
