@@ -33,7 +33,7 @@ test("PL and EN show data-backed analytics without combining currencies", async 
   await expect(page.getByRole("heading", { name: "Analiza gospodarstwa" })).toBeVisible();
   await expect(page.getByText("PLN", { exact: true })).toBeVisible();
   await expect(page.getByText("EUR", { exact: true })).toBeVisible();
-  await expect(page.getByText("Housing", { exact: true })).toBeVisible();
+  await expect(page.getByText("Housing", { exact: true }).first()).toBeVisible();
   await page.goto("/en/analytics");
   await expect(page.getByRole("heading", { name: "Household analytics" })).toBeVisible();
   await expect(page.getByText("PLN", { exact: true })).toBeVisible();
