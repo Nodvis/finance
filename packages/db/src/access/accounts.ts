@@ -167,6 +167,7 @@ export type CreateHouseholdAccountInput = {
   balanceSnapshotMinor?: bigint | null | undefined;
   balanceSnapshotAt?: Date | null | undefined;
   overdraft?: { name: string; approvedLimitMinor: bigint };
+  creditFacility?: { kind: "credit_card"; name: string; approvedLimitMinor: bigint };
 };
 
 export async function createHouseholdAccount(
@@ -257,6 +258,19 @@ export async function createHouseholdAccount(
         name: input.overdraft.name,
         currency: domainAccount.currency,
         approvedLimitMinor: input.overdraft.approvedLimitMinor,
+      });
+    }
+
+    if (input.creditFacility) {
+      if (domainAccount.type !== "credit_card") throw new Error("A credit card facility can only be created for a credit card account");
+      if (input.creditFacility.approvedLimitMinor < 0n) throw new Error("Credit card limit cannot be negative");
+      await tx.insert(creditFacilities).values({
+        householdId: input.householdId,
+        accountId: domainAccount.id,
+        kind: input.creditFacility.kind,
+        name: input.creditFacility.name,
+        currency: domainAccount.currency,
+        approvedLimitMinor: input.creditFacility.approvedLimitMinor,
       });
     }
 

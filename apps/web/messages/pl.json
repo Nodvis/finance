@@ -202,7 +202,18 @@
       "updated": "Dane debetu zostały zaktualizowane.",
       "archiveConfirm": "Zarchiwizować ten debet? Historia zostanie zachowana.",
       "archivedSuccess": "Debet został zarchiwizowany.",
-      "overdraftObservationDateInvalid": "Wpisz poprawną datę obserwacji."
+      "overdraftObservationDateInvalid": "Podaj prawidłową datę obserwacji."
+    },
+    "creditCardFacility": {
+      "title": "Limit karty kredytowej",
+      "enable": "Śledź uzgodniony limit kredytowy",
+      "limit": "Przyznany limit kredytowy",
+      "limitPlaceholder": "np. 5000,00",
+      "help": "Limit jest pożyczoną pojemnością. Zakupy pozostają wydatkami, a spłaty karty nie są drugim wydatkiem.",
+      "limitValue": "Limit kredytowy",
+      "debt": "Zadłużenie karty",
+      "available": "Dostępny kredyt",
+      "overpayment": "Dodatnie saldo karty"
     }
   },
   "Categories": {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeOverdraftCapacity, validateCreditSnapshot } from "./credit-facility";
+import { computeCreditCardCapacity, computeOverdraftCapacity, validateCreditSnapshot } from "./credit-facility";
 import { currencyCode } from "./money";
 
 describe("computeOverdraftCapacity", () => {
@@ -55,6 +55,16 @@ describe("computeOverdraftCapacity", () => {
   });
 });
 
+describe("computeCreditCardCapacity", () => {
+  it("keeps card debt, available credit and positive overpayment separate", () => {
+    expect(computeCreditCardCapacity({ currency: "PLN", accountBalanceMinor: -20000n, approvedLimitMinor: 100000n })).toMatchObject({ creditLimitMinor: 100000n, outstandingDebtMinor: 20000n, overpaymentMinor: 0n, availableCreditMinor: 80000n });
+    expect(computeCreditCardCapacity({ currency: "PLN", accountBalanceMinor: 15000n, approvedLimitMinor: 100000n })).toMatchObject({ outstandingDebtMinor: 0n, overpaymentMinor: 15000n, availableCreditMinor: 100000n });
+  });
+
+  it("preserves observed availability and flags inconsistent observations", () => {
+    expect(computeCreditCardCapacity({ currency: "PLN", accountBalanceMinor: -20000n, approvedLimitMinor: 100000n, observedUsedMinor: 25000n, observedAvailableMinor: 70000n })).toMatchObject({ basis: "observed", warning: "inconsistent_observation", outstandingDebtMinor: 25000n, availableCreditMinor: 70000n });
+  });
+});
 describe("validateCreditSnapshot", () => {
   it("requires a date whenever an observed component is entered", () => {
     expect(() => validateCreditSnapshot({ currency: "PLN", observedAvailable: { currency: currencyCode("PLN"), amountMinor: 100n }, observedAt: null })).toThrow("observation date");

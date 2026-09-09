@@ -10,7 +10,7 @@ import type { SerializedAccountIdentifier } from "@/lib/account-identifiers/serv
 import type { AuthorizedHouseholdUserContext } from "@/lib/authorization/household";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 import { getCurrencyFractionDigits, parseNaturalDecimalToMinor } from "@/lib/transactions/money-entry";
-import { computeOverdraftCapacity } from "@nodvis/finance-domain";
+import { computeCreditCardCapacity, computeOverdraftCapacity } from "@nodvis/finance-domain";
 
 const COMMON_CURRENCIES = ["PLN", "EUR", "USD", "GBP", "CHF"] as const;
 const ACCOUNT_TYPES = ["checking", "savings", "cash", "credit_card"] as const;
@@ -87,6 +87,8 @@ export function AccountsView({
   const [initialBalanceNatural, setInitialBalanceNatural] = useState("");
   const [overdraftEnabled, setOverdraftEnabled] = useState(false);
   const [overdraftLimitNatural, setOverdraftLimitNatural] = useState("");
+  const [creditCardEnabled, setCreditCardEnabled] = useState(false);
+  const [creditCardLimitNatural, setCreditCardLimitNatural] = useState("");
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
 
   // Form states for editing account
@@ -136,6 +138,9 @@ export function AccountsView({
               },
             }
           : {}),
+        ...(creditCardEnabled && type === "credit_card"
+          ? { creditCard: { enabled: true as const, approvedLimitNatural: creditCardLimitNatural } }
+          : {}),
       };
 
       const res = await fetch(
@@ -155,7 +160,7 @@ export function AccountsView({
         });
       } else {
         setAccounts((prev) => [...prev, json.data]);
-        if (json.data.type === "checking") {
+        if (json.data.type === "checking" || json.data.type === "credit_card") {
           const facilityResponse = await fetch(`/api/households/${householdContext.householdId}/accounts/${json.data.id}/credit-facility`);
           if (facilityResponse.ok) {
             const facilityJson = await facilityResponse.json();
@@ -168,6 +173,8 @@ export function AccountsView({
         setInitialBalanceNatural("");
         setOverdraftEnabled(false);
         setOverdraftLimitNatural("");
+        setCreditCardEnabled(false);
+        setCreditCardLimitNatural("");
         setSelectedOwnerIds([householdContext.personId]);
         setIsCreating(false);
         setStatusMessage({
@@ -710,6 +717,14 @@ export function AccountsView({
                 </fieldset>
               )}
 
+              {type === "credit_card" && (
+                <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-stone-800 dark:bg-stone-950/40">
+                  <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-stone-200">{tAccounts("creditCardFacility.title")}</legend>
+                  <label className="mt-2 flex items-start gap-2 text-sm text-slate-700 dark:text-stone-300"><input id="credit-card-enabled" type="checkbox" checked={creditCardEnabled} onChange={(event) => setCreditCardEnabled(event.target.checked)} className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /><span>{tAccounts("creditCardFacility.enable")}</span></label>
+                  {creditCardEnabled && <div className="mt-3"><label htmlFor="credit-card-limit" className="block text-sm font-medium text-slate-700 dark:text-stone-300">{tAccounts("creditCardFacility.limit")}</label><input id="credit-card-limit" required inputMode="decimal" value={creditCardLimitNatural} onChange={(event) => setCreditCardLimitNatural(event.target.value)} placeholder={tAccounts("creditCardFacility.limitPlaceholder")} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900" /><p className="mt-1 text-xs text-slate-500 dark:text-stone-400">{tAccounts("creditCardFacility.help")}</p></div>}
+                </fieldset>
+              )}
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-stone-800">
                 <button
                   type="button"
@@ -1033,6 +1048,8 @@ export function AccountsView({
                     active: overdraft.archivedAt === null && (overdraft.expiresAt === null || new Date(overdraft.expiresAt).getTime() >= Date.now()),
                   })
                 : null;
+              const creditCard = facilities.find((facility) => facility.accountId === acc.id && facility.kind === "credit_card");
+              const creditCardCapacity = creditCard ? computeCreditCardCapacity({ currency: acc.currency, accountBalanceMinor: minor, approvedLimitMinor: creditCard.approvedLimitMinor === null ? null : BigInt(creditCard.approvedLimitMinor), observedUsedMinor: creditCard.observedUsedMinor === null ? null : BigInt(creditCard.observedUsedMinor), observedAvailableMinor: creditCard.observedAvailableMinor === null ? null : BigInt(creditCard.observedAvailableMinor) }) : null;
 
               return (
                 <article
@@ -1123,6 +1140,16 @@ export function AccountsView({
                           <button type="button" onClick={() => startFacilityEdit(overdraft)} className="text-[11px] font-semibold text-amber-900 underline dark:text-amber-200">{tAccounts("overdraft.edit")}</button>
                           <button type="button" disabled={isSubmittingFacility} onClick={() => handleFacilityArchive(overdraft)} className="text-[11px] font-semibold text-rose-700 underline disabled:opacity-50 dark:text-rose-300">{tAccounts("overdraft.archive")}</button>
                         </div>
+                      </div>
+                    )}
+
+                    {creditCardCapacity && creditCard && (
+                      <div className="mt-4 grid gap-2 rounded-xl border border-sky-200/80 bg-sky-50/60 p-3 text-xs dark:border-sky-900/60 dark:bg-sky-950/20">
+                        <div className="flex justify-between gap-3"><span>{tAccounts("creditCardFacility.limitValue")}</span><strong>{creditCardCapacity.creditLimitMinor === null ? tAccounts("balanceUnknown") : formatAmountPresentation(creditCardCapacity.creditLimitMinor.toString(), acc.currency, locale)}</strong></div>
+                        <div className="flex justify-between gap-3"><span>{tAccounts("creditCardFacility.debt")}</span><strong>{creditCardCapacity.outstandingDebtMinor === null ? tAccounts("balanceUnknown") : formatAmountPresentation(creditCardCapacity.outstandingDebtMinor.toString(), acc.currency, locale)}</strong></div>
+                        <div className="flex justify-between gap-3"><span>{tAccounts("creditCardFacility.available")}</span><strong>{creditCardCapacity.availableCreditMinor === null ? tAccounts("balanceUnknown") : formatAmountPresentation(creditCardCapacity.availableCreditMinor.toString(), acc.currency, locale)}</strong></div>
+                        <div className="flex justify-between gap-3"><span>{tAccounts("creditCardFacility.overpayment")}</span><strong>{creditCardCapacity.overpaymentMinor === null ? tAccounts("balanceUnknown") : formatAmountPresentation(creditCardCapacity.overpaymentMinor.toString(), acc.currency, locale)}</strong></div>
+                        {creditCardCapacity.warning && <p className="rounded-md bg-rose-100 px-2 py-1 text-[11px] font-medium text-rose-800 dark:bg-rose-950/50 dark:text-rose-200">{tAccounts(`overdraft.${creditCardCapacity.warning === "over_limit" ? "overLimit" : "inconsistent"}`)}</p>}
                       </div>
                     )}
 

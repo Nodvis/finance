@@ -262,6 +262,7 @@ export type {
 } from "./liability";
 export {
   CREDIT_FACILITY_KINDS,
+  computeCreditCardCapacity,
   computeOverdraftCapacity,
   creditMoney,
   validateCreditSnapshot,

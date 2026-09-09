@@ -78,6 +78,13 @@ export async function createHouseholdAccountEntry(
     overdraftLimitMinor = parsedLimit.amountMinor;
   }
 
+  let creditCardLimitMinor: bigint | undefined;
+  if (input.creditCard?.enabled) {
+    const parsedLimit = parseAccountBalanceToMinor(input.creditCard.approvedLimitNatural, input.currency);
+    if (!parsedLimit.success || parsedLimit.amountMinor === null || parsedLimit.amountMinor < 0n) throw new Error("Invalid credit card limit format");
+    creditCardLimitMinor = parsedLimit.amountMinor;
+  }
+
   return await createHouseholdAccount({
     householdId: context.householdId,
     name: input.name,
@@ -89,6 +96,9 @@ export async function createHouseholdAccountEntry(
     ...(overdraftLimitMinor === undefined
       ? {}
       : { overdraft: { name: "Overdraft facility", approvedLimitMinor: overdraftLimitMinor } }),
+    ...(creditCardLimitMinor === undefined
+      ? {}
+      : { creditFacility: { kind: "credit_card" as const, name: "Credit card facility", approvedLimitMinor: creditCardLimitMinor } }),
   });
 }
 

@@ -203,6 +203,17 @@
       "archiveConfirm": "Archive this overdraft? Its history will remain preserved.",
       "archivedSuccess": "Overdraft archived.",
       "overdraftObservationDateInvalid": "Enter a valid observation date."
+    },
+    "creditCardFacility": {
+      "title": "Credit card limit",
+      "enable": "Track the agreed credit limit",
+      "limit": "Approved credit limit",
+      "limitPlaceholder": "e.g. 5000.00",
+      "help": "The limit is borrowed capacity. Purchases remain expenses; card repayments are not a second expense.",
+      "limitValue": "Credit limit",
+      "debt": "Outstanding card debt",
+      "available": "Available credit",
+      "overpayment": "Positive card balance"
     }
   },
   "Categories": {

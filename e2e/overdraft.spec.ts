@@ -68,5 +68,18 @@ test.describe("overdraft management", () => {
     await page.goto("/en/accounts");
     await expect(page.getByRole("heading", { name: "Accounts & balances" })).toBeVisible();
     await expect.poll(async () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+    await page.getByRole("button", { name: /Add account/ }).first().click();
+    await page.getByLabel("Account name").fill("Visa Card");
+    await page.locator("#account-type").selectOption("credit_card");
+    await page.getByLabel("Initial balance (optional)").fill("-250");
+    await page.getByLabel("Track the agreed credit limit").check();
+    await page.getByLabel("Approved credit limit").fill("5000");
+    await Promise.all([
+      page.waitForResponse((response) => response.url().endsWith("/api/households") === false && response.url().includes("/accounts") && response.request().method() === "POST" && response.status() === 201),
+      page.getByRole("button", { name: "Create account" }).click(),
+    ]);
+    const card = page.locator("article").filter({ hasText: "Visa Card" });
+    await expect(card).toContainText("Credit limit");
+    await expect(card).toContainText("Available credit");
   });
 });

@@ -109,6 +109,32 @@ export function computeOverdraftCapacity(input: {
   });
 }
 
+export type CreditCardCapacity = Readonly<{
+  currency: CurrencyCode;
+  creditLimitMinor: bigint | null;
+  outstandingDebtMinor: bigint | null;
+  overpaymentMinor: bigint | null;
+  availableCreditMinor: bigint | null;
+  basis: "calculated" | "observed" | "unknown";
+  warning: "over_limit" | "inconsistent_observation" | null;
+}>;
+
+export function computeCreditCardCapacity(input: {
+  currency: string;
+  accountBalanceMinor: bigint | null;
+  approvedLimitMinor: bigint | null;
+  observedUsedMinor?: bigint | null;
+  observedAvailableMinor?: bigint | null;
+}): CreditCardCapacity {
+  const currency = currencyCode(input.currency);
+  const outstandingDebtMinor = input.observedUsedMinor ?? (input.accountBalanceMinor === null ? null : input.accountBalanceMinor < 0n ? -input.accountBalanceMinor : 0n);
+  const overpaymentMinor = input.accountBalanceMinor === null ? null : input.accountBalanceMinor > 0n ? input.accountBalanceMinor : 0n;
+  const availableCreditMinor = input.observedAvailableMinor ?? (input.approvedLimitMinor === null || outstandingDebtMinor === null ? null : input.approvedLimitMinor > outstandingDebtMinor ? input.approvedLimitMinor - outstandingDebtMinor : 0n);
+  const overLimit = input.approvedLimitMinor !== null && outstandingDebtMinor !== null && outstandingDebtMinor > input.approvedLimitMinor;
+  const inconsistentObservation = input.observedUsedMinor !== undefined && input.observedUsedMinor !== null && input.observedAvailableMinor !== undefined && input.observedAvailableMinor !== null && input.approvedLimitMinor !== null && input.observedUsedMinor + input.observedAvailableMinor !== input.approvedLimitMinor;
+  return Object.freeze({ currency, creditLimitMinor: input.approvedLimitMinor, outstandingDebtMinor, overpaymentMinor, availableCreditMinor, basis: input.observedAvailableMinor !== undefined && input.observedAvailableMinor !== null ? "observed" : availableCreditMinor === null ? "unknown" : "calculated", warning: overLimit ? "over_limit" : inconsistentObservation ? "inconsistent_observation" : null });
+}
+
 export function validateCreditSnapshot(input: {
   currency: string;
   approvedLimit?: Money | null;
