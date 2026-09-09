@@ -242,6 +242,7 @@ export {
   validateVoidReason,
   voidLiabilityRepayment,
 } from "./liability";
+export * from "./categorization-rule";
 export type {
   CreateLiabilityInput,
   CreateLiabilityRepaymentInput,

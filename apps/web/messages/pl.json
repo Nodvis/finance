@@ -12,6 +12,7 @@
     "imports": "Importy",
     "transfers": "Przelewy",
     "liabilities": "Zobowiązania",
+    "rules": "Reguły",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Prywatne"
   },
@@ -650,5 +651,25 @@
       "missingAccount": "Konto „{name}” ({currency}) nie ma zarejestrowanego salda.",
       "staleAccount": "Saldo konta „{name}” ({currency}) z dnia {date} jest nieaktualne (>30 dni)."
     }
+  },
+  "Rules": {
+    "eyebrow": "Wyjaśnialna automatyzacja",
+    "title": "Reguły kategoryzacji",
+    "description": "Twórz wąskie reguły sugerujące kategorie bez zastępowania istniejących ręcznych klasyfikacji.",
+    "createTitle": "Dodaj regułę",
+    "name": "Nazwa reguły",
+    "matchText": "Nazwa kontrahenta lub źródła zawiera",
+    "category": "Kategoria",
+    "priority": "Priorytet",
+    "save": "Zapisz regułę",
+    "saving": "Zapisywanie...",
+    "created": "Reguła została zapisana.",
+    "error": "Nie udało się zapisać reguły.",
+    "empty": "Brak reguł. Zacznij od jednego konkretnego kontrahenta lub źródła.",
+    "explanation": "Dopasowanie, gdy kontrahent {mode} „{text}”; priorytet {priority}.",
+    "enabled": "Włączona",
+    "disabled": "Wyłączona",
+    "enable": "Włącz",
+    "disable": "Wyłącz"
   }
 }
