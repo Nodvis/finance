@@ -19,12 +19,15 @@ test("PL and EN show data-backed analytics without combining currencies", async 
   const category = (await categoryResponse.json()).data as { id: string };
   const accountResponse = await page.request.post(`/api/households/${household.householdId}/accounts`, { data: { name: "Analytics checking", type: "checking", currency: "PLN", ownerPersonIds: [household.personId], initialBalance: { amountNatural: "1000", capturedAt: new Date().toISOString() } } });
   const account = (await accountResponse.json()).data as { id: string };
+  const eurAccountResponse = await page.request.post(`/api/households/${household.householdId}/accounts`, { data: { name: "Analytics euro", type: "checking", currency: "EUR", ownerPersonIds: [household.personId], initialBalance: { amountNatural: "1000", capturedAt: new Date().toISOString() } } });
+  const eurAccount = (await eurAccountResponse.json()).data as { id: string };
   for (const item of [
     { amountMinor: "12000", currency: "PLN", occurredOn: "2026-01-05T12:00:00.000Z" },
     { amountMinor: "8000", currency: "PLN", occurredOn: "2026-02-05T12:00:00.000Z" },
     { amountMinor: "5000", currency: "EUR", occurredOn: "2026-02-05T12:00:00.000Z" },
   ]) {
-    await page.request.post(`/api/households/${household.householdId}/transactions`, { data: { kind: "expense", amountMinor: item.amountMinor, currency: item.currency, occurredOn: item.occurredOn, accountId: account.id, categoryId: category.id, payee: "Home Ltd", paidByPersonId: household.personId, submissionId: crypto.randomUUID() } });
+    const response = await page.request.post(`/api/households/${household.householdId}/transactions`, { data: { kind: "expense", amountMinor: item.amountMinor, currency: item.currency, occurredOn: item.occurredOn, accountId: item.currency === "EUR" ? eurAccount.id : account.id, categoryId: category.id, payee: "Home Ltd", paidByPersonId: household.personId, submissionId: crypto.randomUUID() } });
+    expect(response.ok(), await response.text()).toBeTruthy();
   }
   await page.goto("/pl/analytics");
   await expect(page.getByRole("heading", { name: "Analiza gospodarstwa" })).toBeVisible();
