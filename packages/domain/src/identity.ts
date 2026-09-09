@@ -10,6 +10,8 @@ declare const accountIdentifierIdBrand: unique symbol;
 declare const statementImportProfileIdBrand: unique symbol;
 declare const liabilityIdBrand: unique symbol;
 declare const liabilityRepaymentIdBrand: unique symbol;
+declare const creditFacilityIdBrand: unique symbol;
+declare const bnplPurchaseIdBrand: unique symbol;
 
 export type HouseholdId = string & { readonly [householdIdBrand]: true };
 export type PersonId = string & { readonly [personIdBrand]: true };
@@ -27,6 +29,12 @@ export type LiabilityId = string & {
 };
 export type LiabilityRepaymentId = string & {
   readonly [liabilityRepaymentIdBrand]: true;
+};
+export type CreditFacilityId = string & {
+  readonly [creditFacilityIdBrand]: true;
+};
+export type BnplPurchaseId = string & {
+  readonly [bnplPurchaseIdBrand]: true;
 };
 
 export function householdId(value: string): HouseholdId {
@@ -63,6 +71,14 @@ export function liabilityId(value: string): LiabilityId {
 
 export function liabilityRepaymentId(value: string): LiabilityRepaymentId {
   return domainId(value, "liability repayment") as LiabilityRepaymentId;
+}
+
+export function creditFacilityId(value: string): CreditFacilityId {
+  return domainId(value, "credit facility") as CreditFacilityId;
+}
+
+export function bnplPurchaseId(value: string): BnplPurchaseId {
+  return domainId(value, "bnpl purchase") as BnplPurchaseId;
 }
 
 function domainId(value: string, kind: string): string {

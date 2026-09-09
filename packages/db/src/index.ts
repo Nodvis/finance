@@ -44,6 +44,21 @@ export type {
   UpdateCreditFacilityInput,
 } from "./access/credit-facilities";
 export {
+  BnplPurchaseFacilityError,
+  BnplPurchaseNotFoundError,
+  BnplPurchaseVersionConflictError,
+  createBnplPurchaseRecord,
+  getBnplPurchase,
+  listBnplPurchasesByHousehold,
+  serializeBnplPurchase,
+  updateBnplPurchaseRecord,
+  voidBnplPurchaseRecord,
+} from "./access/bnpl-purchases";
+export type {
+  BnplPurchaseSummary,
+  CreateBnplPurchaseRecordInput,
+} from "./access/bnpl-purchases";
+export {
   DuplicateSubmissionError,
   TransactionAlreadyVoidedError,
   TransactionNotFoundError,

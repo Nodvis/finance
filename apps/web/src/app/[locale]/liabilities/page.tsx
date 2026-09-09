@@ -7,7 +7,7 @@ import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { listHouseholdAccountsSummary } from "@/lib/accounts/service";
 import { serializeAccount } from "@/lib/accounts/serialization";
 import { listHouseholdLiabilities } from "@/lib/liabilities/service";
-import { listCreditFacilitiesByHousehold, serializeCreditFacility } from "@nodvis/finance-db";
+import { listBnplPurchasesByHousehold, listCreditFacilitiesByHousehold, serializeBnplPurchase, serializeCreditFacility } from "@nodvis/finance-db";
 import { serializeLiability } from "@/lib/liabilities/serialization";
 
 import { HouseholdSelectionCard } from "../components/HouseholdSelectionCard";
@@ -34,10 +34,11 @@ export default async function LiabilitiesPage({ params }: LiabilitiesPageProps) 
   if (status.status !== "single" && status.status !== "multiple_selected") return null;
 
   const context = status.activeContext;
-  const [rawLiabilities, rawAccounts, rawFacilities] = await Promise.all([
+  const [rawLiabilities, rawAccounts, rawFacilities, rawBnplPurchases] = await Promise.all([
     listHouseholdLiabilities(context, { includeArchived: true }),
     listHouseholdAccountsSummary(context),
     listCreditFacilitiesByHousehold(context.householdId),
+    listBnplPurchasesByHousehold(context.householdId),
   ]);
 
   return (
@@ -46,6 +47,7 @@ export default async function LiabilitiesPage({ params }: LiabilitiesPageProps) 
       initialLiabilities={rawLiabilities.map(serializeLiability)}
       accounts={rawAccounts.map(serializeAccount)}
       initialFacilities={rawFacilities.map(serializeCreditFacility)}
+      initialBnplPurchases={rawBnplPurchases.map(serializeBnplPurchase)}
       locale={locale}
     />
   );

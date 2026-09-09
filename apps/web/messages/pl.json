@@ -275,6 +275,10 @@
   "Liabilities": {
     "eyebrow": "Zobowiązania gospodarstwa", "title": "Zobowiązania", "description": "Zarządzaj kredytami, pożyczkami, ratami i limitami zadłużenia z dokładnymi saldami i historią spłat.", "activeLiabilities": "Aktywne zobowiązania",
  "independentFacilities": "Niezależne limity kredytowe",
+ "bnplPurchases": "Zakupy z odroczoną płatnością",
+ "bnplFinanced": "Kwota finansowana",
+ "bnplOutstanding": "Zaobserwowane saldo",
+ "bnplDueDate": "Termin płatności",
  "facilityObserved": "Zaobserwowano: wykorzystano {used}, dostępne {available}",
  "facilityUnknown": "Brak aktualnych obserwacji kredytu.", "facilityRevolving": "Kredyt odnawialny", "facilityBnpl": "Kup teraz, zapłać później", "facilityLimit": "Limit kredytowy", "facilityUsed": "Wykorzystany kredyt", "facilityAvailable": "Dostępny kredyt", "archivedLiabilities": "Zarchiwizowane zobowiązania", "showArchived": "Pokaż zarchiwizowane ({count})", "hideArchived": "Ukryj zarchiwizowane", "emptyActiveTitle": "Brak aktywnych zobowiązań", "emptyActiveDescription": "Dodaj swój pierwszy kredyt, pożyczkę lub raty poniżej.", "emptyArchivedDescription": "Brak zarchiwizowanych zobowiązań w tym gospodarstwie domowym.",
     "kinds": { "loan": "Kredyt gotówkowy", "mortgage": "Kredyt hipoteczny", "installment": "Raty", "credit_line": "Limit w koncie", "other": "Inne" }, "allocationStates": { "full": "Pełny podział", "partial": "Częściowy podział", "unknown": "Nieznany podział" }, "balance": { "unknown": "Nieznane saldo", "observedAt": "Stan na {date}", "outstanding": "Zadłużenie" },

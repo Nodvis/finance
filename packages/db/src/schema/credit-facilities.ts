@@ -49,6 +49,10 @@ export const creditFacilities = financeSchema.table(
       table.accountId,
       table.kind,
     ),
+    unique("credit_facilities_household_id_id_unique").on(
+      table.householdId,
+      table.id,
+    ),
     uniqueIndex("credit_facilities_independent_identity_unique")
       .on(table.householdId, table.kind, table.name)
       .where(sql`${table.accountId} is null`),
