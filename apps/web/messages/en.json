@@ -743,5 +743,23 @@
     "noCategories": "No categorized spending yet.",
     "noCounterparties": "No merchant data yet.",
     "noExpenses": "No expenses yet."
+  },
+  "ProfileMenu": {
+    "open": "Open account menu for {name}",
+    "account": "Your account",
+    "profile": "Account details"
+  },
+  "Settings": {
+    "eyebrow": "Preferences",
+    "title": "Settings",
+    "description": "Choose how Nodvis Finance looks and reads for you.",
+    "appearance": "Appearance",
+    "theme": "Color theme",
+    "themeDescription": "Switch between a light and dark interface.",
+    "language": "Language",
+    "languageLabel": "Interface language",
+    "languageDescription": "Choose the language used across your finance workspace.",
+    "account": "Your account",
+    "openSettings": "Open settings"
   }
 }
