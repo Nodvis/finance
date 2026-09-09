@@ -9,8 +9,8 @@ Nodvis Finance is a household finance application focused on a simple question:
 It is not intended to be another accounting-style ledger or a pure envelope-budgeting clone. Its core is the combination of **available cash, obligations, debt, cash flow and forecasting** presented in a way that remains useful to non-technical users.
 
 > [!IMPORTANT]
-> **Project status: Phase 1 / core financial foundation in progress.**
-> Person, Household, membership, account ownership, persistence and authentication foundations now exist, but transactions and the remaining Phase 1 product flows are not implemented. The application is **not ready for real financial data or production use**.
+> **Project status: authenticated private finance foundation in active development.**
+> Household/account authorization, transactions, imports, overdraft, credit-card capacity and independent revolving-facility management are implemented and tested. BNPL financed purchases, repayment terms, upcoming-payment integration, 2FA and encrypted backup workflows remain in progress. Use only in a controlled private deployment; review `SECURITY.md` before handling real data.
 
 ## Product principles
 

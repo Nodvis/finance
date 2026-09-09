@@ -16,6 +16,10 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    disableSignUp:
+      process.env.ALLOW_SIGN_UP !== "true" && process.env.CI !== "true",
+    minPasswordLength: 12,
+    maxPasswordLength: 128,
   },
   trustedOrigins,
   rateLimit: {

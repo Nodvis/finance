@@ -1,6 +1,6 @@
-# Initial threat model
+# Nodvis Finance threat model
 
-> Status: Phase 0 design artifact. This is an initial model, not a security certification.
+> Status: living engineering model updated for the current authenticated finance application. This is not a security certification.
 
 ## Security objective
 
@@ -65,7 +65,7 @@ The exact boundaries depend on the deployment ADR.
 - evaluate field/file encryption where it materially reduces risk,
 - ensure encryption keys are not simply stored beside encrypted data.
 
-**Open decision:** exact encryption-at-rest scope and key management.
+**Current status:** PostgreSQL and backups are treated as high-sensitivity assets. Application-level field encryption and encrypted archival backups remain open; see `docs/security/encryption-and-key-management.md`.
 
 ### TM-002 — Backup theft
 
@@ -98,7 +98,7 @@ The exact boundaries depend on the deployment ADR.
 - logout/session revocation,
 - future TOTP/passkey capability.
 
-**Open decision:** authentication stack ADR.
+**Current status:** Better Auth 1.7.2 owns email/password and sessions. TOTP, passkeys, user-visible session revocation and complete password-reset evidence remain open.
 
 ### TM-004 — Insecure public deployment
 
