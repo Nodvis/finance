@@ -954,6 +954,9 @@
       "cancelled": "No cancelled obligations.",
       "filtered": "No obligations match the selected filters."
     },
+    "pagination": {
+      "loadMore": "Load more"
+    },
     "feedback": {
       "createSuccess": "Obligation created successfully.",
       "updateSuccess": "Obligation updated successfully.",

@@ -24,6 +24,7 @@ type UpcomingPageProps = {
     status?: string | string[];
     currency?: string | string[];
     sortOrder?: string | string[];
+    offset?: string | string[];
   }>;
 };
 
@@ -45,11 +46,12 @@ export default async function UpcomingPage({
     status: firstSearchParam(resolvedSearchParams?.status),
     currency: firstSearchParam(resolvedSearchParams?.currency),
     sortOrder: firstSearchParam(resolvedSearchParams?.sortOrder),
+    offset: firstSearchParam(resolvedSearchParams?.offset),
     limit: 100,
   });
   const query = queryResult.success
     ? queryResult.data
-    : obligationQuerySchema.parse({ limit: 100 });
+    : obligationQuerySchema.parse({ limit: 100, offset: 0 });
 
   const session = await getCurrentSession();
   if (!session) {
@@ -107,6 +109,8 @@ export default async function UpcomingPage({
           ? query.sortOrder
           : undefined
       }
+      initialOffset={query.offset ?? 0}
+      initialHasMore={obligations.length === (query.limit ?? 100)}
     />
   );
 }

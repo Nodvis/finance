@@ -20,6 +20,8 @@ type Props = {
   initialStatus?: string | undefined;
   initialCurrency?: string | undefined;
   initialSortOrder?: "asc" | "desc" | undefined;
+  initialOffset?: number | undefined;
+  initialHasMore?: boolean | undefined;
 };
 
 type TabFilter =
@@ -60,6 +62,8 @@ export function UpcomingView({
   initialStatus,
   initialCurrency,
   initialSortOrder,
+  initialOffset = 0,
+  initialHasMore = false,
 }: Props) {
   const t = useTranslations("Obligations");
   const router = useRouter();
@@ -162,6 +166,14 @@ export function UpcomingView({
   const [candidates, setCandidates] = useState<CandidateTransaction[]>([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState("");
   const [isCandidatesLoading, setIsCandidatesLoading] = useState(false);
+
+  const canLoadMore = initialHasMore;
+
+  function loadMore() {
+    const params = new URLSearchParams(window.location.search);
+    params.set("offset", String(initialOffset + 100));
+    router.push(`${pathname}?${params.toString()}`);
+  }
 
   async function refreshSummary() {
     try {
@@ -986,6 +998,14 @@ export function UpcomingView({
           </div>
         </section>
       )}
+
+      {canLoadMore ? (
+        <div className="flex justify-center pt-6">
+          <button type="button" onClick={loadMore} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800">
+            {t("pagination.loadMore")}
+          </button>
+        </div>
+      ) : null}
 
       {/* Create Modal */}
       {isCreateOpen ? (
