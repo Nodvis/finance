@@ -428,7 +428,8 @@ export function UpcomingView({
   }
 
   async function handleCancel(obligation: SerializedHouseholdObligation) {
-    if (!window.confirm(t("actions.confirmCancel"))) return;
+    const recurring = obligation.recurringDefinitionId !== null && obligation.recurringDefinitionId !== undefined;
+    if (!window.confirm(t(recurring ? "actions.confirmSkip" : "actions.confirmCancel"))) return;
     setPending(true);
     setFeedback(null);
 
@@ -451,7 +452,7 @@ export function UpcomingView({
       setObligations((prev) =>
         prev.map((o) => (o.id === obligation.id ? json.data : o)),
       );
-      setFeedback({ type: "success", text: t("feedback.cancelSuccess") });
+      setFeedback({ type: "success", text: t(recurring ? "feedback.skipSuccess" : "feedback.cancelSuccess") });
       await refreshSummary();
       router.refresh();
     } catch (err) {
@@ -584,7 +585,7 @@ export function UpcomingView({
                 onClick={() => handleCancel(item)}
                 className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-xs hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40"
               >
-                {t("actions.cancel")}
+                {item.recurringDefinitionId ? t("actions.skip") : t("actions.cancel")}
               </button>
             ) : null}
           </div>

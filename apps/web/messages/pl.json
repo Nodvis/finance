@@ -890,7 +890,9 @@
       "match": "Połącz z płatnością",
       "unlink": "Odłącz",
       "cancel": "Anuluj",
-      "confirmCancel": "Czy na pewno chcesz anulować to zobowiązanie?",
+      "skip": "Pomiń tę płatność",
+      "confirmCancel": "Czy na pewno anulować to zobowiązanie?",
+      "confirmSkip": "Pominąć tylko tę płatność cykliczną? Seria będzie kontynuowana.",
       "confirmUnlink": "Czy na pewno chcesz odłączyć tę transakcję?"
     },
     "matching": {
@@ -934,6 +936,7 @@
       "matchSuccess": "Zobowiązanie połączono z transakcją i oznaczono jako opłacone.",
       "unlinkSuccess": "Transakcja została odłączona. Przywrócono stan aktywny zobowiązania.",
       "cancelSuccess": "Zobowiązanie zostało anulowane.",
+      "skipSuccess": "To wystąpienie zostało pominięte.",
       "errorGeneric": "Wystąpił błąd. Spróbuj ponownie."
     }
   }

@@ -129,6 +129,9 @@ export type SerializedHouseholdObligation = {
   notes: string | null;
   transactionId: string | null;
   recurringDefinitionId?: string | null;
+  recurringScheduledDate?: string | null;
+  recurringOverride?: boolean;
+  recurringSkipped?: boolean;
   version: number;
   status: "upcoming" | "overdue" | "paid" | "cancelled";
   cancelledAt: string | null;

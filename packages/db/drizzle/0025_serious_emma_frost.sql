@@ -1,0 +1,2 @@
+DROP INDEX "finance"."obligations_recurring_occurrence_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "obligations_recurring_occurrence_unique" ON "finance"."obligations" USING btree ("recurring_definition_id","recurring_scheduled_date") WHERE "finance"."obligations"."recurring_definition_id" is not null and "finance"."obligations"."recurring_scheduled_date" is not null and "finance"."obligations"."cancelled_at" is null;
