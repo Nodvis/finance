@@ -134,6 +134,7 @@ export const unarchiveLiabilitySchema = z.object({
 export type UnarchiveLiabilityInput = z.infer<typeof unarchiveLiabilitySchema>;
 
 export const createLiabilityRepaymentSchema = z.object({
+  submissionId: z.uuid().optional(),
   paidAt: z.coerce.date({ message: "Repayment date is required" }),
   amountNatural: z.string().trim().optional(),
   amountMinor: z

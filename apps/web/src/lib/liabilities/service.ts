@@ -532,7 +532,7 @@ export async function recordHouseholdLiabilityRepayment(
     }
   }
 
-  const repaymentId = toLiabilityRepaymentId(crypto.randomUUID());
+  const repaymentId = toLiabilityRepaymentId(input.submissionId ?? crypto.randomUUID());
   const domainRepayment = createLiabilityRepayment({
     id: repaymentId,
     householdId: toHouseholdId(context.householdId),

@@ -1,12 +1,14 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   foreignKey,
   index,
   integer,
   unique,
   uuid,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -98,6 +100,8 @@ export const liabilityRepayments = financeSchema.table(
       .references(() => households.id, { onDelete: "cascade" }),
     liabilityId: uuid("liability_id").notNull(),
     transactionId: uuid("transaction_id"),
+    // Null means historical ownership is unknown; never infer it during migration.
+    ownsTransaction: boolean("owns_transaction"),
     paidAt: instant("paid_at").notNull(),
     amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
     currency: varchar("currency", { length: 3 }).notNull(),
@@ -153,6 +157,7 @@ export const liabilityRepayments = financeSchema.table(
     index("liability_repayments_household_id_idx").on(table.householdId),
     index("liability_repayments_liability_id_idx").on(table.liabilityId),
     index("liability_repayments_transaction_id_idx").on(table.transactionId),
+    uniqueIndex("liability_repayments_active_transaction_unique").on(table.transactionId).where(sql`${table.transactionId} is not null and ${table.voidedAt} is null`),
     index("liability_repayments_paid_at_idx").on(table.paidAt),
     index("liability_repayments_household_paid_at_idx").on(
       table.householdId,

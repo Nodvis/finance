@@ -788,11 +788,14 @@ describe("audit and transaction mutations", () => {
     const insertedAuditValues: any[] = [];
 
     const mockDbTx = {
-      select: () => ({
+      select: (fields?: unknown) => ({
         from: () => ({
           where: () => ({
+            for: () => ({
+              then: (resolve: (v: any) => any) => resolve([]),
+            }),
             limit: () => ({
-              then: (resolve: (v: any) => any) => resolve([existingRow]),
+              then: (resolve: (v: any) => any) => resolve(fields ? [] : [existingRow]),
             }),
           }),
         }),
@@ -800,6 +803,9 @@ describe("audit and transaction mutations", () => {
       update: () => ({
         set: () => ({
           where: () => ({
+            for: () => ({
+              then: (resolve: (v: any) => any) => resolve([]),
+            }),
             returning: () => ({
               then: (resolve: (v: any) => any) => resolve([updatedRow]),
             }),
@@ -901,9 +907,12 @@ describe("audit and transaction mutations", () => {
     };
 
     const mockDbTx = {
-      select: () => ({
+      select: (fields?: unknown) => ({
         from: () => ({
           where: () => ({
+            for: () => ({
+              then: (resolve: (v: any) => any) => resolve([]),
+            }),
             limit: () => ({
               then: (resolve: (v: any) => any) => resolve([staleRow]),
             }),
@@ -970,11 +979,14 @@ describe("audit and transaction mutations", () => {
     const insertedAuditValues: any[] = [];
 
     const mockDbTx = {
-      select: () => ({
+      select: (fields?: unknown) => ({
         from: () => ({
           where: () => ({
+            for: () => ({
+              then: (resolve: (v: any) => any) => resolve([]),
+            }),
             limit: () => ({
-              then: (resolve: (v: any) => any) => resolve([existingRow]),
+              then: (resolve: (v: any) => any) => resolve(fields ? [] : [existingRow]),
             }),
           }),
         }),
@@ -982,6 +994,9 @@ describe("audit and transaction mutations", () => {
       update: () => ({
         set: () => ({
           where: () => ({
+            for: () => ({
+              then: (resolve: (v: any) => any) => resolve([]),
+            }),
             returning: () => ({
               then: (resolve: (v: any) => any) => resolve([voidedRow]),
             }),
@@ -1066,9 +1081,12 @@ describe("audit and transaction mutations", () => {
     ];
 
     const mockDb = {
-      select: () => ({
+      select: (fields?: unknown) => ({
         from: () => ({
           where: () => ({
+            for: () => ({
+              then: (resolve: (v: any) => any) => resolve([]),
+            }),
             orderBy: () => ({
               then: (resolve: (v: any) => any) => resolve(mockAuditRows),
             }),

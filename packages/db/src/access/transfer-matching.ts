@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 
 import {
   createTransactionAuditSnapshot,
@@ -9,6 +9,9 @@ import {
 import type { Transaction } from "@nodvis/finance-domain";
 
 import { getDb } from "../client";
+import { households } from "../schema/foundation";
+import { liabilityRepayments } from "../schema/liabilities";
+import { bnplPurchases } from "../schema/bnpl-purchases";
 import { statementImportRows } from "../schema/statement-imports";
 import {
   transactionAuditEntries,
@@ -61,6 +64,9 @@ export async function executeTransferMatch(
   const confidence = params.matchConfidence ?? "automatic";
 
   return await db.transaction(async (tx) => {
+    await tx.select({ id: households.id }).from(households)
+      .where(eq(households.id, params.householdId)).for("update");
+
     // 1. Fetch and validate outflow transaction (must be an active expense)
     const [outflowRow] = await tx
       .select()
@@ -124,6 +130,32 @@ export async function executeTransferMatch(
     if (inflowRow.kind !== "income" || !inflowRow.accountId) {
       throw new InvalidTransferMatchError(
         `Inflow transaction ${params.inflowTransactionId} is not an income`,
+      );
+    }
+
+    const linkedRepayments = await tx.select({ id: liabilityRepayments.id })
+      .from(liabilityRepayments)
+      .where(and(
+        eq(liabilityRepayments.householdId, params.householdId),
+        isNull(liabilityRepayments.voidedAt),
+        or(
+          eq(liabilityRepayments.transactionId, params.outflowTransactionId),
+          eq(liabilityRepayments.transactionId, params.inflowTransactionId),
+        ),
+      )).limit(1);
+    const linkedBnpl = await tx.select({ id: bnplPurchases.id })
+      .from(bnplPurchases)
+      .where(and(
+        eq(bnplPurchases.householdId, params.householdId),
+        isNull(bnplPurchases.voidedAt),
+        or(
+          eq(bnplPurchases.transactionId, params.outflowTransactionId),
+          eq(bnplPurchases.transactionId, params.inflowTransactionId),
+        ),
+      )).limit(1);
+    if (linkedRepayments.length > 0 || linkedBnpl.length > 0) {
+      throw new InvalidTransferMatchError(
+        "Transactions linked to a liability repayment or BNPL purchase cannot be matched as transfers",
       );
     }
 
