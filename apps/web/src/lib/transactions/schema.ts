@@ -213,6 +213,16 @@ export const listTransactionsQuerySchema = z.object({
   format: z.enum(["json", "csv"]).optional(),
   export: z.enum(["json", "csv"]).optional(),
   locale: z.string().max(10).optional(),
+}).superRefine((query, ctx) => {
+  for (const [fromKey, toKey] of [["from", "to"], ["startDate", "endDate"]] as const) {
+    const from = query[fromKey];
+    const to = query[toKey];
+    if ((from === undefined) !== (to === undefined)) {
+      ctx.addIssue({ code: "custom", path: [to === undefined ? toKey : fromKey], message: `${fromKey} and ${toKey} must be provided together` });
+    } else if (from !== undefined && to !== undefined && from > to) {
+      ctx.addIssue({ code: "custom", path: [fromKey], message: `${fromKey} must not be after ${toKey}` });
+    }
+  }
 });
 
 export type ListTransactionsQuery = {

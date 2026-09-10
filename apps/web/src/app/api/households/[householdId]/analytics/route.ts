@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { ZodError, z } from "zod";
 
+import { calendarDateSchema } from "@/lib/obligations/schema";
+
 import { HouseholdAccessDeniedError, requireHouseholdAccess } from "@/lib/authorization/household";
 import { getHouseholdAnalytics } from "@/lib/analytics/service";
-import { calendarDateSchema } from "@/lib/obligations/schema";
 
 const analyticsQuerySchema = z.object({
   from: calendarDateSchema.optional(),
   to: calendarDateSchema.optional(),
+}).superRefine((query, ctx) => {
+  if ((query.from === undefined) !== (query.to === undefined)) {
+    ctx.addIssue({ code: "custom", path: [query.to === undefined ? "to" : "from"], message: "from and to must be provided together" });
+  } else if (query.from !== undefined && query.to !== undefined && query.from > query.to) {
+    ctx.addIssue({ code: "custom", path: ["from"], message: "from must not be after to" });
+  }
 });
 
 export async function GET(request: Request, { params }: { params: Promise<{ householdId: string }> }) {

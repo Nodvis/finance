@@ -17,6 +17,10 @@ export const overviewQuerySchema = z
   .refine((value) => Boolean(value.from) === Boolean(value.to), {
     message: "Start and end dates must be provided together",
     path: ["to"],
+  })
+  .refine((value) => value.from === undefined || value.to === undefined || value.from <= value.to, {
+    message: "Start date must not be after end date",
+    path: ["from"],
   });
 
 export type OverviewQuery = z.infer<typeof overviewQuerySchema>;
