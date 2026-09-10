@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -30,6 +31,9 @@ export const obligations = financeSchema.table(
     notes: varchar("notes", { length: 280 }),
     transactionId: uuid("transaction_id"),
     recurringDefinitionId: uuid("recurring_definition_id"),
+    recurringScheduledDate: date("recurring_scheduled_date", { mode: "string" }),
+    recurringOverride: boolean("recurring_override").default(false).notNull(),
+    recurringSkipped: boolean("recurring_skipped").default(false).notNull(),
     version: integer("version").default(1).notNull(),
     cancelledAt: instant("cancelled_at"),
     createdAt: instant("created_at").defaultNow().notNull(),
@@ -57,10 +61,10 @@ export const obligations = financeSchema.table(
       table.dueDate,
     ),
     index("obligations_transaction_id_idx").on(table.transactionId),
-    index("obligations_recurring_definition_idx").on(table.recurringDefinitionId, table.dueDate),
+    index("obligations_recurring_definition_idx").on(table.recurringDefinitionId, table.recurringScheduledDate),
     uniqueIndex("obligations_recurring_occurrence_unique")
-      .on(table.recurringDefinitionId, table.dueDate)
-      .where(sql`${table.recurringDefinitionId} is not null and ${table.cancelledAt} is null`),
+      .on(table.recurringDefinitionId, table.recurringScheduledDate)
+      .where(sql`${table.recurringDefinitionId} is not null and ${table.recurringScheduledDate} is not null and ${table.cancelledAt} is null`),
     index("obligations_household_cancelled_at_idx").on(
       table.householdId,
       table.cancelledAt,

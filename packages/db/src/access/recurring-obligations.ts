@@ -31,29 +31,62 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function materializeInTransaction(dbTx: DbTransaction, definition: typeof recurringObligationDefinitions.$inferSelect, through: string, from: string) {
+async function materializeInTransaction(
+  dbTx: DbTransaction,
+  definition: typeof recurringObligationDefinitions.$inferSelect,
+  through: string,
+  from: string,
+) {
   const dates = generateRecurringDueDates(
     { frequency: definition.frequency as RecurringObligationFrequency, firstDueDate: definition.firstDueDate, endDate: definition.endDate },
     through,
     from,
   );
-  for (const dueDate of dates) {
+  for (const scheduledDate of dates) {
+    const [existing] = await dbTx.select().from(obligations).where(and(
+      eq(obligations.recurringDefinitionId, definition.id),
+      eq(obligations.recurringScheduledDate, scheduledDate),
+    )).limit(1);
+    if (existing?.transactionId || existing?.recurringSkipped) continue;
+    if (existing?.recurringOverride) {
+      if (existing.cancelledAt) {
+        await dbTx.update(obligations).set({ cancelledAt: null, updatedAt: new Date(), version: sql`${obligations.version} + 1` }).where(eq(obligations.id, existing.id));
+      }
+      continue;
+    }
     const entity = createObligation({
       householdId: toHouseholdId(definition.householdId),
       title: definition.title,
       amount: money(definition.amountMinor, definition.currency),
-      dueDate,
+      dueDate: scheduledDate,
       notes: definition.notes,
     });
+    if (existing) {
+      await dbTx.update(obligations).set({
+        title: entity.title,
+        amountMinor: entity.amount.amountMinor,
+        currency: entity.amount.currency,
+        dueDate: entity.dueDate,
+        notes: entity.notes,
+        cancelledAt: null,
+        recurringOverride: false,
+        version: sql`${obligations.version} + 1`,
+        updatedAt: new Date(),
+      }).where(eq(obligations.id, existing.id));
+      continue;
+    }
     await dbTx.insert(obligations).values({
       id: entity.id,
       householdId: definition.householdId,
       title: definition.title,
       amountMinor: definition.amountMinor,
       currency: definition.currency,
-      dueDate,
+      dueDate: scheduledDate,
       notes: definition.notes,
       recurringDefinitionId: definition.id,
+      recurringScheduledDate: scheduledDate,
+      recurringOverride: false,
+      recurringSkipped: false,
       transactionId: null,
       version: 1,
       cancelledAt: null,

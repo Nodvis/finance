@@ -1,0 +1,2 @@
+ALTER TABLE "finance"."obligations" ADD COLUMN "recurring_override" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "finance"."obligations" ADD COLUMN "recurring_skipped" boolean DEFAULT false NOT NULL;

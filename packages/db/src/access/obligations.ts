@@ -61,6 +61,9 @@ export type ObligationWithTransaction = {
   notes: string | null;
   transactionId: string | null;
   recurringDefinitionId?: string | null;
+  recurringScheduledDate?: string | null;
+  recurringOverride?: boolean;
+  recurringSkipped?: boolean;
   version: number;
   status: ObligationStatus;
   cancelledAt: Date | null;
@@ -85,6 +88,9 @@ export type SerializedObligation = {
   notes: string | null;
   transactionId: string | null;
   recurringDefinitionId?: string | null;
+  recurringScheduledDate?: string | null;
+  recurringOverride?: boolean;
+  recurringSkipped?: boolean;
   version: number;
   status: ObligationStatus;
   cancelledAt: string | null;
@@ -148,6 +154,9 @@ function mapToObligationWithTransaction(
     notes: row.notes,
     transactionId: row.transactionId,
     recurringDefinitionId: row.recurringDefinitionId,
+    recurringScheduledDate: row.recurringScheduledDate,
+    recurringOverride: row.recurringOverride,
+    recurringSkipped: row.recurringSkipped,
     version: row.version,
     status,
     cancelledAt: row.cancelledAt,
@@ -494,6 +503,7 @@ export async function updateObligationInDb(
         currency: domainUpdated.amount.currency,
         dueDate: domainUpdated.dueDate,
         notes: domainUpdated.notes,
+        recurringOverride: existing.recurringDefinitionId !== null ? true : existing.recurringOverride,
         version: existing.version + 1,
         updatedAt: new Date(),
       })
@@ -561,6 +571,7 @@ export async function cancelObligationInDb(
       .update(obligations)
       .set({
         cancelledAt: new Date(),
+        recurringSkipped: existing.recurringDefinitionId !== null ? true : existing.recurringSkipped,
         version: existing.version + 1,
         updatedAt: new Date(),
       })

@@ -913,7 +913,9 @@
       "match": "Match payment",
       "unlink": "Unlink",
       "cancel": "Cancel",
+      "skip": "Skip this payment",
       "confirmCancel": "Are you sure you want to cancel this obligation?",
+      "confirmSkip": "Skip this recurring payment only? The series will continue.",
       "confirmUnlink": "Are you sure you want to unlink this transaction?"
     },
     "matching": {
@@ -957,6 +959,7 @@
       "matchSuccess": "Obligation matched and marked as paid.",
       "unlinkSuccess": "Transaction unlinked. Obligation returned to active status.",
       "cancelSuccess": "Obligation cancelled.",
+      "skipSuccess": "This occurrence was skipped.",
       "errorGeneric": "An error occurred. Please try again."
     }
   }
