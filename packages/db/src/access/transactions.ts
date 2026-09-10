@@ -32,6 +32,9 @@ import type {
 } from "@nodvis/finance-domain";
 
 import { getDb } from "../client";
+import { bnplPurchases } from "../schema/bnpl-purchases";
+import { households } from "../schema/foundation";
+import { liabilityRepayments } from "../schema/liabilities";
 import {
   transactionAuditEntries,
   transactions,
@@ -325,6 +328,8 @@ export async function updateTransactionInDb(params: {
   }
 
   return await getDb().transaction(async (dbTx) => {
+    await dbTx.select({ id: households.id }).from(households)
+      .where(eq(households.id, params.householdId)).for("update");
     const [existing] = await dbTx
       .select()
       .from(transactions)
@@ -350,6 +355,42 @@ export async function updateTransactionInDb(params: {
       throw new TransactionVersionConflictError(
         `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
       );
+    }
+
+    const [linkedRepayment] = await dbTx
+      .select({ id: liabilityRepayments.id })
+      .from(liabilityRepayments)
+      .where(
+        and(
+          eq(liabilityRepayments.householdId, params.householdId),
+          eq(liabilityRepayments.transactionId, params.id),
+          isNull(liabilityRepayments.voidedAt),
+        ),
+      )
+      .limit(1);
+
+    const [linkedBnpl] = await dbTx
+      .select({ id: bnplPurchases.id })
+      .from(bnplPurchases)
+      .where(
+        and(
+          eq(bnplPurchases.householdId, params.householdId),
+          eq(bnplPurchases.transactionId, params.id),
+          isNull(bnplPurchases.voidedAt),
+        ),
+      )
+      .limit(1);
+
+    if (linkedRepayment || linkedBnpl) {
+      if (
+        values.amountMinor !== existing.amountMinor ||
+        values.currency !== existing.currency ||
+        values.kind !== existing.kind
+      ) {
+        throw new TransactionVersionConflictError(
+          "Cannot modify amount, currency, or kind of transaction linked to active repayment or BNPL purchase",
+        );
+      }
     }
 
     const [updated] = await dbTx
@@ -404,6 +445,8 @@ export async function voidTransactionInDb(params: {
   const effectiveVoidReason = params.voidReason?.trim() || null;
 
   return await getDb().transaction(async (dbTx) => {
+    await dbTx.select({ id: households.id }).from(households)
+      .where(eq(households.id, params.householdId)).for("update");
     const [existing] = await dbTx
       .select()
       .from(transactions)
@@ -428,6 +471,36 @@ export async function voidTransactionInDb(params: {
     if (existing.version !== params.expectedVersion) {
       throw new TransactionVersionConflictError(
         `Transaction was modified concurrently (expected version ${params.expectedVersion}, found ${existing.version})`,
+      );
+    }
+
+    const [linkedRepayment] = await dbTx
+      .select({ id: liabilityRepayments.id })
+      .from(liabilityRepayments)
+      .where(
+        and(
+          eq(liabilityRepayments.householdId, params.householdId),
+          eq(liabilityRepayments.transactionId, params.id),
+          isNull(liabilityRepayments.voidedAt),
+        ),
+      )
+      .limit(1);
+
+    const [linkedBnpl] = await dbTx
+      .select({ id: bnplPurchases.id })
+      .from(bnplPurchases)
+      .where(
+        and(
+          eq(bnplPurchases.householdId, params.householdId),
+          eq(bnplPurchases.transactionId, params.id),
+          isNull(bnplPurchases.voidedAt),
+        ),
+      )
+      .limit(1);
+
+    if (linkedRepayment || linkedBnpl) {
+      throw new TransactionVersionConflictError(
+        "Cannot void transaction linked to active repayment or BNPL purchase",
       );
     }
 

@@ -6,6 +6,7 @@ import {
   index,
   integer,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -132,6 +133,7 @@ export const bnplPurchases = financeSchema.table(
     index("bnpl_purchases_household_id_idx").on(table.householdId),
     index("bnpl_purchases_credit_facility_id_idx").on(table.creditFacilityId),
     index("bnpl_purchases_transaction_id_idx").on(table.transactionId),
+    uniqueIndex("bnpl_purchases_active_transaction_unique").on(table.transactionId).where(sql`${table.transactionId} is not null and ${table.voidedAt} is null`),
     index("bnpl_purchases_purchase_date_idx").on(table.purchaseDate),
     index("bnpl_purchases_due_date_idx").on(table.dueDate),
     index("bnpl_purchases_household_status_idx").on(

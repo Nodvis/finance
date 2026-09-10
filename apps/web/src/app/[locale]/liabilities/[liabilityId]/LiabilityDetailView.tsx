@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -34,6 +34,7 @@ export function LiabilityDetailView({
   const [repayments, setRepayments] = useState(initialRepayments);
   const [editing, setEditing] = useState(false);
   const [recording, setRecording] = useState(false);
+  const submissionId = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(initialLiability.name);
   const [kind, setKind] = useState<LiabilityKind>(initialLiability.kind);
@@ -79,6 +80,7 @@ export function LiabilityDetailView({
 
   async function recordRepayment(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    submissionId.current ??= crypto.randomUUID();
     setRecording(true);
     setError(null);
     try {
@@ -87,6 +89,7 @@ export function LiabilityDetailView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paidAt,
+          submissionId: submissionId.current,
           amountNatural: amount,
           principalNatural: principal || null,
           interestNatural: interest || null,
@@ -97,8 +100,9 @@ export function LiabilityDetailView({
       });
       const json = await response.json();
       if (!response.ok) throw new Error(t("repaymentForm.errorGeneric"));
-      setRepayments((current) => [json.data.repayment, ...current]);
-      setPaidAt(""); setAmount(""); setPrincipal(""); setInterest(""); setFee(""); setNotes("");
+      setRepayments((current) => [json.data.repayment, ...current.filter((item) => item.id !== json.data.repayment.id)]);
+      submissionId.current = null;
+      setPaidAt(""); setAmount(""); setPrincipal(""); setInterest(""); setFee(""); setSourceAccountId(""); setNotes("");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("repaymentForm.errorGeneric"));

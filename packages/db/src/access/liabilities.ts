@@ -32,6 +32,7 @@ import {
   liabilities,
   liabilityRepayments,
 } from "../schema/liabilities";
+import { bnplPurchases } from "../schema/bnpl-purchases";
 import {
   transactionAuditEntries,
   transactions,
@@ -536,6 +537,14 @@ export async function recordLiabilityRepaymentInDb(params: {
 }): Promise<{ repayment: LiabilityRepayment; transaction: Transaction | null }> {
   return await getDb().transaction(async (dbTx) => {
     // 1. Verify liability belongs to household
+    // Serialize relationship writes within the household, including retries
+    // against different liabilities pointing at the same canonical payment.
+    await dbTx.select({ id: households.id }).from(households)
+      .where(eq(households.id, params.householdId)).for("update");
+    const rep = params.repayment;
+    if (rep.householdId !== params.householdId || (params.cashTransaction && rep.transactionId && rep.transactionId !== params.cashTransaction.id)) {
+      throw new LiabilityRepaymentVersionConflictError("Invalid repayment transaction relationship");
+    }
     const [liabilityRow] = await dbTx
       .select({ id: liabilities.id, currency: liabilities.currency })
       .from(liabilities)
@@ -553,11 +562,90 @@ export async function recordLiabilityRepaymentInDb(params: {
       );
     }
 
+    if (liabilityRow.currency !== rep.amount.currency) {
+      throw new LiabilityDestinationAccountCurrencyMismatchError();
+    }
+    if (params.cashTransaction &&
+      (params.cashTransaction.householdId !== params.householdId ||
+        params.cashTransaction.voidedAt !== null ||
+        params.cashTransaction.amount.currency !== rep.amount.currency ||
+        params.cashTransaction.amount.amountMinor !== rep.amount.amountMinor)) {
+      throw new LiabilityRepaymentVersionConflictError("Repayment submission conflicts with an existing payment");
+    }
+
+    if (rep.transactionId && !params.cashTransaction) {
+      const [payment] = await dbTx.select().from(transactions).where(and(
+        eq(transactions.id, rep.transactionId), eq(transactions.householdId, params.householdId),
+      )).for("update");
+      if (!payment || payment.voidedAt || payment.kind === "income" || payment.currency !== rep.amount.currency || payment.amountMinor !== rep.amount.amountMinor) {
+        throw new LiabilityRepaymentVersionConflictError("Invalid repayment transaction relationship");
+      }
+      const [linkedBnpl] = await dbTx.select({ id: bnplPurchases.id }).from(bnplPurchases).where(and(
+        eq(bnplPurchases.householdId, params.householdId),
+        eq(bnplPurchases.transactionId, rep.transactionId),
+        isNull(bnplPurchases.voidedAt),
+      )).limit(1);
+      if (linkedBnpl) {
+        throw new LiabilityRepaymentVersionConflictError("Transaction is linked to an active BNPL purchase");
+      }
+    }
+    const existingRepayments = await dbTx.select().from(liabilityRepayments).where(and(
+      eq(liabilityRepayments.householdId, params.householdId),
+      or(
+        eq(liabilityRepayments.id, rep.id),
+        rep.transactionId ? and(eq(liabilityRepayments.transactionId, rep.transactionId), isNull(liabilityRepayments.voidedAt)) : undefined,
+      ),
+    ));
+    if (existingRepayments.length > 1) {
+      throw new LiabilityRepaymentVersionConflictError("Repayment submission conflicts with an existing payment");
+    }
+    if (existingRepayments.length === 1) {
+      const previous = existingRepayments[0]!;
+      let cash: Transaction | null = null;
+      let sameCash = false;
+
+      if (!params.cashTransaction) {
+        sameCash = previous.ownsTransaction !== true && previous.transactionId === rep.transactionId;
+      } else {
+        if (previous.ownsTransaction && previous.transactionId && params.cashTransaction.householdId === params.householdId) {
+          const [existingCash] = await dbTx.select().from(transactions).where(and(
+            eq(transactions.id, previous.transactionId), eq(transactions.householdId, params.householdId),
+          )).for("share");
+
+          if (existingCash && !existingCash.voidedAt) {
+            cash = mapRowToTransaction(existingCash);
+            // The repayment row is the immutable idempotency record. The
+            // owned ledger row may be corrected later without making a
+            // retry create a second economic event.
+            sameCash = true;
+          }
+        }
+      }
+
+      const sameRepayment = !previous.voidedAt &&
+        previous.liabilityId === rep.liabilityId &&
+        previous.currency === rep.amount.currency &&
+        previous.amountMinor === rep.amount.amountMinor &&
+        previous.paidAt.getTime() === rep.paidAt.getTime() &&
+        previous.principalMinor === (rep.principalAmount?.amountMinor ?? null) &&
+        previous.interestMinor === (rep.interestAmount?.amountMinor ?? null) &&
+        previous.feeMinor === (rep.feeAmount?.amountMinor ?? null) &&
+        previous.notes === (rep.notes ?? null);
+
+      if (!sameCash || !sameRepayment) {
+        throw new LiabilityRepaymentVersionConflictError("Repayment submission conflicts with an existing payment");
+      }
+      return { repayment: mapRowToLiabilityRepayment(previous), transaction: cash };
+    }
+
     let insertedTx: Transaction | null = null;
 
     // 2. If a cash payment transaction is supplied, insert it with audit trail atomically
     if (params.cashTransaction) {
       const tx = params.cashTransaction;
+      if (tx.householdId !== params.householdId || tx.voidedAt || tx.amount.currency !== rep.amount.currency || tx.amount.amountMinor !== rep.amount.amountMinor) {
+        throw new LiabilityRepaymentVersionConflictError("Invalid repayment cash transaction");
+      }
       const baseValues = {
         id: tx.id,
         householdId: tx.householdId,
@@ -631,7 +719,6 @@ export async function recordLiabilityRepaymentInDb(params: {
     }
 
     // 3. Insert repayment record
-    const rep = params.repayment;
     const [repRow] = await dbTx
       .insert(liabilityRepayments)
       .values({
@@ -639,6 +726,7 @@ export async function recordLiabilityRepaymentInDb(params: {
         householdId: params.householdId,
         liabilityId: rep.liabilityId,
         transactionId: insertedTx ? insertedTx.id : rep.transactionId,
+        ownsTransaction: insertedTx !== null,
         paidAt: rep.paidAt,
         amountMinor: rep.amount.amountMinor,
         currency: rep.amount.currency,
@@ -675,6 +763,8 @@ export async function voidLiabilityRepaymentInDb(params: {
   const effectiveVoidReason = params.voidReason?.trim() || null;
 
   return await getDb().transaction(async (dbTx) => {
+    await dbTx.select({ id: households.id }).from(households)
+      .where(eq(households.id, params.householdId)).for("update");
     // 1. Fetch repayment
     const [existing] = await dbTx
       .select()
@@ -699,8 +789,9 @@ export async function voidLiabilityRepaymentInDb(params: {
       );
     }
 
-    // 2. Void linked transaction if present
-    if (existing.transactionId) {
+    // A pre-existing imported/manual payment belongs to the ledger, not to
+    // this relationship. Voiding its allocation must not erase cash history.
+    if (existing.transactionId && existing.ownsTransaction === true) {
       const [existingTx] = await dbTx
         .select()
         .from(transactions)
@@ -748,6 +839,8 @@ export async function voidLiabilityRepaymentInDb(params: {
             voidReason: voidedTx.voidReason,
             recordedAt: voidedTx.updatedAt,
           });
+        } else {
+          throw new LiabilityRepaymentVersionConflictError();
         }
       }
     }

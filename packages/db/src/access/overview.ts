@@ -1,10 +1,11 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import type { ACCOUNT_TYPES } from "@nodvis/finance-domain";
 
 import { getDb } from "../client";
 import { accounts } from "../schema/foundation";
 import { categories } from "../schema/categories";
 import { transactions } from "../schema/transactions";
+import { economicAmountMinor, economicKind } from "./financial-reporting";
 
 export type DbPeriodCashFlowRow = {
   kind: "expense" | "income";
@@ -49,9 +50,9 @@ export async function getHouseholdPeriodCashFlow(params: {
 
   const rows = await db
     .select({
-      kind: transactions.kind,
+      kind: economicKind,
       currency: transactions.currency,
-      totalMinor: sql<string>`coalesce(sum(${transactions.amountMinor}), 0)`,
+      totalMinor: sql<string>`coalesce(sum(${economicAmountMinor}), 0)`,
       transactionCount: sql<number>`count(*)::int`,
     })
     .from(transactions)
@@ -59,12 +60,12 @@ export async function getHouseholdPeriodCashFlow(params: {
       and(
         eq(transactions.householdId, params.householdId),
         isNull(transactions.voidedAt),
-        inArray(transactions.kind, ["expense", "income"]),
+        sql`${economicAmountMinor} > 0`,
         gte(transactions.occurredOn, params.startDate),
         lte(transactions.occurredOn, params.endDate),
       ),
     )
-    .groupBy(transactions.kind, transactions.currency);
+    .groupBy(economicKind, transactions.currency);
 
   return rows.map((r) => ({
     kind: r.kind as "expense" | "income",
@@ -93,7 +94,7 @@ export async function getHouseholdPeriodCategorySpending(params: {
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       currency: transactions.currency,
-      totalMinor: sql<string>`coalesce(sum(${transactions.amountMinor}), 0)`,
+      totalMinor: sql<string>`coalesce(sum(${economicAmountMinor}), 0)`,
       transactionCount: sql<number>`count(*)::int`,
     })
     .from(transactions)
@@ -108,7 +109,7 @@ export async function getHouseholdPeriodCategorySpending(params: {
       and(
         eq(transactions.householdId, params.householdId),
         isNull(transactions.voidedAt),
-        eq(transactions.kind, "expense"),
+        sql`${economicKind} = 'expense' and ${economicAmountMinor} > 0`,
         gte(transactions.occurredOn, params.startDate),
         lte(transactions.occurredOn, params.endDate),
       ),
@@ -118,7 +119,7 @@ export async function getHouseholdPeriodCategorySpending(params: {
       categories.name,
       transactions.currency,
     )
-    .orderBy(desc(sql`coalesce(sum(${transactions.amountMinor}), 0)`));
+    .orderBy(desc(sql`coalesce(sum(${economicAmountMinor}), 0)`));
 
   return rows.map((r) => ({
     categoryId: r.categoryId,
