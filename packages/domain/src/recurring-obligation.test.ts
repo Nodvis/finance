@@ -29,5 +29,6 @@ describe("generateRecurringDueDates", () => {
       "2026-05-15", "2026-06-15",
     ]);
     expect(generateRecurringDueDates({ frequency: "monthly", firstDueDate: "2026-05-15" }, "2026-05-01")).toEqual([]);
+    expect(generateRecurringDueDates({ frequency: "monthly", firstDueDate: "2000-01-31" }, "2026-03-31", "2026-03-01")).toEqual(["2026-03-31"]);
   });
 });

@@ -12,7 +12,7 @@ export async function getHouseholdCashForecast(
     throw new Error("Household access denied");
   }
 
-  await materializeRecurringObligationsInDb(context.householdId);
+  await materializeRecurringObligationsInDb(context.householdId, forecastEndDate(options.asOf, options.horizonDays), options.asOf);
   const accounts = await getHouseholdEligibleAccounts(context.householdId);
   const cash = aggregateAvailableCash(accounts.map((account) => ({
     id: toAccountId(account.id),
