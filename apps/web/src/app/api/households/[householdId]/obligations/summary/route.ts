@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHouseholdAccess } from "@/lib/authorization/household";
 import { handleObligationRouteError } from "@/lib/obligations/error-handler";
+import { calendarDateSchema } from "@/lib/obligations/schema";
 import { getHouseholdUpcomingSummary } from "@/lib/obligations/service";
 
 type RouteContext = {
@@ -13,7 +14,8 @@ export async function GET(request: Request, context: RouteContext) {
     const auth = await requireHouseholdAccess(householdId);
 
     const { searchParams } = new URL(request.url);
-    const today = searchParams.get("today") ?? undefined;
+    const rawToday = searchParams.get("today");
+    const today = rawToday === null ? undefined : calendarDateSchema.parse(rawToday);
 
     const summary = await getHouseholdUpcomingSummary(
       auth,

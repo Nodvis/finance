@@ -667,7 +667,7 @@ export function UpcomingView({
                     inputMode="decimal"
                     value={amountNatural}
                     onChange={(e) => setAmountNatural(e.target.value)}
-                    placeholder="0.00"
+                    placeholder={t("form.amountPlaceholder")}
                     className="mt-1 block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
                   />
                 </div>

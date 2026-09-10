@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHouseholdAccess } from "@/lib/authorization/household";
 import {
   cancelObligationSchema,
+  calendarDateSchema,
   updateObligationSchema,
 } from "@/lib/obligations/schema";
 import { handleObligationRouteError } from "@/lib/obligations/error-handler";
@@ -22,7 +23,8 @@ export async function GET(request: Request, context: RouteContext) {
     const auth = await requireHouseholdAccess(householdId);
 
     const { searchParams } = new URL(request.url);
-    const today = searchParams.get("today") ?? undefined;
+    const rawToday = searchParams.get("today");
+    const today = rawToday === null ? undefined : calendarDateSchema.parse(rawToday);
 
     const obligation = await getHouseholdObligation(
       auth,

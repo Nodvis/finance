@@ -825,6 +825,7 @@
       "titleLabel": "Tytuł",
       "titlePlaceholder": "np. Rachunek za internet, Czynsz, Ubezpieczenie",
       "amountLabel": "Kwota",
+      "amountPlaceholder": "np. 123,45",
       "currencyLabel": "Waluta",
       "dueDateLabel": "Termin płatności",
       "notesLabel": "Notatki (opcjonalnie)",

@@ -848,6 +848,7 @@
       "titleLabel": "Title",
       "titlePlaceholder": "e.g. Internet bill, Rent, Insurance",
       "amountLabel": "Amount",
+      "amountPlaceholder": "e.g. 123.45",
       "currencyLabel": "Currency",
       "dueDateLabel": "Due date",
       "notesLabel": "Notes (optional)",

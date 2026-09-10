@@ -8,7 +8,16 @@ export const minorAmountSchema = z
 export const calendarDateSchema = z
   .string()
   .trim()
-  .regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, "Date must be in YYYY-MM-DD format");
+  .regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, "Date must be in YYYY-MM-DD format")
+  .refine((value) => {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year!, month! - 1, day));
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month! - 1 &&
+      date.getUTCDate() === day
+    );
+  }, "Date must be a valid calendar date");
 
 export const currencyCodeSchema = z
   .string()
