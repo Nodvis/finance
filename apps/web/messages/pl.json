@@ -847,6 +847,7 @@
       "description": "Wybierz zarejestrowany wydatek, który pokrywa to zobowiązanie. Wymagana jest dokładnie taka sama kwota i waluta.",
       "noCandidates": "Nie znaleziono pasujących wydatków o zgodnej kwocie i walucie.",
       "selectCandidate": "Wybierz transakcję:",
+      "expenseFallback": "Wydatek",
       "confirmMatch": "Potwierdź połączenie",
       "matching": "Łączenie...",
       "loadingCandidates": "Szukanie transakcji...",

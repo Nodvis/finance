@@ -870,6 +870,7 @@
       "description": "Select the recorded expense transaction that satisfies this obligation. Exact currency and amount are required.",
       "noCandidates": "No eligible expense transactions found with matching amount and currency.",
       "selectCandidate": "Select transaction:",
+      "expenseFallback": "Expense",
       "confirmMatch": "Confirm match",
       "matching": "Matching...",
       "loadingCandidates": "Loading candidates...",

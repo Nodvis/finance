@@ -889,7 +889,7 @@ export function UpcomingView({
                   >
                     {candidates.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.payee ?? "Expense"} ·{" "}
+                        {c.payee ?? t("matching.expenseFallback")} ·{" "}
                         {formatCalendarDate(c.occurredOn.slice(0, 10), locale)}{" "}
                         ·{" "}
                         {formatAmountPresentation(
