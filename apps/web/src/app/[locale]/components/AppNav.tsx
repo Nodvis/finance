@@ -13,6 +13,7 @@ const ITEMS = [
   ["/rules", "rules"],
   ["/recurring", "recurring"],
   ["/analytics", "analytics"],
+  ["/forecast", "forecast"],
 ] as const;
 
 type Props = { labels: Record<(typeof ITEMS)[number][1], string>; ariaLabel: string };

@@ -16,6 +16,7 @@
     "rules": "Rules",
     "recurring": "Recurring",
     "analytics": "Analytics",
+    "forecast": "Forecast",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private"
   },
@@ -962,5 +963,22 @@
       "skipSuccess": "This occurrence was skipped.",
       "errorGeneric": "An error occurred. Please try again."
     }
+  },
+  "Forecast": {
+    "title": "Cash forecast",
+    "subtitle": "Known cash and planned payments, without hidden assumptions.",
+    "horizon": "Forecast window",
+    "days7": "7 days",
+    "days30": "30 days",
+    "startingCash": "Starting available cash",
+    "payments": "Known upcoming payments",
+    "projected": "Projected remaining cash",
+    "contributors": "Included payments",
+    "noData": "There is no forecastable cash or planned payment data for this window.",
+    "noContributors": "No upcoming payments in this window.",
+    "incomplete": "Forecast may be incomplete because one or more account balances are missing or out of date.",
+    "due": "Due {date}",
+    "deficit": "Projected deficit",
+    "zero": "Projected cash reaches zero"
   }
 }

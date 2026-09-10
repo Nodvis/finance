@@ -77,4 +77,9 @@ test("PL and EN review and confirm an observed recurring pattern", async ({ page
   expect(activeData.some((item) => item.id === october!.id)).toBe(false);
   await page.reload();
   await expect(page.getByText("Internet monthly", { exact: true })).toBeVisible();
+  await page.goto("/en/forecast");
+  await expect(page.getByRole("heading", { name: "Cash forecast" })).toBeVisible();
+  await expect(page.getByText("7 days", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "30 days" }).click();
+  await expect(page).toHaveURL(/\/en\/forecast\?horizon=30$/);
 });
