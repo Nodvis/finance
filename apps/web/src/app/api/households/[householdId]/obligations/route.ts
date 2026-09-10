@@ -22,7 +22,14 @@ export async function GET(request: Request, context: RouteContext) {
     const { searchParams } = new URL(request.url);
     const query = obligationQuerySchema.parse({
       status: searchParams.get("status") ?? undefined,
+      scope: searchParams.get("scope") ?? undefined,
+      currency: searchParams.get("currency") ?? undefined,
+      sortBy: searchParams.get("sortBy") ?? undefined,
+      sortOrder: searchParams.get("sortOrder") ?? undefined,
+      sort: searchParams.get("sort") ?? undefined,
       today: searchParams.get("today") ?? undefined,
+      limit: searchParams.get("limit") ?? undefined,
+      offset: searchParams.get("offset") ?? undefined,
     });
 
     const obligations = await listHouseholdObligations(auth, query);

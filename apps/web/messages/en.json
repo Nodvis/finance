@@ -827,13 +827,30 @@
     "eyebrow": "Commitments",
     "title": "Upcoming obligations",
     "description": "Track upcoming bills, scheduled payments, and expenses. Explicitly match them with recorded transactions when paid.",
+    "summaryTitle": "Obligations summary",
     "addObligation": "Add obligation",
     "tabs": {
       "all": "All",
+      "active": "Active",
       "upcoming": "Upcoming",
       "overdue": "Overdue",
+      "history": "History",
       "paid": "Paid",
       "cancelled": "Cancelled"
+    },
+    "filters": {
+      "currency": "Currency",
+      "allCurrencies": "All currencies",
+      "sort": "Sort by",
+      "sortDueDateAsc": "Due date: Earliest first",
+      "sortDueDateDesc": "Due date: Latest first",
+      "resetFilters": "Reset filters"
+    },
+    "sections": {
+      "activeTitle": "Current obligations",
+      "historyTitle": "History",
+      "activeSubtitle": "Upcoming and overdue payments awaiting settlement",
+      "historySubtitle": "Fulfilled and cancelled obligations"
     },
     "summary": {
       "upcomingTotal": "Upcoming",
@@ -892,10 +909,13 @@
     },
     "empty": {
       "all": "No obligations recorded yet.",
+      "active": "No active obligations scheduled.",
       "upcoming": "No upcoming obligations scheduled.",
       "overdue": "No overdue obligations.",
+      "history": "No obligation history recorded.",
       "paid": "No paid obligations.",
-      "cancelled": "No cancelled obligations."
+      "cancelled": "No cancelled obligations.",
+      "filtered": "No obligations match the selected filters."
     },
     "feedback": {
       "createSuccess": "Obligation created successfully.",

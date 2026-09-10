@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   cancelObligation,
   createObligation,
+  getDefaultObligationSortOrder,
   getObligationStatus,
+  isObligationActive,
+  isObligationHistory,
   matchObligation,
   unlinkObligation,
   updateObligation,
@@ -432,6 +435,34 @@ describe("Obligation Domain", () => {
           title: "New Title",
         }),
       ).toThrowError(/Cannot update cancelled obligation/);
+    });
+  });
+
+  describe("scope and sorting helpers", () => {
+    it("identifies active status correctly", () => {
+      expect(isObligationActive("upcoming")).toBe(true);
+      expect(isObligationActive("overdue")).toBe(true);
+      expect(isObligationActive("paid")).toBe(false);
+      expect(isObligationActive("cancelled")).toBe(false);
+    });
+
+    it("identifies history status correctly", () => {
+      expect(isObligationHistory("paid")).toBe(true);
+      expect(isObligationHistory("cancelled")).toBe(true);
+      expect(isObligationHistory("upcoming")).toBe(false);
+      expect(isObligationHistory("overdue")).toBe(false);
+    });
+
+    it("returns useful default sort order for different statuses and scopes", () => {
+      expect(getDefaultObligationSortOrder("upcoming")).toBe("asc");
+      expect(getDefaultObligationSortOrder("overdue")).toBe("asc");
+      expect(getDefaultObligationSortOrder("active")).toBe("asc");
+      expect(getDefaultObligationSortOrder("all")).toBe("asc");
+      expect(getDefaultObligationSortOrder(undefined)).toBe("asc");
+
+      expect(getDefaultObligationSortOrder("paid")).toBe("desc");
+      expect(getDefaultObligationSortOrder("cancelled")).toBe("desc");
+      expect(getDefaultObligationSortOrder("history")).toBe("desc");
     });
   });
 });

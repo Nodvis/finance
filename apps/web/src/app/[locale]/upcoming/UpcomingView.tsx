@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import type { AuthorizedHouseholdUserContext } from "@/lib/authorization/household";
@@ -17,9 +17,19 @@ type Props = {
   initialObligations: SerializedHouseholdObligation[];
   initialSummary: SerializedUpcomingObligationsSummary;
   locale: string;
+  initialStatus?: string | undefined;
+  initialCurrency?: string | undefined;
+  initialSortOrder?: "asc" | "desc" | undefined;
 };
 
-type TabFilter = "all" | "upcoming" | "overdue" | "paid" | "cancelled";
+type TabFilter =
+  | "all"
+  | "active"
+  | "upcoming"
+  | "overdue"
+  | "history"
+  | "paid"
+  | "cancelled";
 
 type CandidateTransaction = {
   id: string;
@@ -42,19 +52,86 @@ function formatCalendarDate(dateStr: string, locale: string): string {
   }).format(date);
 }
 
-
 export function UpcomingView({
   householdContext,
   initialObligations,
   initialSummary,
   locale,
+  initialStatus,
+  initialCurrency,
+  initialSortOrder,
 }: Props) {
   const t = useTranslations("Obligations");
   const router = useRouter();
+  const pathname = usePathname();
 
   const [obligations, setObligations] = useState(initialObligations);
   const [summary, setSummary] = useState(initialSummary);
-  const [activeTab, setActiveTab] = useState<TabFilter>("all");
+  useEffect(() => {
+    setObligations(initialObligations);
+    setSummary(initialSummary);
+  }, [initialObligations, initialSummary]);
+  const [activeTab, setActiveTab] = useState<TabFilter>(() => {
+    if (
+      initialStatus &&
+      [
+        "all",
+        "active",
+        "upcoming",
+        "overdue",
+        "history",
+        "paid",
+        "cancelled",
+      ].includes(initialStatus)
+    ) {
+      return initialStatus as TabFilter;
+    }
+    return "all";
+  });
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(
+    initialCurrency ?? "all",
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    initialSortOrder ?? "asc",
+  );
+  const [hasExplicitSort, setHasExplicitSort] = useState<boolean>(
+    Boolean(initialSortOrder),
+  );
+  useEffect(() => {
+    const nextStatus = [
+      "all",
+      "active",
+      "upcoming",
+      "overdue",
+      "history",
+      "paid",
+      "cancelled",
+    ].includes(initialStatus ?? "")
+      ? (initialStatus as TabFilter)
+      : "all";
+    setActiveTab(nextStatus);
+    setSelectedCurrency(initialCurrency ?? "all");
+    setSortOrder(initialSortOrder ?? "asc");
+    setHasExplicitSort(Boolean(initialSortOrder));
+  }, [initialCurrency, initialSortOrder, initialStatus]);
+
+  function updateFilters(next: {
+    status?: TabFilter;
+    currency?: string;
+    sortOrder?: "asc" | "desc";
+  }) {
+    const params = new URLSearchParams();
+    const nextStatus = next.status ?? activeTab;
+    const nextCurrency = next.currency ?? selectedCurrency;
+    const nextSortOrder = next.sortOrder ?? (hasExplicitSort ? sortOrder : undefined);
+
+    if (nextStatus !== "all") params.set("status", nextStatus);
+    if (nextCurrency !== "all") params.set("currency", nextCurrency);
+    if (nextSortOrder) params.set("sortOrder", nextSortOrder);
+
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -102,10 +179,55 @@ export function UpcomingView({
     }
   }
 
-  const filteredObligations = obligations.filter((o) => {
-    if (activeTab === "all") return true;
-    return o.status === activeTab;
-  });
+  const effectiveSortOrder = hasExplicitSort
+    ? sortOrder
+    : activeTab === "history" || activeTab === "paid" || activeTab === "cancelled"
+      ? "desc"
+      : "asc";
+
+  const availableCurrencies = Array.from(
+    new Set([
+      householdContext.defaultCurrency,
+      ...obligations.map((o) => o.currency),
+    ]),
+  )
+    .filter(Boolean)
+    .sort();
+
+  const filteredObligations = obligations
+    .filter((o) => {
+      // Status filtering
+      if (activeTab === "active") {
+        if (o.status !== "upcoming" && o.status !== "overdue") return false;
+      } else if (activeTab === "history") {
+        if (o.status !== "paid" && o.status !== "cancelled") return false;
+      } else if (activeTab !== "all") {
+        if (o.status !== activeTab) return false;
+      }
+
+      // Currency filtering
+      if (selectedCurrency !== "all" && o.currency !== selectedCurrency) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const cmp = a.dueDate.localeCompare(b.dueDate);
+      if (cmp !== 0) {
+        return effectiveSortOrder === "asc" ? cmp : -cmp;
+      }
+      return effectiveSortOrder === "asc"
+        ? a.id.localeCompare(b.id)
+        : b.id.localeCompare(a.id);
+    });
+
+  const activeItems = filteredObligations.filter(
+    (o) => o.status === "upcoming" || o.status === "overdue",
+  );
+  const historyItems = filteredObligations.filter(
+    (o) => o.status === "paid" || o.status === "cancelled",
+  );
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -342,6 +464,135 @@ export function UpcomingView({
     }
   }
 
+  function renderCard(item: SerializedHouseholdObligation) {
+    const isCancelled = item.cancelledAt !== null;
+    const isPaid = item.status === "paid";
+    const isEditable = !isCancelled && !isPaid;
+
+    return (
+      <article
+        key={item.id}
+        className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 sm:flex-row sm:items-center"
+      >
+        {/* Info */}
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-slate-900 dark:text-stone-100">
+              {item.title}
+            </h3>
+            <span
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                item.status === "upcoming"
+                  ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                  : item.status === "overdue"
+                    ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-400"
+                    : item.status === "paid"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400"
+                      : "border-slate-200 bg-slate-100 text-slate-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400"
+              }`}
+            >
+              {t(`status.${item.status}`)}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-stone-400">
+            <div>
+              <span className="font-medium text-slate-600 dark:text-stone-300">
+                {t("item.dueDate")}:
+              </span>{" "}
+              {formatCalendarDate(item.dueDate, locale)}
+            </div>
+            {item.notes ? (
+              <div>
+                <span className="font-medium text-slate-600 dark:text-stone-300">
+                  {t("item.notes")}:
+                </span>{" "}
+                {item.notes}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Matched Transaction details (no raw IDs) */}
+          {isPaid && item.matchedTransaction ? (
+            <p className="text-xs text-emerald-600 dark:text-emerald-400">
+              {t("item.paidVia")}{" "}
+              <span className="font-medium">
+                {item.matchedTransaction.payee ?? "Expense"}
+              </span>{" "}
+              {t("item.onDate", {
+                date: formatCalendarDate(
+                  item.matchedTransaction.occurredOn.slice(0, 10),
+                  locale,
+                ),
+              })}
+            </p>
+          ) : null}
+        </div>
+
+        {/* Amount & Actions */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 sm:flex-col sm:items-end">
+          <p className="font-mono text-lg font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+            {formatAmountPresentation(
+              item.amountMinor,
+              item.currency,
+              locale,
+            )}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Match button */}
+            {!isPaid && !isCancelled ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => openMatchDialog(item)}
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+              >
+                {t("actions.match")}
+              </button>
+            ) : null}
+
+            {/* Unlink button */}
+            {isPaid ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => handleUnlink(item)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+              >
+                {t("actions.unlink")}
+              </button>
+            ) : null}
+
+            {/* Edit button */}
+            {isEditable ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => startEditing(item)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+              >
+                {t("actions.edit")}
+              </button>
+            ) : null}
+
+            {/* Cancel button */}
+            {!isCancelled && !isPaid ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => handleCancel(item)}
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-xs hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40"
+              >
+                {t("actions.cancel")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Page Header */}
@@ -470,165 +721,269 @@ export function UpcomingView({
         </article>
       </section>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-stone-800">
-        {(["all", "upcoming", "overdue", "paid", "cancelled"] as const).map(
-          (tab) => {
-            const active = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`border-b-2 px-4 py-2.5 text-xs font-medium transition-colors ${
-                  active
-                    ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
-                    : "border-transparent text-slate-600 hover:text-slate-900 dark:text-stone-400 dark:hover:text-stone-200"
-                }`}
+      {/* Tabs and Filters Bar */}
+      <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-stone-800">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Status Tabs */}
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {(
+              [
+                "all",
+                "active",
+                "upcoming",
+                "overdue",
+                "history",
+                "paid",
+                "cancelled",
+              ] as const
+            ).map((tab) => {
+              const active = activeTab === tab;
+              const count =
+                tab === "all"
+                  ? obligations.length
+                  : tab === "active"
+                    ? obligations.filter(
+                        (o) =>
+                          o.status === "upcoming" || o.status === "overdue",
+                      ).length
+                    : tab === "history"
+                      ? obligations.filter(
+                          (o) =>
+                            o.status === "paid" || o.status === "cancelled",
+                        ).length
+                      : obligations.filter((o) => o.status === tab).length;
+
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab);
+                    if (!hasExplicitSort) {
+                      if (
+                        tab === "history" ||
+                        tab === "paid" ||
+                        tab === "cancelled"
+                      ) {
+                        setSortOrder("desc");
+                      } else {
+                        setSortOrder("asc");
+                      }
+                    }
+                    updateFilters({
+                      status: tab,
+                      sortOrder: hasExplicitSort
+                        ? sortOrder
+                        : tab === "history" || tab === "paid" || tab === "cancelled"
+                          ? "desc"
+                          : "asc",
+                    });
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                    active
+                      ? "bg-emerald-600 text-white dark:bg-emerald-500"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-stone-400 dark:hover:bg-stone-800"
+                  }`}
+                >
+                  <span>{t(`tabs.${tab}`)}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-slate-200 text-slate-700 dark:bg-stone-800 dark:text-stone-300"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Currency and Sorting Controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Currency Filter */}
+            <div className="flex items-center gap-1.5">
+              <label
+                htmlFor="obligation-currency-filter"
+                className="text-xs font-medium text-slate-500 dark:text-stone-400"
               >
-                {t(`tabs.${tab}`)}
+                {t("filters.currency")}:
+              </label>
+              <select
+                id="obligation-currency-filter"
+                value={selectedCurrency}
+                onChange={(e) => {
+                  const nextCurrency = e.target.value;
+                  setSelectedCurrency(nextCurrency);
+                  updateFilters({ currency: nextCurrency });
+                }}
+                className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
+              >
+                <option value="all">{t("filters.allCurrencies")}</option>
+                {availableCurrencies.map((curr) => (
+                  <option key={curr} value={curr}>
+                    {curr}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Due Date Sort */}
+            <div className="flex items-center gap-1.5">
+              <label
+                htmlFor="obligation-sort-filter"
+                className="text-xs font-medium text-slate-500 dark:text-stone-400"
+              >
+                {t("filters.sort")}:
+              </label>
+              <select
+                id="obligation-sort-filter"
+                value={effectiveSortOrder}
+                onChange={(e) => {
+                  const nextSortOrder = e.target.value as "asc" | "desc";
+                  setSortOrder(nextSortOrder);
+                  setHasExplicitSort(true);
+                  updateFilters({ sortOrder: nextSortOrder });
+                }}
+                className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
+              >
+                <option value="asc">{t("filters.sortDueDateAsc")}</option>
+                <option value="desc">{t("filters.sortDueDateDesc")}</option>
+              </select>
+            </div>
+
+            {/* Reset Filters */}
+            {activeTab !== "all" ||
+            selectedCurrency !== "all" ||
+            hasExplicitSort ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("all");
+                  setSelectedCurrency("all");
+                  setHasExplicitSort(false);
+                  setSortOrder("asc");
+                  router.push(pathname);
+                }}
+                className="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+              >
+                {t("filters.resetFilters")}
               </button>
-            );
-          },
-        )}
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      {/* Obligations List */}
+      {/* Obligations List / Sections */}
       {filteredObligations.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-600 dark:border-stone-700 dark:text-stone-400">
-          {t(`empty.${activeTab}`)}
+          {selectedCurrency !== "all"
+            ? t("empty.filtered")
+            : t(`empty.${activeTab}`)}
         </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {filteredObligations.map((item) => {
-            const isCancelled = item.cancelledAt !== null;
-            const isPaid = item.status === "paid";
-            const isEditable = !isCancelled && !isPaid;
+      ) : activeTab === "all" ? (
+        <div className="flex flex-col gap-8">
+          {/* Current / Active Section */}
+          <section
+            aria-label={t("sections.activeTitle")}
+            className="space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-stone-100">
+                  {t("sections.activeTitle")}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-stone-400">
+                  {t("sections.activeSubtitle")}
+                </p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-stone-800 dark:text-stone-300">
+                {activeItems.length}
+              </span>
+            </div>
+            {activeItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500 dark:border-stone-800 dark:text-stone-400">
+                {t("empty.active")}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {activeItems.map((item) => renderCard(item))}
+              </div>
+            )}
+          </section>
 
-            return (
-              <article
-                key={item.id}
-                className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 sm:flex-row sm:items-center"
-              >
-                {/* Info */}
-                <div className="space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-slate-900 dark:text-stone-100">
-                      {item.title}
-                    </h3>
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        item.status === "upcoming"
-                          ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
-                          : item.status === "overdue"
-                            ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-400"
-                            : item.status === "paid"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400"
-                              : "border-slate-200 bg-slate-100 text-slate-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400"
-                      }`}
-                    >
-                      {t(`status.${item.status}`)}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-stone-400">
-                    <div>
-                      <span className="font-medium text-slate-600 dark:text-stone-300">
-                        {t("item.dueDate")}:
-                      </span>{" "}
-                      {formatCalendarDate(item.dueDate, locale)}
-                    </div>
-                    {item.notes ? (
-                      <div>
-                        <span className="font-medium text-slate-600 dark:text-stone-300">
-                          {t("item.notes")}:
-                        </span>{" "}
-                        {item.notes}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {/* Matched Transaction details (no raw IDs) */}
-                  {isPaid && item.matchedTransaction ? (
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                      {t("item.paidVia")}{" "}
-                      <span className="font-medium">
-                        {item.matchedTransaction.payee ?? "Expense"}
-                      </span>{" "}
-                      {t("item.onDate", {
-                        date: formatCalendarDate(
-                          item.matchedTransaction.occurredOn.slice(0, 10),
-                          locale,
-                        ),
-                      })}
-                    </p>
-                  ) : null}
-                </div>
-
-                {/* Amount & Actions */}
-                <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 sm:flex-col sm:items-end">
-                  <p className="font-mono text-lg font-semibold tracking-tight text-slate-900 dark:text-stone-100">
-                    {formatAmountPresentation(
-                      item.amountMinor,
-                      item.currency,
-                      locale,
-                    )}
+          {/* History Section */}
+          {historyItems.length > 0 && (
+            <section
+              aria-label={t("sections.historyTitle")}
+              className="space-y-3 border-t border-slate-200 pt-6 dark:border-stone-800"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-stone-100">
+                    {t("sections.historyTitle")}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-stone-400">
+                    {t("sections.historySubtitle")}
                   </p>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Match button */}
-                    {!isPaid && !isCancelled ? (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => openMatchDialog(item)}
-                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-500 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-400"
-                      >
-                        {t("actions.match")}
-                      </button>
-                    ) : null}
-
-                    {/* Unlink button */}
-                    {isPaid ? (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => handleUnlink(item)}
-                        className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
-                      >
-                        {t("actions.unlink")}
-                      </button>
-                    ) : null}
-
-                    {/* Edit button */}
-                    {isEditable ? (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => startEditing(item)}
-                        className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
-                      >
-                        {t("actions.edit")}
-                      </button>
-                    ) : null}
-
-                    {/* Cancel button */}
-                    {!isCancelled && !isPaid ? (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => handleCancel(item)}
-                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 shadow-xs hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40"
-                      >
-                        {t("actions.cancel")}
-                      </button>
-                    ) : null}
-                  </div>
                 </div>
-              </article>
-            );
-          })}
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-stone-800 dark:text-stone-300">
+                  {historyItems.length}
+                </span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {historyItems.map((item) => renderCard(item))}
+              </div>
+            </section>
+          )}
         </div>
+      ) : activeTab === "history" ||
+        activeTab === "paid" ||
+        activeTab === "cancelled" ? (
+        <section
+          aria-label={t("sections.historyTitle")}
+          className="space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-stone-100">
+                {t(`tabs.${activeTab}`)}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-stone-400">
+                {t("sections.historySubtitle")}
+              </p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-stone-800 dark:text-stone-300">
+              {filteredObligations.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {filteredObligations.map((item) => renderCard(item))}
+          </div>
+        </section>
+      ) : (
+        <section
+          aria-label={t("sections.activeTitle")}
+          className="space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-stone-100">
+                {t(`tabs.${activeTab}`)}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-stone-400">
+                {t("sections.activeSubtitle")}
+              </p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-stone-800 dark:text-stone-300">
+              {filteredObligations.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {filteredObligations.map((item) => renderCard(item))}
+          </div>
+        </section>
       )}
 
       {/* Create Modal */}

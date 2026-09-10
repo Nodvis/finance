@@ -804,13 +804,30 @@
     "eyebrow": "Zobowiązania",
     "title": "Nadchodzące płatności",
     "description": "Śledź nadchodzące rachunki, zaplanowane płatności i wydatki. Po opłaceniu połącz je z zarejestrowanymi transakcjami.",
+    "summaryTitle": "Podsumowanie zobowiązań",
     "addObligation": "Dodaj zobowiązanie",
     "tabs": {
       "all": "Wszystkie",
+      "active": "Aktywne",
       "upcoming": "Nadchodzące",
       "overdue": "Przeterminowane",
+      "history": "Historia",
       "paid": "Opłacone",
       "cancelled": "Anulowane"
+    },
+    "filters": {
+      "currency": "Waluta",
+      "allCurrencies": "Wszystkie waluty",
+      "sort": "Sortuj według",
+      "sortDueDateAsc": "Termin: od najbliższych",
+      "sortDueDateDesc": "Termin: od najdalszych",
+      "resetFilters": "Wyczyść filtry"
+    },
+    "sections": {
+      "activeTitle": "Bieżące zobowiązania",
+      "historyTitle": "Historia",
+      "activeSubtitle": "Nadchodzące i przeterminowane płatności oczekujące na rozliczenie",
+      "historySubtitle": "Zrealizowane i anulowane zobowiązania"
     },
     "summary": {
       "upcomingTotal": "Do zapłaty",
@@ -869,10 +886,13 @@
     },
     "empty": {
       "all": "Brak zarejestrowanych zobowiązań.",
+      "active": "Brak zaplanowanych aktywnych zobowiązań.",
       "upcoming": "Brak zaplanowanych nadchodzących zobowiązań.",
       "overdue": "Brak przeterminowanych zobowiązań.",
+      "history": "Brak historii zobowiązań.",
       "paid": "Brak opłaconych zobowiązań.",
-      "cancelled": "Brak anulowanych zobowiązań."
+      "cancelled": "Brak anulowanych zobowiązań.",
+      "filtered": "Brak zobowiązań spełniających wybrane filtry."
     },
     "feedback": {
       "createSuccess": "Zobowiązanie zostało pomyślnie dodane.",

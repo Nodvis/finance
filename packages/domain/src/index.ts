@@ -307,7 +307,10 @@ export {
   MAX_OBLIGATION_TITLE_LENGTH,
   cancelObligation,
   createObligation,
+  getDefaultObligationSortOrder,
   getObligationStatus,
+  isObligationActive,
+  isObligationHistory,
   matchObligation,
   unlinkObligation,
   updateObligation,
@@ -319,6 +322,7 @@ export {
 export type {
   CreateObligationInput,
   Obligation,
+  ObligationScope,
   ObligationStatus,
   UpdateObligationInput,
 } from "./obligation";

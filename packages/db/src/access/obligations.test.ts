@@ -610,4 +610,221 @@ describe.runIf(Boolean(process.env.DATABASE_URL))("Obligations DB Access & Invar
     expect(candidates[0]?.amountMinor).toBe(fixture.amountMinor);
     expect(candidates[0]?.currency).toBe(fixture.currency);
   });
+
+  describe("Obligations History and Filtering query capabilities", () => {
+    it("separates active obligations from historical (paid and cancelled) obligations", async () => {
+      const fixture = await createTestFixture();
+      const today = "2026-09-10";
+
+      // 1. Upcoming (active)
+      const upcoming = await createObligationInDb(fixture.householdId, {
+        title: "Upcoming internet",
+        amountMinor: 10000n,
+        currency: "PLN",
+        dueDate: "2026-09-20",
+      });
+
+      // 2. Overdue (active)
+      const overdue = await createObligationInDb(fixture.householdId, {
+        title: "Overdue power",
+        amountMinor: 20000n,
+        currency: "PLN",
+        dueDate: "2026-09-01",
+      });
+
+      // 3. Paid (history)
+      const toPay = await createObligationInDb(fixture.householdId, {
+        title: "Paid water",
+        amountMinor: fixture.amountMinor,
+        currency: fixture.currency,
+        dueDate: "2026-09-08",
+      });
+      const paid = await matchObligationInDb(
+        fixture.householdId,
+        toPay.id,
+        toPay.version,
+        fixture.txId,
+      );
+
+      // 4. Cancelled (history)
+      const toCancel = await createObligationInDb(fixture.householdId, {
+        title: "Cancelled subscription",
+        amountMinor: 5000n,
+        currency: "PLN",
+        dueDate: "2026-09-25",
+      });
+      const cancelled = await cancelObligationInDb(
+        fixture.householdId,
+        toCancel.id,
+        toCancel.version,
+      );
+
+      // Query active: upcoming + overdue only
+      const activeList = await listObligationsByHousehold(fixture.householdId, {
+        status: "active",
+        today,
+      });
+      const activeIds = activeList.map((o) => o.id);
+      expect(activeIds).toContain(upcoming.id);
+      expect(activeIds).toContain(overdue.id);
+      expect(activeIds).not.toContain(paid.id);
+      expect(activeIds).not.toContain(cancelled.id);
+
+      // Query history: paid + cancelled only
+      const historyList = await listObligationsByHousehold(fixture.householdId, {
+        status: "history",
+        today,
+      });
+      const historyIds = historyList.map((o) => o.id);
+      expect(historyIds).toContain(paid.id);
+      expect(historyIds).toContain(cancelled.id);
+      expect(historyIds).not.toContain(upcoming.id);
+      expect(historyIds).not.toContain(overdue.id);
+
+      // Query all: contains all 4
+      const allList = await listObligationsByHousehold(fixture.householdId, {
+        status: "all",
+        today,
+      });
+      const allIds = allList.map((o) => o.id);
+      expect(allIds).toContain(upcoming.id);
+      expect(allIds).toContain(overdue.id);
+      expect(allIds).toContain(paid.id);
+      expect(allIds).toContain(cancelled.id);
+    });
+
+    it("filters obligations by currency", async () => {
+      const fixture = await createTestFixture();
+
+      const pln = await createObligationInDb(fixture.householdId, {
+        title: "PLN Bill",
+        amountMinor: 1000n,
+        currency: "PLN",
+        dueDate: "2026-09-15",
+      });
+      const eur = await createObligationInDb(fixture.householdId, {
+        title: "EUR Subscription",
+        amountMinor: 1000n,
+        currency: "EUR",
+        dueDate: "2026-09-16",
+      });
+
+      const plnOnly = await listObligationsByHousehold(fixture.householdId, {
+        currency: "PLN",
+      });
+      expect(plnOnly.some((o) => o.id === pln.id)).toBe(true);
+      expect(plnOnly.some((o) => o.id === eur.id)).toBe(false);
+
+      const eurOnly = await listObligationsByHousehold(fixture.householdId, {
+        currency: "eur", // case-insensitive query parameter
+      });
+      expect(eurOnly.some((o) => o.id === eur.id)).toBe(true);
+      expect(eurOnly.some((o) => o.id === pln.id)).toBe(false);
+    });
+
+    it("sorts by due-date in ascending and descending order", async () => {
+      const fixture = await createTestFixture();
+
+      const early = await createObligationInDb(fixture.householdId, {
+        title: "Early Bill",
+        amountMinor: 1000n,
+        currency: "PLN",
+        dueDate: "2026-09-02",
+      });
+      const late = await createObligationInDb(fixture.householdId, {
+        title: "Late Bill",
+        amountMinor: 1000n,
+        currency: "PLN",
+        dueDate: "2026-09-28",
+      });
+
+      const ascList = await listObligationsByHousehold(fixture.householdId, {
+        sortOrder: "asc",
+      });
+      const earlyIdxAsc = ascList.findIndex((o) => o.id === early.id);
+      const lateIdxAsc = ascList.findIndex((o) => o.id === late.id);
+      expect(earlyIdxAsc).toBeLessThan(lateIdxAsc);
+
+      const descList = await listObligationsByHousehold(fixture.householdId, {
+        sortOrder: "desc",
+      });
+      const earlyIdxDesc = descList.findIndex((o) => o.id === early.id);
+      const lateIdxDesc = descList.findIndex((o) => o.id === late.id);
+      expect(lateIdxDesc).toBeLessThan(earlyIdxDesc);
+    });
+
+    it("applies useful default ordering (desc for history/paid, asc for active/upcoming)", async () => {
+      const fixture = await createTestFixture();
+
+      const earlyPaid = await createObligationInDb(fixture.householdId, {
+        title: "Early Paid",
+        amountMinor: fixture.amountMinor,
+        currency: fixture.currency,
+        dueDate: "2026-09-01",
+      });
+      await matchObligationInDb(
+        fixture.householdId,
+        earlyPaid.id,
+        earlyPaid.version,
+        fixture.txId,
+      );
+
+      // Second expense transaction for late paid
+      const db = getDb();
+      const lateTxId = crypto.randomUUID();
+      await db.insert(transactions).values({
+        id: lateTxId,
+        householdId: fixture.householdId,
+        kind: "expense",
+        amountMinor: fixture.amountMinor,
+        currency: fixture.currency,
+        accountId: fixture.accountId,
+        paidByPersonId: fixture.personId,
+        payee: "Late Payee",
+        occurredOn: new Date("2026-09-10T10:00:00Z"),
+      });
+
+      const latePaid = await createObligationInDb(fixture.householdId, {
+        title: "Late Paid",
+        amountMinor: fixture.amountMinor,
+        currency: fixture.currency,
+        dueDate: "2026-09-29",
+      });
+      await matchObligationInDb(
+        fixture.householdId,
+        latePaid.id,
+        latePaid.version,
+        lateTxId,
+      );
+
+      // Default for history is desc: latePaid comes before earlyPaid
+      const historyList = await listObligationsByHousehold(fixture.householdId, {
+        status: "history",
+      });
+      const earlyIdx = historyList.findIndex((o) => o.id === earlyPaid.id);
+      const lateIdx = historyList.findIndex((o) => o.id === latePaid.id);
+      expect(lateIdx).toBeLessThan(earlyIdx);
+    });
+
+    it("supports bounded queries with limit and offset", async () => {
+      const fixture = await createTestFixture();
+
+      for (let i = 1; i <= 5; i++) {
+        await createObligationInDb(fixture.householdId, {
+          title: `Bounded Bill ${i}`,
+          amountMinor: 1000n * BigInt(i),
+          currency: "PLN",
+          dueDate: `2026-10-0${i}`,
+        });
+      }
+
+      const bounded = await listObligationsByHousehold(fixture.householdId, {
+        limit: 2,
+        offset: 1,
+        sortOrder: "asc",
+      });
+
+      expect(bounded).toHaveLength(2);
+    });
+  });
 });
