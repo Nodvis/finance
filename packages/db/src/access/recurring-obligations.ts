@@ -31,10 +31,11 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function materializeInTransaction(dbTx: DbTransaction, definition: typeof recurringObligationDefinitions.$inferSelect, through: string) {
+async function materializeInTransaction(dbTx: DbTransaction, definition: typeof recurringObligationDefinitions.$inferSelect, through: string, from: string) {
   const dates = generateRecurringDueDates(
     { frequency: definition.frequency as RecurringObligationFrequency, firstDueDate: definition.firstDueDate, endDate: definition.endDate },
     through,
+    from,
   );
   for (const dueDate of dates) {
     const entity = createObligation({
@@ -76,7 +77,7 @@ export async function createRecurringObligationInDb(householdId: string, input: 
       cancelledAt: null,
     }).returning();
     if (!definition) throw new Error("Failed to create recurring obligation");
-    await materializeInTransaction(dbTx, definition, through);
+    await materializeInTransaction(dbTx, definition, through, today());
     return definition;
   });
 }
@@ -87,11 +88,11 @@ export async function listRecurringObligationsInDb(householdId: string) {
     .orderBy(asc(recurringObligationDefinitions.firstDueDate), asc(recurringObligationDefinitions.id));
 }
 
-export async function materializeRecurringObligationsInDb(householdId: string, through = horizonDate(today())) {
+export async function materializeRecurringObligationsInDb(householdId: string, through = horizonDate(today()), from = today()) {
   return getDb().transaction(async (dbTx) => {
     await dbTx.select({ id: households.id }).from(households).where(eq(households.id, householdId)).for("update");
     const definitions = await dbTx.select().from(recurringObligationDefinitions).where(and(eq(recurringObligationDefinitions.householdId, householdId), isNull(recurringObligationDefinitions.cancelledAt)));
-    for (const definition of definitions) await materializeInTransaction(dbTx, definition, through);
+    for (const definition of definitions) await materializeInTransaction(dbTx, definition, through, from);
     return definitions;
   });
 }
@@ -118,7 +119,7 @@ export async function updateRecurringObligationInDb(householdId: string, id: str
     await dbTx.update(obligations).set({
       cancelledAt: new Date(), updatedAt: new Date(), version: sql`${obligations.version} + 1`,
     }).where(and(eq(obligations.recurringDefinitionId, id), isNull(obligations.transactionId), isNull(obligations.cancelledAt), gte(obligations.dueDate, today())));
-    await materializeInTransaction(dbTx, updated, horizonDate(today()));
+    await materializeInTransaction(dbTx, updated, horizonDate(today()), today());
     return updated;
   });
 }
