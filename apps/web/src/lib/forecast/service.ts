@@ -39,6 +39,21 @@ export async function getHouseholdCashForecast(
   });
 }
 
+export async function getHouseholdForecastObligations(
+  context: AuthorizedHouseholdContext,
+  options: { asOf: string; horizonDays: 7 | 30 },
+) {
+  if (!(await isPersonInHousehold(context.householdId, context.personId))) {
+    throw new Error("Household access denied");
+  }
+  return listObligationsByHousehold(context.householdId, {
+    status: "active",
+    today: options.asOf,
+    dueFrom: options.asOf,
+    dueTo: forecastEndDate(options.asOf, options.horizonDays),
+  });
+}
+
 function forecastEndDate(asOf: string, horizonDays: 7 | 30): string {
   const date = new Date(`${asOf}T00:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + horizonDays);

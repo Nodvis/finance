@@ -16,6 +16,7 @@
     "rules": "Reguły",
     "recurring": "Powtarzalne",
     "analytics": "Analiza",
+    "forecast": "Prognoza",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Prywatne"
   },
@@ -939,5 +940,22 @@
       "skipSuccess": "To wystąpienie zostało pominięte.",
       "errorGeneric": "Wystąpił błąd. Spróbuj ponownie."
     }
+  },
+  "Forecast": {
+    "title": "Prognoza gotówki",
+    "subtitle": "Znane środki i zaplanowane płatności, bez ukrytych założeń.",
+    "horizon": "Okres prognozy",
+    "days7": "7 dni",
+    "days30": "30 dni",
+    "startingCash": "Początkowo dostępna gotówka",
+    "payments": "Znane nadchodzące płatności",
+    "projected": "Prognozowana pozostała gotówka",
+    "contributors": "Uwzględnione płatności",
+    "noData": "Brak danych o gotówce lub zaplanowanych płatnościach do prognozy w tym okresie.",
+    "noContributors": "Brak nadchodzących płatności w tym okresie.",
+    "incomplete": "Prognoza może być niepełna, ponieważ saldo co najmniej jednego konta jest nieuzupełnione lub nieaktualne.",
+    "due": "Termin {date}",
+    "deficit": "Prognozowany deficyt",
+    "zero": "Prognozowana gotówka spada do zera"
   }
 }
