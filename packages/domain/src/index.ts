@@ -115,6 +115,11 @@ export type {
   RecurringObservationKind,
   RecurringPattern,
 } from "./recurring";
+export { generateRecurringDueDates, nextRecurringDate } from "./recurring-obligation";
+export type {
+  RecurringObligationFrequency,
+  RecurringObligationSchedule,
+} from "./recurring-obligation";
 
 export {
   DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS,

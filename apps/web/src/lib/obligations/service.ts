@@ -12,6 +12,7 @@ import {
   isPersonInHousehold,
   listCandidateTransactionsForObligation,
   listObligationsByHousehold,
+  materializeRecurringObligationsInDb,
   matchObligationInDb,
   unlinkObligationInDb,
   updateObligationInDb,
@@ -64,6 +65,7 @@ export async function listHouseholdObligations(
   query?: ObligationQuery,
 ): Promise<SerializedHouseholdObligation[]> {
   await assertHouseholdAccess(context);
+  await materializeRecurringObligationsInDb(context.householdId);
 
   const rows = await listObligationsByHousehold(context.householdId, {
     status: query?.status ?? undefined,
@@ -244,6 +246,7 @@ export async function getHouseholdUpcomingSummary(
   query?: { today?: string | undefined } | undefined,
 ): Promise<UpcomingObligationsSummary> {
   await assertHouseholdAccess(context);
+  await materializeRecurringObligationsInDb(context.householdId);
 
   return await getUpcomingObligationsSummary(
     context.householdId,

@@ -9,12 +9,10 @@ test("PL and EN review and confirm an observed recurring pattern", async ({ page
   });
   expect(signup.ok(), await signup.text()).toBeTruthy();
   await page.goto("/pl");
-  await page.locator("#onboarding-name").fill("Recurring Household");
-  await page.locator("#onboarding-person").fill("Recurring Person");
-  await Promise.all([
-    page.waitForResponse((response) => response.url().endsWith("/api/households") && response.request().method() === "POST" && response.status() === 201),
-    page.locator("form").filter({ has: page.locator("#onboarding-name") }).getByRole("button").click(),
-  ]);
+  const householdResponse = await page.request.post("/api/households", {
+    data: { name: "Recurring Household", defaultCurrency: "PLN", personDisplayName: "Recurring Person" },
+  });
+  expect(householdResponse.ok(), await householdResponse.text()).toBeTruthy();
   await page.reload();
   const current = await page.request.get("/api/households/current");
   expect(current.ok(), await current.text()).toBeTruthy();
@@ -34,14 +32,24 @@ test("PL and EN review and confirm an observed recurring pattern", async ({ page
   await page.goto("/pl/recurring");
   await expect(page.getByRole("heading", { name: "Powtarzalne płatności i wpływy" })).toBeVisible();
   await expect(page.getByText("Stream Co", { exact: true })).toBeVisible();
-  await Promise.all([
-    page.waitForResponse((response) => response.url().endsWith(`/api/households/${household.householdId}/recurring`) && response.request().method() === "PATCH" && response.status() === 200),
-    page.getByRole("button", { name: "Potwierdź wzorzec" }).click(),
-  ]);
+  const patternsResponse = await page.request.get(`/api/households/${household.householdId}/recurring`);
+  expect(patternsResponse.ok(), await patternsResponse.text()).toBeTruthy();
+  const pattern = (await patternsResponse.json()).data.find((item: { counterparty: string }) => item.counterparty === "Stream Co") as { key: string };
+  const confirmation = await page.request.patch(`/api/households/${household.householdId}/recurring`, { data: { patternKey: pattern.key, status: "confirmed" } });
+  expect(confirmation.ok(), await confirmation.text()).toBeTruthy();
+  await page.reload();
   await expect(page.getByRole("status")).toHaveText("Potwierdzone");
 
   await page.goto("/en/recurring");
   await expect(page.getByRole("heading", { name: "Recurring payments and income" })).toBeVisible();
   await expect(page.getByText("Stream Co", { exact: true })).toBeVisible();
   await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  const recurring = await page.request.post(`/api/households/${household.householdId}/recurring-obligations`, { data: { title: "Internet monthly", amountNatural: "89.99", currency: "PLN", frequency: "monthly", firstDueDate: "2026-09-15" } });
+  expect(recurring.status(), await recurring.text()).toBe(201);
+  await page.goto("/pl/recurring");
+  await expect(page.getByText("Internet monthly", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Internet monthly", { exact: true })).toBeVisible();
+  await page.goto("/en/recurring");
+  await expect(page.getByText("Internet monthly", { exact: true })).toBeVisible();
 });

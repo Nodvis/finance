@@ -65,6 +65,7 @@ What are we choosing?
 | [0007](0007-authentication.md) | Better Auth with an isolated Finance auth boundary | Accepted |
 | [0008](0008-deployment-topology.md) | Self-hosted modular monolith with web + PostgreSQL | Accepted |
 | [0009](0009-obligations-and-upcoming-payments.md) | Obligations and upcoming payments architecture | Accepted |
+| [0010](0010-recurring-obligation-materialization.md) | Deterministic recurring obligation materialization | Accepted |
 
 ## Decisions intentionally still open
 
