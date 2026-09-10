@@ -931,6 +931,9 @@
       "cancelled": "Brak anulowanych zobowiązań.",
       "filtered": "Brak zobowiązań spełniających wybrane filtry."
     },
+    "pagination": {
+      "loadMore": "Załaduj więcej"
+    },
     "feedback": {
       "createSuccess": "Zobowiązanie zostało pomyślnie dodane.",
       "updateSuccess": "Zobowiązanie zostało zaktualizowane.",
