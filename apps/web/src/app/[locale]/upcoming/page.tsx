@@ -16,6 +16,8 @@ import { NoHouseholdCard } from "../components/NoHouseholdCard";
 import { SignInCard } from "../components/SignInCard";
 import { UpcomingView } from "./UpcomingView";
 
+export const dynamic = "force-dynamic";
+
 type UpcomingPageProps = {
   params: Promise<{ locale: string }>;
   searchParams?: Promise<{

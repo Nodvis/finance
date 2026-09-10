@@ -186,6 +186,20 @@ test.describe("obligations vertical slice", () => {
       );
       expect(cancelResponse.ok(), await cancelResponse.text()).toBeTruthy();
 
+      const historyListResponse = await page.request.get(
+        `/api/households/${household.householdId}/obligations?status=history&currency=PLN`,
+      );
+      expect(historyListResponse.ok(), await historyListResponse.text()).toBeTruthy();
+      const historyItems = (await historyListResponse.json()).data as Array<{
+        title: string;
+      }>;
+      expect(historyItems.map((item) => item.title)).toContain(
+        `Cancelled Internet ${locale}`,
+      );
+      expect(historyItems.map((item) => item.title)).not.toContain(
+        `Internet Fiber ${locale}`,
+      );
+
       await page.goto(
         `/${locale}/upcoming?status=history&currency=PLN&sortOrder=desc`,
       );

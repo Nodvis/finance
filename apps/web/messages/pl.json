@@ -804,6 +804,7 @@
     "eyebrow": "Zobowiązania",
     "title": "Nadchodzące płatności",
     "description": "Śledź nadchodzące rachunki, zaplanowane płatności i wydatki. Po opłaceniu połącz je z zarejestrowanymi transakcjami.",
+    "summaryTitle": "Podsumowanie zobowiązań",
     "addObligation": "Dodaj zobowiązanie",
     "tabs": {
       "all": "Wszystkie",

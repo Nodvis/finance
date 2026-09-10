@@ -827,6 +827,7 @@
     "eyebrow": "Commitments",
     "title": "Upcoming obligations",
     "description": "Track upcoming bills, scheduled payments, and expenses. Explicitly match them with recorded transactions when paid.",
+    "summaryTitle": "Obligations summary",
     "addObligation": "Add obligation",
     "tabs": {
       "all": "All",
