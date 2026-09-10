@@ -101,6 +101,11 @@ test.describe("obligations vertical slice", () => {
         { data: "not-json" },
       );
       expect(malformedCancel.status()).toBe(400);
+      const malformedCancelPost = await page.request.post(
+        `/api/households/${household.householdId}/obligations/${createdObligation.id}/cancel`,
+        { data: "not-json" },
+      );
+      expect(malformedCancelPost.status()).toBe(400);
 
       // 7. Verify Overview displays upcoming obligation
       await page.goto(`/${locale}`);

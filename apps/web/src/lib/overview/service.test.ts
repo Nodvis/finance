@@ -10,6 +10,7 @@ vi.mock("@nodvis/finance-db", async (importOriginal) => {
     getHouseholdPeriodCashFlow: vi.fn(),
     getHouseholdPeriodCategorySpending: vi.fn(),
     getHouseholdEligibleAccounts: vi.fn(),
+    getUpcomingObligationsSummary: vi.fn(),
   };
 });
 
@@ -17,6 +18,7 @@ import {
   getHouseholdEligibleAccounts,
   getHouseholdPeriodCashFlow,
   getHouseholdPeriodCategorySpending,
+  getUpcomingObligationsSummary,
   isPersonInHousehold,
 } from "@nodvis/finance-db";
 import { householdId, personId } from "@nodvis/finance-domain";
@@ -123,6 +125,14 @@ describe("Household Overview Service", () => {
       },
     ]);
 
+    vi.mocked(getUpcomingObligationsSummary).mockResolvedValueOnce({
+      upcomingCount: 2,
+      overdueCount: 1,
+      paidCount: 3,
+      upcomingByCurrency: [{ currency: "PLN", totalMinor: 45000n }],
+      overdueByCurrency: [{ currency: "PLN", totalMinor: 12000n }],
+    });
+
     const overview = await getHouseholdOverview(
       context,
       { month: "2026-09" },
@@ -171,5 +181,7 @@ describe("Household Overview Service", () => {
     // Only fresh checking account is counted in available cash
     expect(overview.availableCash.byCurrency[0]!.amountMinor).toBe(500000n);
     expect(overview.availableCash.byCurrency[0]!.isComplete).toBe(false);
+    expect(overview.upcoming?.upcomingCount).toBe(2);
+    expect(overview.upcoming?.upcomingByCurrency[0]?.totalMinor).toBe(45000n);
   });
 });

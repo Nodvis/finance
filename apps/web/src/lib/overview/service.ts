@@ -128,13 +128,7 @@ export async function getHouseholdOverview(
       endDate: period.endDate,
     }),
     getHouseholdEligibleAccounts(context.householdId),
-    getUpcomingObligationsSummary(context.householdId).catch(() => ({
-      upcomingCount: 0,
-      overdueCount: 0,
-      paidCount: 0,
-      upcomingByCurrency: [],
-      overdueByCurrency: [],
-    })),
+    getUpcomingObligationsSummary(context.householdId),
   ]);
 
   // Aggregate Available Cash with honesty regarding stale and missing observations
