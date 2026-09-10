@@ -12,6 +12,8 @@ test.describe("obligations vertical slice", () => {
     }) => {
       // 1. Sign up new user
       const email = `e2e-obligation-${locale}-${Date.now()}@example.test`;
+      const obligationTitle = `Internet Fiber ${locale} ${Date.now()}`;
+      const cancelledTitle = `Cancelled Internet ${locale} ${Date.now()}`;
       const signup = await page.request.post("/api/auth/sign-up/email", {
         data: { name: `Obligation ${locale}`, email, password },
       });
@@ -71,7 +73,7 @@ test.describe("obligations vertical slice", () => {
 
       await page
         .getByRole("textbox", { name: locale === "pl" ? "Tytuł" : "Title" })
-        .fill(`Internet Fiber ${locale}`);
+        .fill(obligationTitle);
       await page
         .getByRole("textbox", { name: locale === "pl" ? "Kwota" : "Amount" })
         .fill("149.99");
@@ -87,7 +89,7 @@ test.describe("obligations vertical slice", () => {
 
       // 6. Verify obligation appears in upcoming list
       await expect(
-        page.getByText(`Internet Fiber ${locale}`, { exact: true }),
+        page.getByText(obligationTitle, { exact: true }),
       ).toBeVisible();
       await expect(page.getByText(/149[,.]99/).first()).toBeVisible();
 
@@ -156,7 +158,15 @@ test.describe("obligations vertical slice", () => {
       // 11. Unlink transaction
       page.on("dialog", (dialog) => dialog.accept());
       const unlinkBtnText = locale === "pl" ? "Odłącz" : "Unlink";
-      await page.getByRole("button", { name: unlinkBtnText }).first().click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/unlink") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: unlinkBtnText }).first().click(),
+      ]);
 
       // 12. Verify status returns to Upcoming
       await expect(
@@ -168,7 +178,7 @@ test.describe("obligations vertical slice", () => {
         `/api/households/${household.householdId}/obligations`,
         {
           data: {
-            title: `Cancelled Internet ${locale}`,
+            title: cancelledTitle,
             amountNatural: "39.00",
             currency: "PLN",
             dueDate: "2026-09-20",
@@ -194,20 +204,20 @@ test.describe("obligations vertical slice", () => {
         title: string;
       }>;
       expect(historyItems.map((item) => item.title)).toContain(
-        `Cancelled Internet ${locale}`,
+        cancelledTitle,
       );
       expect(historyItems.map((item) => item.title)).not.toContain(
-        `Internet Fiber ${locale}`,
+        obligationTitle,
       );
 
       await page.goto(
         `/${locale}/upcoming?status=history&currency=PLN&sortOrder=desc`,
       );
       await expect(
-        page.getByText(`Cancelled Internet ${locale}`, { exact: true }),
+        page.getByText(cancelledTitle, { exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByText(`Internet Fiber ${locale}`, { exact: true }),
+        page.getByText(obligationTitle, { exact: true }),
       ).not.toBeVisible();
       await expect(page).toHaveURL(/status=history/);
 
@@ -224,7 +234,7 @@ test.describe("obligations vertical slice", () => {
       await expect(page).toHaveURL(/status=history/);
       await page.reload();
       await expect(
-        page.getByText(`Cancelled Internet ${locale}`, { exact: true }),
+        page.getByText(cancelledTitle, { exact: true }),
       ).toBeVisible();
     });
   }
