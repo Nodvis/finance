@@ -93,6 +93,7 @@ export default async function UpcomingPage({
 
   return (
     <UpcomingView
+      key={`${query.status ?? "all"}:${query.currency ?? "all"}:${query.sortOrder ?? "default"}`}
       householdContext={context}
       initialObligations={obligations}
       initialSummary={summary}
