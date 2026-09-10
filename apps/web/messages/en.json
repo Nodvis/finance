@@ -12,6 +12,7 @@
     "imports": "Imports",
     "transfers": "Transfers",
     "liabilities": "Liabilities",
+    "upcoming": "Upcoming",
     "rules": "Rules",
     "recurring": "Recurring",
     "analytics": "Analytics",
@@ -691,7 +692,11 @@
     "upcoming": {
       "title": "Upcoming obligations",
       "notModeled": "Upcoming obligations are not yet modeled",
-      "note": "Scheduled bills and future commitments will appear here when modeled."
+      "note": "Scheduled bills and future commitments will appear here when modeled.",
+      "viewAll": "View upcoming obligations",
+      "empty": "No upcoming obligations",
+      "upcomingCount": "{count} upcoming obligation(s)",
+      "overdueCount": "{count} overdue"
     },
     "debt": {
       "title": "Debt & liabilities",
@@ -817,5 +822,88 @@
     "languageDescription": "Choose the language used across your finance workspace.",
     "account": "Your account",
     "openSettings": "Open settings"
+  },
+  "Obligations": {
+    "eyebrow": "Commitments",
+    "title": "Upcoming obligations",
+    "description": "Track upcoming bills, scheduled payments, and expenses. Explicitly match them with recorded transactions when paid.",
+    "addObligation": "Add obligation",
+    "tabs": {
+      "all": "All",
+      "upcoming": "Upcoming",
+      "overdue": "Overdue",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "summary": {
+      "upcomingTotal": "Upcoming",
+      "overdueTotal": "Overdue",
+      "paidTotal": "Paid",
+      "totalCount": "{count} obligations",
+      "noOverdue": "No overdue obligations"
+    },
+    "form": {
+      "createTitle": "Add upcoming obligation",
+      "editTitle": "Edit obligation",
+      "titleLabel": "Title",
+      "titlePlaceholder": "e.g. Internet bill, Rent, Insurance",
+      "amountLabel": "Amount",
+      "amountPlaceholder": "e.g. 123.45",
+      "currencyLabel": "Currency",
+      "dueDateLabel": "Due date",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Optional details or reference number",
+      "createButton": "Add obligation",
+      "saveButton": "Save changes",
+      "cancelButton": "Cancel"
+    },
+    "actions": {
+      "edit": "Edit",
+      "match": "Match payment",
+      "unlink": "Unlink",
+      "cancel": "Cancel",
+      "confirmCancel": "Are you sure you want to cancel this obligation?",
+      "confirmUnlink": "Are you sure you want to unlink this transaction?"
+    },
+    "matching": {
+      "title": "Match obligation with payment",
+      "description": "Select the recorded expense transaction that satisfies this obligation. Exact currency and amount are required.",
+      "noCandidates": "No eligible expense transactions found with matching amount and currency.",
+      "selectCandidate": "Select transaction:",
+      "expenseFallback": "Expense",
+      "confirmMatch": "Confirm match",
+      "matching": "Matching...",
+      "loadingCandidates": "Loading candidates...",
+      "close": "Close"
+    },
+    "item": {
+      "dueDate": "Due date",
+      "amount": "Amount",
+      "notes": "Notes",
+      "paidVia": "Paid via",
+      "onDate": "on {date}",
+      "status": "Status"
+    },
+    "status": {
+      "upcoming": "Upcoming",
+      "overdue": "Overdue",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "empty": {
+      "all": "No obligations recorded yet.",
+      "upcoming": "No upcoming obligations scheduled.",
+      "overdue": "No overdue obligations.",
+      "paid": "No paid obligations.",
+      "cancelled": "No cancelled obligations."
+    },
+    "feedback": {
+      "createSuccess": "Obligation created successfully.",
+      "updateSuccess": "Obligation updated successfully.",
+      "matchSuccess": "Obligation matched and marked as paid.",
+      "unlinkSuccess": "Transaction unlinked. Obligation returned to active status.",
+      "cancelSuccess": "Obligation cancelled.",
+      "errorGeneric": "An error occurred. Please try again."
+    }
   }
 }

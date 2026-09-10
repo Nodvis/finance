@@ -12,3 +12,4 @@ export * from "./categorization-rules";
 export * from "./recurring-patterns";
 export * from "./credit-facilities";
 export * from "./bnpl-purchases";
+export * from "./obligations";

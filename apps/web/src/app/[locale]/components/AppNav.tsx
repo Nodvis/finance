@@ -9,6 +9,7 @@ const ITEMS = [
   ["/imports", "imports"],
   ["/transfers", "transfers"],
   ["/liabilities", "liabilities"],
+  ["/upcoming", "upcoming"],
   ["/rules", "rules"],
   ["/recurring", "recurring"],
   ["/analytics", "analytics"],

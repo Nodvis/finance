@@ -24,6 +24,7 @@ import { bnplPurchases } from "../schema/bnpl-purchases";
 import { creditFacilities } from "../schema/credit-facilities";
 import { households } from "../schema/foundation";
 import { liabilityRepayments } from "../schema/liabilities";
+import { obligations } from "../schema/obligations";
 import { transactions } from "../schema/transactions";
 
 type DbTransaction = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
@@ -64,6 +65,16 @@ async function validatePurchaseTransaction(
   )).limit(1);
   if (existingRepayment) {
     throw new BnplPurchaseFacilityError("BNPL purchase transaction conflicts with an active liability repayment");
+  }
+
+  // Enforce conflict against active obligation links
+  const [existingObligation] = await db.select().from(obligations).where(and(
+    eq(obligations.householdId, household),
+    eq(obligations.transactionId, id),
+    isNull(obligations.cancelledAt),
+  )).limit(1);
+  if (existingObligation) {
+    throw new BnplPurchaseFacilityError("BNPL purchase transaction conflicts with an active obligation");
   }
 }
 

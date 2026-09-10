@@ -33,6 +33,7 @@ import {
   liabilityRepayments,
 } from "../schema/liabilities";
 import { bnplPurchases } from "../schema/bnpl-purchases";
+import { obligations } from "../schema/obligations";
 import {
   transactionAuditEntries,
   transactions,
@@ -587,6 +588,14 @@ export async function recordLiabilityRepaymentInDb(params: {
       )).limit(1);
       if (linkedBnpl) {
         throw new LiabilityRepaymentVersionConflictError("Transaction is linked to an active BNPL purchase");
+      }
+      const [linkedObligation] = await dbTx.select({ id: obligations.id }).from(obligations).where(and(
+        eq(obligations.householdId, params.householdId),
+        eq(obligations.transactionId, rep.transactionId),
+        isNull(obligations.cancelledAt),
+      )).limit(1);
+      if (linkedObligation) {
+        throw new LiabilityRepaymentVersionConflictError("Transaction is linked to an active obligation");
       }
     }
     const existingRepayments = await dbTx.select().from(liabilityRepayments).where(and(

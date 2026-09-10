@@ -35,6 +35,7 @@ import { getDb } from "../client";
 import { bnplPurchases } from "../schema/bnpl-purchases";
 import { households } from "../schema/foundation";
 import { liabilityRepayments } from "../schema/liabilities";
+import { obligations } from "../schema/obligations";
 import {
   transactionAuditEntries,
   transactions,
@@ -381,6 +382,18 @@ export async function updateTransactionInDb(params: {
       )
       .limit(1);
 
+    const [linkedObligation] = await dbTx
+      .select({ id: obligations.id })
+      .from(obligations)
+      .where(
+        and(
+          eq(obligations.householdId, params.householdId),
+          eq(obligations.transactionId, params.id),
+          isNull(obligations.cancelledAt),
+        ),
+      )
+      .limit(1);
+
     if (linkedRepayment || linkedBnpl) {
       if (
         values.amountMinor !== existing.amountMinor ||
@@ -389,6 +402,18 @@ export async function updateTransactionInDb(params: {
       ) {
         throw new TransactionVersionConflictError(
           "Cannot modify amount, currency, or kind of transaction linked to active repayment or BNPL purchase",
+        );
+      }
+    }
+
+    if (linkedObligation) {
+      if (
+        values.amountMinor !== existing.amountMinor ||
+        values.currency !== existing.currency ||
+        values.kind !== existing.kind
+      ) {
+        throw new TransactionVersionConflictError(
+          "Cannot modify amount, currency, or kind of transaction linked to active obligation",
         );
       }
     }
@@ -498,9 +523,27 @@ export async function voidTransactionInDb(params: {
       )
       .limit(1);
 
+    const [linkedObligation] = await dbTx
+      .select({ id: obligations.id })
+      .from(obligations)
+      .where(
+        and(
+          eq(obligations.householdId, params.householdId),
+          eq(obligations.transactionId, params.id),
+          isNull(obligations.cancelledAt),
+        ),
+      )
+      .limit(1);
+
     if (linkedRepayment || linkedBnpl) {
       throw new TransactionVersionConflictError(
         "Cannot void transaction linked to active repayment or BNPL purchase",
+      );
+    }
+
+    if (linkedObligation) {
+      throw new TransactionVersionConflictError(
+        "Cannot void transaction linked to active obligation",
       );
     }
 

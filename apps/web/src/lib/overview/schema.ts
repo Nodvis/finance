@@ -76,6 +76,20 @@ export type SerializedCategorySpending = {
   percentage: number;
 };
 
+export type SerializedUpcomingObligationsSummary = {
+  upcomingCount: number;
+  overdueCount: number;
+  paidCount: number;
+  upcomingByCurrency: Array<{
+    currency: string;
+    totalMinor: string;
+  }>;
+  overdueByCurrency: Array<{
+    currency: string;
+    totalMinor: string;
+  }>;
+};
+
 export type SerializedHouseholdOverview = {
   householdId: string;
   period: SerializedPeriod;
@@ -85,4 +99,5 @@ export type SerializedHouseholdOverview = {
     totalTransactionsCount: number;
   };
   categorySpending: SerializedCategorySpending[];
+  upcoming?: SerializedUpcomingObligationsSummary | undefined;
 };
