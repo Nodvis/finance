@@ -109,6 +109,10 @@ describe("Overview domain model and period calculations", () => {
       expect(isSnapshotStale(staleDate, asOf)).toBe(true);
     });
 
+    it("rejects observations captured after the requested as-of instant", () => {
+      expect(isSnapshotStale(new Date("2026-09-11T00:00:00Z"), asOf)).toBe(true);
+    });
+
     it("aggregates only eligible asset accounts with non-stale snapshots", () => {
       const accounts = [
         {

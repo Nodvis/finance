@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getHouseholdEligibleAccounts, isPersonInHousehold, listObligationsByHousehold } from "@nodvis/finance-db";
+import { getHouseholdEligibleAccounts, isPersonInHousehold, listObligationsByHousehold, materializeRecurringObligationsInDb } from "@nodvis/finance-db";
 import { aggregateAvailableCash, accountId as toAccountId, calculateCashForecast, money, type CashForecast } from "@nodvis/finance-domain";
 import type { AuthorizedHouseholdContext } from "@/lib/overview/service";
 
@@ -12,6 +12,7 @@ export async function getHouseholdCashForecast(
     throw new Error("Household access denied");
   }
 
+  await materializeRecurringObligationsInDb(context.householdId);
   const accounts = await getHouseholdEligibleAccounts(context.householdId);
   const cash = aggregateAvailableCash(accounts.map((account) => ({
     id: toAccountId(account.id),
@@ -22,7 +23,7 @@ export async function getHouseholdCashForecast(
       ? { balance: money(account.balanceSnapshotMinor, account.currency), capturedAt: account.balanceSnapshotAt }
       : null,
     archivedAt: null,
-  })), { asOf: new Date(`${options.asOf}T00:00:00.000Z`) });
+  })), { asOf: new Date(`${options.asOf}T23:59:59.999Z`) });
   const obligations = await listObligationsByHousehold(context.householdId, {
     status: "active",
     today: options.asOf,

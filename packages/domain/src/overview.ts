@@ -151,7 +151,7 @@ export function isSnapshotStale(
     return true;
   }
   const elapsed = asOf.getTime() - capturedAt.getTime();
-  return elapsed > thresholdMs;
+  return elapsed < 0 || elapsed > thresholdMs;
 }
 
 export type AvailableCashAccountInput = Readonly<{

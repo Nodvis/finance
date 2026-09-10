@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "obligations_recurring_occurrence_unique" ON "finance"."obligations" USING btree ("recurring_definition_id","due_date") WHERE "finance"."obligations"."recurring_definition_id" is not null;

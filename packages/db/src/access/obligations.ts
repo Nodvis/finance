@@ -60,6 +60,7 @@ export type ObligationWithTransaction = {
   dueDate: string;
   notes: string | null;
   transactionId: string | null;
+  recurringDefinitionId?: string | null;
   version: number;
   status: ObligationStatus;
   cancelledAt: Date | null;
@@ -83,6 +84,7 @@ export type SerializedObligation = {
   dueDate: string;
   notes: string | null;
   transactionId: string | null;
+  recurringDefinitionId?: string | null;
   version: number;
   status: ObligationStatus;
   cancelledAt: string | null;
@@ -145,6 +147,7 @@ function mapToObligationWithTransaction(
     dueDate: row.dueDate,
     notes: row.notes,
     transactionId: row.transactionId,
+    recurringDefinitionId: row.recurringDefinitionId,
     version: row.version,
     status,
     cancelledAt: row.cancelledAt,

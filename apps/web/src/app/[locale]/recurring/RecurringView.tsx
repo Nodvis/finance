@@ -2,74 +2,31 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 import type { SerializedRecurringPattern } from "@/lib/recurring/service";
+import type { SerializedRecurringObligation } from "@/lib/recurring-obligations/service";
 
-type Props = {
-  householdId: string;
-  initialPatterns: SerializedRecurringPattern[];
-  locale: string;
-};
-
-export function RecurringView({ householdId, initialPatterns, locale }: Props) {
+type Props = { householdId: string; initialPatterns: SerializedRecurringPattern[]; initialDefinitions: SerializedRecurringObligation[]; locale: string };
+export function RecurringView({ householdId, initialPatterns, initialDefinitions, locale }: Props) {
   const t = useTranslations("Recurring");
   const [patterns, setPatterns] = useState(initialPatterns);
-  const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
-  async function update(patternKey: string, status: "confirmed" | "dismissed") {
-    setBusyKey(patternKey);
-    setMessage(null);
-    try {
-      const response = await fetch(`/api/households/${householdId}/recurring`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patternKey, status }),
-      });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? t("error"));
-      setPatterns((current) => current.map((pattern) => pattern.key === patternKey ? json.data : pattern));
-      setMessage(status === "confirmed" ? t("confirmed") : t("dismissed"));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : t("error"));
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="border-b border-slate-200 pb-5 dark:border-stone-800">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">{t("eyebrow")}</p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-stone-100">{t("title")}</h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-stone-400">{t("description")}</p>
-      </header>
-      {message ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">{message}</p> : null}
-      {patterns.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-sm text-slate-600 dark:border-stone-700 dark:text-stone-400">{t("empty")}</p>
-      ) : (
-        <section aria-label={t("sectionLabel")} className="grid gap-4 md:grid-cols-2">
-          {patterns.map((pattern) => (
-            <article key={pattern.key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-stone-800 dark:bg-stone-950">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-semibold text-slate-900 dark:text-stone-100">{pattern.counterparty}</h2>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-stone-400">{pattern.kind === "income" ? t("income") : t("expense")} · {pattern.frequency === "monthly" ? t("monthly") : t("weekly")}</p>
-                </div>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600 dark:bg-stone-900 dark:text-stone-300">{t(pattern.status)}</span>
-              </div>
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-slate-500 dark:text-stone-500">{t("typicalAmount")}</dt><dd className="font-medium text-slate-900 dark:text-stone-100">{formatAmountPresentation(pattern.typicalAmountMinor, pattern.currency, locale)}</dd></div>
-                <div><dt className="text-slate-500 dark:text-stone-500">{t("observations")}</dt><dd className="font-medium text-slate-900 dark:text-stone-100">{pattern.observationIds.length}</dd></div>
-                <div><dt className="text-slate-500 dark:text-stone-500">{t("lastObserved")}</dt><dd className="font-medium text-slate-900 dark:text-stone-100">{new Intl.DateTimeFormat(locale).format(new Date(pattern.lastObservedOn))}</dd></div>
-                <div><dt className="text-slate-500 dark:text-stone-500">{t("nextExpected")}</dt><dd className="font-medium text-slate-900 dark:text-stone-100">{new Intl.DateTimeFormat(locale).format(new Date(pattern.nextExpectedOn))}</dd></div>
-              </dl>
-              {pattern.status === "suggested" ? <div className="mt-5 flex flex-wrap gap-2"><button type="button" disabled={busyKey === pattern.key} onClick={() => update(pattern.key, "confirmed")} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 dark:bg-emerald-400 dark:text-stone-950">{t("confirm")}</button><button type="button" disabled={busyKey === pattern.key} onClick={() => update(pattern.key, "dismissed")} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-stone-700 dark:text-stone-200">{t("dismiss")}</button></div> : null}
-            </article>
-          ))}
-        </section>
-      )}
-    </main>
-  );
+  const [definitions, setDefinitions] = useState(initialDefinitions);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<SerializedRecurringObligation | null>(null);
+  const [title, setTitle] = useState(""); const [amount, setAmount] = useState(""); const [currency, setCurrency] = useState("PLN"); const [frequency, setFrequency] = useState<"weekly" | "monthly" | "yearly">("monthly"); const [firstDueDate, setFirstDueDate] = useState(""); const [endDate, setEndDate] = useState(""); const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false); const [message, setMessage] = useState<string | null>(null);
+  async function updatePattern(patternKey: string, status: "confirmed" | "dismissed") { setBusy(true); try { const response = await fetch(`/api/households/${householdId}/recurring`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patternKey, status }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error ?? t("error")); setPatterns((items) => items.map((item) => item.key === patternKey ? json.data : item)); setMessage(status === "confirmed" ? t("confirmed") : t("dismissed")); } catch (error) { setMessage(error instanceof Error ? error.message : t("error")); } finally { setBusy(false); } }
+  function reset() { setFormOpen(false); setEditing(null); setTitle(""); setAmount(""); setCurrency("PLN"); setFrequency("monthly"); setFirstDueDate(""); setEndDate(""); setNotes(""); }
+  function startEdit(item: SerializedRecurringObligation) { setEditing(item); setFormOpen(true); setTitle(item.title); setAmount(""); setCurrency(item.currency); setFrequency(item.frequency); setFirstDueDate(item.firstDueDate); setEndDate(item.endDate ?? ""); setNotes(item.notes ?? ""); }
+  async function submit(event: React.FormEvent) { event.preventDefault(); setBusy(true); setMessage(null); try { const url = editing ? `/api/households/${householdId}/recurring-obligations/${editing.id}` : `/api/households/${householdId}/recurring-obligations`; const response = await fetch(url, { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, ...(amount ? { amountNatural: amount } : {}), currency, frequency, firstDueDate, endDate: endDate || null, notes: notes || null, ...(editing ? { version: editing.version } : {}) }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error ?? t("error")); setDefinitions((items) => editing ? items.map((item) => item.id === editing.id ? json.data : item) : [...items, json.data]); reset(); setMessage(t("saved")); } catch (error) { setMessage(error instanceof Error ? error.message : t("error")); } finally { setBusy(false); } }
+  async function stop(item: SerializedRecurringObligation) { setBusy(true); try { const response = await fetch(`/api/households/${householdId}/recurring-obligations/${item.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: item.version }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error ?? t("error")); setDefinitions((items) => items.map((current) => current.id === item.id ? json.data : current)); setMessage(t("stopped")); } catch (error) { setMessage(error instanceof Error ? error.message : t("error")); } finally { setBusy(false); } }
+  return <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+    <header className="border-b border-slate-200 pb-5 dark:border-stone-800"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">{t("eyebrow")}</p><h1 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-stone-100">{t("title")}</h1><p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-stone-400">{t("description")}</p></header>
+    {message ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p> : null}
+    <section aria-labelledby="recurring-definitions-title"><div className="flex items-center justify-between gap-3"><div><h2 id="recurring-definitions-title" className="text-lg font-semibold text-slate-900 dark:text-stone-100">{t("definitionsTitle")}</h2><p className="text-sm text-slate-600 dark:text-stone-400">{t("definitionsDescription")}</p></div><button type="button" onClick={() => { reset(); setFormOpen(true); }} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{t("add")}</button></div>
+      {definitions.length === 0 ? <p className="mt-4 rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-600">{t("noDefinitions")}</p> : <div className="mt-4 grid gap-3 md:grid-cols-2">{definitions.map((item) => <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950"><div className="flex justify-between gap-3"><div><h3 className="font-semibold">{item.title}</h3><p className="text-sm text-slate-600">{t(item.frequency)} · {item.currency}</p></div>{item.cancelledAt ? <span className="text-xs text-slate-500">{t("stoppedLabel")}</span> : null}</div><p className="mt-2 text-sm">{item.amountMinor ? formatAmountPresentation(item.amountMinor, item.currency, locale) : ""} · {item.firstDueDate}{item.endDate ? ` – ${item.endDate}` : ""}</p><div className="mt-3 flex gap-2">{!item.cancelledAt ? <><button type="button" disabled={busy} onClick={() => startEdit(item)} className="rounded-lg border px-3 py-1.5 text-xs font-semibold">{t("edit")}</button><button type="button" disabled={busy} onClick={() => stop(item)} className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700">{t("stop")}</button></> : null}</div></article>)}</div>}
+    </section>
+    {formOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"><form onSubmit={submit} className="w-full max-w-md space-y-3 rounded-2xl bg-white p-6 dark:bg-stone-900"><h2 className="text-lg font-bold">{editing ? t("editTitle") : t("createTitle")}</h2><label className="block text-sm">{t("formTitle")}<input required maxLength={160} value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" /></label><div className="grid grid-cols-2 gap-3"><label className="block text-sm">{t("formAmount")}<input required={!editing} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={editing ? t("leaveAmount") : undefined} className="mt-1 w-full rounded-lg border px-3 py-2" /></label><label className="block text-sm">{t("formCurrency")}<input required maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className="mt-1 w-full rounded-lg border px-3 py-2 uppercase" /></label></div><label className="block text-sm">{t("formFrequency")}<select value={frequency} onChange={(e) => setFrequency(e.target.value as typeof frequency)} className="mt-1 w-full rounded-lg border px-3 py-2"><option value="weekly">{t("weekly")}</option><option value="monthly">{t("monthly")}</option><option value="yearly">{t("yearly")}</option></select></label><label className="block text-sm">{t("formFirstDue")}<input required type="date" value={firstDueDate} onChange={(e) => setFirstDueDate(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" /></label><label className="block text-sm">{t("formEndDate")}<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" /></label><label className="block text-sm">{t("formNotes")}<input maxLength={280} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2" /></label><div className="flex justify-end gap-2"><button type="button" onClick={reset} className="rounded-lg border px-3 py-2 text-sm">{t("close")}</button><button disabled={busy} type="submit" className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">{t("save")}</button></div></form></div> : null}
+    <section aria-label={t("sectionLabel")}><h2 className="text-lg font-semibold">{t("suggestionsTitle")}</h2>{patterns.length === 0 ? <p className="mt-3 text-sm text-slate-600">{t("empty")}</p> : <div className="mt-3 grid gap-4 md:grid-cols-2">{patterns.map((pattern) => <article key={pattern.key} className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">{pattern.counterparty}</h3><p className="text-sm text-slate-600">{pattern.kind === "income" ? t("income") : t("expense")} · {t(pattern.frequency)}</p></div><span role="status" className="text-xs text-slate-500">{t(pattern.status)}</span></div><p className="mt-2 text-sm">{formatAmountPresentation(pattern.typicalAmountMinor, pattern.currency, locale)}</p>{pattern.status === "suggested" ? <div className="mt-3 flex gap-2"><button type="button" disabled={busy} onClick={() => updatePattern(pattern.key, "confirmed")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">{t("confirm")}</button><button type="button" disabled={busy} onClick={() => updatePattern(pattern.key, "dismissed")} className="rounded-lg border px-3 py-1.5 text-xs font-semibold">{t("dismiss")}</button></div> : null}</article>)}</div>}</section>
+  </main>;
 }

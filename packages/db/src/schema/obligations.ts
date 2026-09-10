@@ -14,6 +14,7 @@ import {
 import { currencyCheck, households, instant } from "./foundation";
 import { financeSchema } from "./namespace";
 import { transactions } from "./transactions";
+import { recurringObligationDefinitions } from "./recurring-obligations";
 
 export const obligations = financeSchema.table(
   "obligations",
@@ -28,6 +29,7 @@ export const obligations = financeSchema.table(
     dueDate: date("due_date", { mode: "string" }).notNull(),
     notes: varchar("notes", { length: 280 }),
     transactionId: uuid("transaction_id"),
+    recurringDefinitionId: uuid("recurring_definition_id"),
     version: integer("version").default(1).notNull(),
     cancelledAt: instant("cancelled_at"),
     createdAt: instant("created_at").defaultNow().notNull(),
@@ -38,6 +40,11 @@ export const obligations = financeSchema.table(
       name: "obligations_transaction_fk",
       columns: [table.transactionId],
       foreignColumns: [transactions.id],
+    }).onDelete("set null"),
+    foreignKey({
+      name: "obligations_recurring_definition_fk",
+      columns: [table.recurringDefinitionId],
+      foreignColumns: [recurringObligationDefinitions.id],
     }).onDelete("set null"),
     check("obligations_title_not_blank", sql`length(btrim(${table.title})) > 0`),
     check("obligations_amount_positive", sql`${table.amountMinor} > 0`),
@@ -50,6 +57,10 @@ export const obligations = financeSchema.table(
       table.dueDate,
     ),
     index("obligations_transaction_id_idx").on(table.transactionId),
+    index("obligations_recurring_definition_idx").on(table.recurringDefinitionId, table.dueDate),
+    uniqueIndex("obligations_recurring_occurrence_unique")
+      .on(table.recurringDefinitionId, table.dueDate)
+      .where(sql`${table.recurringDefinitionId} is not null and ${table.cancelledAt} is null`),
     index("obligations_household_cancelled_at_idx").on(
       table.householdId,
       table.cancelledAt,

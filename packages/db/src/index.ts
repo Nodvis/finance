@@ -205,6 +205,16 @@ export {
 } from "./access/liabilities";
 export * from "./access/categorization-rules";
 export * from "./access/obligations";
+export {
+  RECURRING_MATERIALIZATION_DAYS,
+  RecurringObligationNotFoundError,
+  RecurringObligationVersionConflictError,
+  cancelRecurringObligationInDb,
+  createRecurringObligationInDb,
+  listRecurringObligationsInDb,
+  materializeRecurringObligationsInDb,
+  updateRecurringObligationInDb,
+} from "./access/recurring-obligations";
 export type {
   HouseholdLiabilitySummary,
   LiabilityRepaymentRow,

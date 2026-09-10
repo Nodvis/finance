@@ -17,6 +17,7 @@ vi.mock("@nodvis/finance-db", () => ({
   unlinkObligationInDb: vi.fn(),
   listCandidateTransactionsForObligation: vi.fn(),
   getUpcomingObligationsSummary: vi.fn(),
+  materializeRecurringObligationsInDb: vi.fn(),
   serializeObligation: vi.fn((row) => ({
     ...row,
     amountMinor: row.amountMinor.toString(),
