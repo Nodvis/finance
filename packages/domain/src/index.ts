@@ -140,6 +140,8 @@ export type {
   PeriodCashFlowSummary,
 } from "./overview";
 
+export * from "./forecast";
+
 export {
   TRANSACTION_AUDIT_OPERATIONS,
   TRANSACTION_AUDIT_SOURCES,

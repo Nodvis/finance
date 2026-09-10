@@ -41,17 +41,28 @@ vi.mock("@/lib/overview/service", () => ({
   getHouseholdOverview: vi.fn(),
 }));
 
+vi.mock("@/lib/forecast/service", () => ({
+  getHouseholdCashForecast: vi.fn(),
+}));
+
 import { listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { listHouseholdCategories } from "@/lib/categories/service";
 import { getHouseholdOverview } from "@/lib/overview/service";
+import { getHouseholdCashForecast } from "@/lib/forecast/service";
 import { listManualTransactions } from "@/lib/transactions/service";
 import HomePage from "./page";
 
 describe("HomePage Server Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getHouseholdCashForecast).mockResolvedValue({
+      asOf: "2026-09-10",
+      horizonDays: 7,
+      endDate: "2026-09-17",
+      byCurrency: [],
+    });
   });
 
   it("renders the sign-in section when user is unauthenticated", async () => {
