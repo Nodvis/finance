@@ -106,6 +106,32 @@ describe("Obligations Web Service", () => {
     expect(result[0]?.amountMinor).toBe("250000");
   });
 
+  it("forwards query parameters (status, scope, currency, sort, limit, offset) to listObligationsByHousehold", async () => {
+    vi.mocked(listObligationsByHousehold).mockResolvedValue([]);
+
+    await listHouseholdObligations(testContext, {
+      status: "active",
+      scope: "active",
+      currency: "EUR",
+      sortBy: "dueDate",
+      sortOrder: "desc",
+      today: "2026-09-10",
+      limit: 20,
+      offset: 40,
+    });
+
+    expect(listObligationsByHousehold).toHaveBeenCalledWith(validHousehold, {
+      status: "active",
+      scope: "active",
+      currency: "EUR",
+      sortBy: "dueDate",
+      sortOrder: "desc",
+      today: "2026-09-10",
+      limit: 20,
+      offset: 40,
+    });
+  });
+
   it("creates an obligation parsing natural decimal input via BigInt", async () => {
     const mockRow = {
       id: "ob-2",

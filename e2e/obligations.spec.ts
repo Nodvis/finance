@@ -89,7 +89,7 @@ test.describe("obligations vertical slice", () => {
       await expect(
         page.getByText(`Internet Fiber ${locale}`, { exact: true }),
       ).toBeVisible();
-      await expect(page.getByText(/149[,.]99/)).toBeVisible();
+      await expect(page.getByText(/149[,.]99/).first()).toBeVisible();
 
       const obligationsResponse = await page.request.get(
         `/api/households/${household.householdId}/obligations`,
@@ -109,7 +109,7 @@ test.describe("obligations vertical slice", () => {
 
       // 7. Verify Overview displays upcoming obligation
       await page.goto(`/${locale}`);
-      await expect(page.getByText(/149[,.]99/)).toBeVisible();
+      await expect(page.getByText(/149[,.]99/).first()).toBeVisible();
 
       // 8. Record matching canonical expense transaction via API (exact currency and minor units)
       const txResponse = await page.request.post(
@@ -161,6 +161,56 @@ test.describe("obligations vertical slice", () => {
       // 12. Verify status returns to Upcoming
       await expect(
         page.getByText(locale === "pl" ? "Nadchodzące" : "Upcoming").first(),
+      ).toBeVisible();
+
+      // 13. Create and cancel a second obligation to exercise server-side history filters
+      const historyResponse = await page.request.post(
+        `/api/households/${household.householdId}/obligations`,
+        {
+          data: {
+            title: `Cancelled Internet ${locale}`,
+            amountNatural: "39.00",
+            currency: "PLN",
+            dueDate: "2026-09-20",
+          },
+        },
+      );
+      expect(historyResponse.ok(), await historyResponse.text()).toBeTruthy();
+      const historyObligation = (await historyResponse.json()).data as {
+        id: string;
+        version: number;
+      };
+      const cancelResponse = await page.request.post(
+        `/api/households/${household.householdId}/obligations/${historyObligation.id}/cancel`,
+        { data: { version: historyObligation.version } },
+      );
+      expect(cancelResponse.ok(), await cancelResponse.text()).toBeTruthy();
+
+      await page.goto(
+        `/${locale}/upcoming?status=history&currency=PLN&sortOrder=desc`,
+      );
+      await expect(
+        page.getByText(`Cancelled Internet ${locale}`, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(`Internet Fiber ${locale}`, { exact: true }),
+      ).not.toBeVisible();
+      await expect(page).toHaveURL(/status=history/);
+
+      // UI filter changes remain URL-persistent and server-backed after reload
+      const statusHistoryButton = page.getByRole("button", {
+        name: locale === "pl" ? /Historia/ : /History/,
+      });
+      await expect(statusHistoryButton).toHaveClass(/bg-emerald/);
+      await page
+        .getByRole("combobox", {
+          name: locale === "pl" ? "Waluta" : "Currency",
+        })
+        .selectOption("all");
+      await expect(page).toHaveURL(/status=history/);
+      await page.reload();
+      await expect(
+        page.getByText(`Cancelled Internet ${locale}`, { exact: true }),
       ).toBeVisible();
     });
   }

@@ -1,12 +1,16 @@
-import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import {
   createObligation,
+  getDefaultObligationSortOrder,
   getObligationStatus,
   householdId as toHouseholdId,
+  isObligationActive,
+  isObligationHistory,
   money,
   obligationId as toObligationId,
   transactionId as toTransactionId,
   updateObligation,
+  type ObligationScope,
   type ObligationStatus,
 } from "@nodvis/finance-domain";
 
@@ -150,17 +154,83 @@ function mapToObligationWithTransaction(
   };
 }
 
+export type ListObligationsOptions = {
+  status?: ObligationStatus | "active" | "history" | "all" | undefined;
+  scope?: ObligationScope | undefined;
+  currency?: string | undefined;
+  sortBy?: "dueDate" | undefined;
+  sortOrder?: "asc" | "desc" | undefined;
+  today?: string | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+};
+
 export async function listObligationsByHousehold(
   householdId: string,
-  options?: {
-    status?: ObligationStatus | "active" | "all" | undefined;
-    today?: string | undefined;
-  } | undefined,
+  options?: ListObligationsOptions,
 ): Promise<ObligationWithTransaction[]> {
   const db = getDb();
   const todayStr = options?.today ?? new Date().toISOString().slice(0, 10);
+  const filterStatus = options?.status ?? options?.scope ?? "all";
+  const effectiveSortOrder =
+    options?.sortOrder ?? getDefaultObligationSortOrder(filterStatus);
 
-  const rows = await db
+  const whereConditions = [eq(obligations.householdId, householdId)];
+
+  if (options?.currency) {
+    whereConditions.push(
+      eq(obligations.currency, options.currency.trim().toUpperCase()),
+    );
+  }
+
+  // SQL status pre-filtering
+  if (filterStatus === "cancelled") {
+    whereConditions.push(isNotNull(obligations.cancelledAt));
+  } else if (filterStatus === "paid") {
+    whereConditions.push(
+      and(
+        isNull(obligations.cancelledAt),
+        isNotNull(obligations.transactionId),
+      )!,
+    );
+  } else if (filterStatus === "active") {
+    whereConditions.push(
+      and(
+        isNull(obligations.cancelledAt),
+        isNull(obligations.transactionId),
+      )!,
+    );
+  } else if (filterStatus === "history") {
+    whereConditions.push(
+      or(
+        isNotNull(obligations.cancelledAt),
+        isNotNull(obligations.transactionId),
+      )!,
+    );
+  } else if (filterStatus === "upcoming") {
+    whereConditions.push(
+      and(
+        isNull(obligations.cancelledAt),
+        isNull(obligations.transactionId),
+        gte(obligations.dueDate, todayStr),
+      )!,
+    );
+  } else if (filterStatus === "overdue") {
+    whereConditions.push(
+      and(
+        isNull(obligations.cancelledAt),
+        isNull(obligations.transactionId),
+        lt(obligations.dueDate, todayStr),
+      )!,
+    );
+  }
+
+  const orderClauses =
+    effectiveSortOrder === "desc"
+      ? [desc(obligations.dueDate), desc(obligations.id)]
+      : [asc(obligations.dueDate), asc(obligations.id)];
+
+  let query = db
     .select({
       obligation: obligations,
       txId: transactions.id,
@@ -177,8 +247,17 @@ export async function listObligationsByHousehold(
         eq(transactions.householdId, householdId),
       ),
     )
-    .where(eq(obligations.householdId, householdId))
-    .orderBy(asc(obligations.dueDate), asc(obligations.id));
+    .where(and(...whereConditions))
+    .orderBy(...orderClauses);
+
+  if (typeof options?.limit === "number" && options.limit > 0) {
+    query = query.limit(options.limit) as typeof query;
+  }
+  if (typeof options?.offset === "number" && options.offset > 0) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  const rows = await query;
 
   const items = rows.map((r) =>
     mapToObligationWithTransaction(
@@ -196,12 +275,15 @@ export async function listObligationsByHousehold(
     ),
   );
 
-  const filterStatus = options?.status ?? "all";
+  // In-memory verification filter to ensure domain status parity
   if (filterStatus === "all") {
     return items;
   }
   if (filterStatus === "active") {
-    return items.filter((item) => item.status !== "cancelled");
+    return items.filter((item) => isObligationActive(item.status));
+  }
+  if (filterStatus === "history") {
+    return items.filter((item) => isObligationHistory(item.status));
   }
   return items.filter((item) => item.status === filterStatus);
 }

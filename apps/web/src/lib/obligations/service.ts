@@ -67,7 +67,13 @@ export async function listHouseholdObligations(
 
   const rows = await listObligationsByHousehold(context.householdId, {
     status: query?.status ?? undefined,
+    scope: query?.scope ?? undefined,
+    currency: query?.currency ?? undefined,
+    sortBy: query?.sortBy ?? undefined,
+    sortOrder: query?.sortOrder ?? undefined,
     today: query?.today ?? undefined,
+    limit: query?.limit ?? undefined,
+    offset: query?.offset ?? undefined,
   });
 
   return rows.map(serializeHouseholdObligation);

@@ -111,6 +111,31 @@ describe("/api/households/[householdId]/obligations", () => {
       expect(json.data).toHaveLength(1);
       expect(json.data[0].title).toBe("Phone");
     });
+
+    it("parses query parameters (status, scope, currency, sort, limit, offset) and passes them to service", async () => {
+      vi.mocked(listHouseholdObligations).mockResolvedValue([]);
+
+      const response = await GET(
+        new Request(
+          `http://localhost/api/households/${validHousehold}/obligations?status=active&scope=active&currency=EUR&sort=dueDateDesc&limit=15&offset=5&today=2026-09-10`,
+        ),
+        { params: Promise.resolve({ householdId: validHousehold }) },
+      );
+
+      expect(response.status).toBe(200);
+      expect(listHouseholdObligations).toHaveBeenCalledWith(
+        testAccess,
+        expect.objectContaining({
+          status: "active",
+          scope: "active",
+          currency: "EUR",
+          sortOrder: "desc",
+          limit: 15,
+          offset: 5,
+          today: "2026-09-10",
+        }),
+      );
+    });
   });
 
   describe("POST", () => {

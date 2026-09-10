@@ -70,6 +70,28 @@ export function validateObligationAmount(amount: Money): Money {
 }
 
 export type ObligationStatus = "upcoming" | "overdue" | "paid" | "cancelled";
+export type ObligationScope = "active" | "history" | "all";
+
+export function isObligationActive(status: ObligationStatus): boolean {
+  return status === "upcoming" || status === "overdue";
+}
+
+export function isObligationHistory(status: ObligationStatus): boolean {
+  return status === "paid" || status === "cancelled";
+}
+
+export function getDefaultObligationSortOrder(
+  statusOrScope?: ObligationStatus | "active" | "history" | "all" | undefined,
+): "asc" | "desc" {
+  if (
+    statusOrScope === "paid" ||
+    statusOrScope === "cancelled" ||
+    statusOrScope === "history"
+  ) {
+    return "desc";
+  }
+  return "asc";
+}
 
 export type Obligation = Readonly<{
   id: ObligationId;

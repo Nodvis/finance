@@ -83,12 +83,34 @@ export const cancelObligationSchema = z.object({
   version: z.number().int().positive("Version must be a positive integer"),
 });
 
-export const obligationQuerySchema = z.object({
-  status: z
-    .enum(["all", "active", "upcoming", "overdue", "paid", "cancelled"])
-    .optional(),
-  today: calendarDateSchema.optional(),
-});
+export const obligationQuerySchema = z
+  .object({
+    status: z
+      .enum(["all", "active", "upcoming", "overdue", "paid", "cancelled", "history"])
+      .optional(),
+    scope: z.enum(["active", "history", "all"]).optional(),
+    currency: currencyCodeSchema.optional(),
+    sortBy: z.enum(["dueDate"]).optional().default("dueDate"),
+    sortOrder: z.enum(["asc", "desc"]).optional(),
+    sort: z.enum(["dueDateAsc", "dueDateDesc", "asc", "desc"]).optional(),
+    today: calendarDateSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    offset: z.coerce.number().int().min(0).optional(),
+  })
+  .transform((data) => {
+    let resolvedSortOrder = data.sortOrder;
+    if (!resolvedSortOrder && data.sort) {
+      if (data.sort === "dueDateDesc" || data.sort === "desc") {
+        resolvedSortOrder = "desc";
+      } else if (data.sort === "dueDateAsc" || data.sort === "asc") {
+        resolvedSortOrder = "asc";
+      }
+    }
+    return {
+      ...data,
+      sortOrder: resolvedSortOrder,
+    };
+  });
 
 export type CreateObligationInput = z.infer<typeof createObligationSchema>;
 export type UpdateObligationInput = z.infer<typeof updateObligationSchema>;
