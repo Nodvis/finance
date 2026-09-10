@@ -204,6 +204,7 @@ export {
   voidLiabilityRepaymentInDb,
 } from "./access/liabilities";
 export * from "./access/categorization-rules";
+export * from "./access/obligations";
 export type {
   HouseholdLiabilitySummary,
   LiabilityRepaymentRow,

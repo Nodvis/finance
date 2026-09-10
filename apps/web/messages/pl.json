@@ -12,6 +12,7 @@
     "imports": "Importy",
     "transfers": "Przelewy",
     "liabilities": "Zobowiązania",
+    "upcoming": "Do zapłaty",
     "rules": "Reguły",
     "recurring": "Powtarzalne",
     "analytics": "Analiza",
@@ -668,7 +669,11 @@
     "upcoming": {
       "title": "Nadchodzące zobowiązania",
       "notModeled": "Nadchodzące zobowiązania nie są jeszcze modelowane",
-      "note": "Zaplanowane rachunki i przyszłe zobowiązania pojawią się tutaj po ich zamodelowaniu."
+      "note": "Zaplanowane rachunki i przyszłe zobowiązania pojawią się tutaj po ich zamodelowaniu.",
+      "viewAll": "Zobacz nadchodzące zobowiązania",
+      "empty": "Brak nadchodzących zobowiązań",
+      "upcomingCount": "{count} nadchodzących zobowiązań",
+      "overdueCount": "{count} przeterminowanych"
     },
     "debt": {
       "title": "Zadłużenie i zobowiązania",
@@ -794,5 +799,86 @@
     "languageDescription": "Wybierz język używany w całej przestrzeni finansów.",
     "account": "Twoje konto",
     "openSettings": "Otwórz ustawienia"
+  },
+  "Obligations": {
+    "eyebrow": "Zobowiązania",
+    "title": "Nadchodzące płatności",
+    "description": "Śledź nadchodzące rachunki, zaplanowane płatności i wydatki. Po opłaceniu połącz je z zarejestrowanymi transakcjami.",
+    "addObligation": "Dodaj zobowiązanie",
+    "tabs": {
+      "all": "Wszystkie",
+      "upcoming": "Nadchodzące",
+      "overdue": "Przeterminowane",
+      "paid": "Opłacone",
+      "cancelled": "Anulowane"
+    },
+    "summary": {
+      "upcomingTotal": "Do zapłaty",
+      "overdueTotal": "Przeterminowane",
+      "paidTotal": "Opłacone",
+      "totalCount": "{count} zobowiązań",
+      "noOverdue": "Brak przeterminowanych zobowiązań"
+    },
+    "form": {
+      "createTitle": "Dodaj nadchodzące zobowiązanie",
+      "editTitle": "Edytuj zobowiązanie",
+      "titleLabel": "Tytuł",
+      "titlePlaceholder": "np. Rachunek za internet, Czynsz, Ubezpieczenie",
+      "amountLabel": "Kwota",
+      "currencyLabel": "Waluta",
+      "dueDateLabel": "Termin płatności",
+      "notesLabel": "Notatki (opcjonalnie)",
+      "notesPlaceholder": "Opcjonalne szczegóły lub numer referencyjny",
+      "createButton": "Dodaj zobowiązanie",
+      "saveButton": "Zapisz zmiany",
+      "cancelButton": "Anuluj"
+    },
+    "actions": {
+      "edit": "Edytuj",
+      "match": "Połącz z płatnością",
+      "unlink": "Odłącz",
+      "cancel": "Anuluj",
+      "confirmCancel": "Czy na pewno chcesz anulować to zobowiązanie?",
+      "confirmUnlink": "Czy na pewno chcesz odłączyć tę transakcję?"
+    },
+    "matching": {
+      "title": "Połącz zobowiązanie z płatnością",
+      "description": "Wybierz zarejestrowany wydatek, który pokrywa to zobowiązanie. Wymagana jest dokładnie taka sama kwota i waluta.",
+      "noCandidates": "Nie znaleziono pasujących wydatków o zgodnej kwocie i walucie.",
+      "selectCandidate": "Wybierz transakcję:",
+      "confirmMatch": "Potwierdź połączenie",
+      "matching": "Łączenie...",
+      "loadingCandidates": "Szukanie transakcji...",
+      "close": "Zamknij"
+    },
+    "item": {
+      "dueDate": "Termin",
+      "amount": "Kwota",
+      "notes": "Notatki",
+      "paidVia": "Opłacono przez",
+      "onDate": "w dniu {date}",
+      "status": "Status"
+    },
+    "status": {
+      "upcoming": "Nadchodzące",
+      "overdue": "Przeterminowane",
+      "paid": "Opłacone",
+      "cancelled": "Anulowane"
+    },
+    "empty": {
+      "all": "Brak zarejestrowanych zobowiązań.",
+      "upcoming": "Brak zaplanowanych nadchodzących zobowiązań.",
+      "overdue": "Brak przeterminowanych zobowiązań.",
+      "paid": "Brak opłaconych zobowiązań.",
+      "cancelled": "Brak anulowanych zobowiązań."
+    },
+    "feedback": {
+      "createSuccess": "Zobowiązanie zostało pomyślnie dodane.",
+      "updateSuccess": "Zobowiązanie zostało zaktualizowane.",
+      "matchSuccess": "Zobowiązanie połączono z transakcją i oznaczono jako opłacone.",
+      "unlinkSuccess": "Transakcja została odłączona. Przywrócono stan aktywny zobowiązania.",
+      "cancelSuccess": "Zobowiązanie zostało anulowane.",
+      "errorGeneric": "Wystąpił błąd. Spróbuj ponownie."
+    }
   }
 }

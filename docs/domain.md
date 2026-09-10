@@ -120,21 +120,30 @@ The system should preserve both cash-flow events while allowing analytics to com
 
 ### Obligation
 
-A planned or expected payment that has not necessarily happened.
+A planned or committed upcoming payment for a household (e.g. utility bills, subscriptions, scheduled insurance, rent).
 
-Example:
-
-```text
-Rent
-expected: 3000 PLN
-frequency: monthly
-payment method: cash
-status: expected
-```
-
-An obligation affects forecasts/upcoming views but **does not change actual account balances**.
-
-An actual payment can later settle or match the obligation.
+Key semantics and invariants:
+- **Household-scoped**: Belongs to exactly one household.
+- **Fields**:
+  - `title`: Non-empty description up to 160 characters.
+  - `amountMinor`: Positive integer in minor currency units (BigInt). JS `Number` is never used.
+  - `currency`: 3-letter ISO code (e.g. `PLN`).
+  - `dueDate`: Calendar date string (`YYYY-MM-DD`, stored in Postgres `date` format), timezone-independent.
+  - `notes`: Optional string up to 280 characters.
+  - `version`: Optimistic concurrency integer starting at 1.
+  - `cancelledAt`: Null while active; non-null timestamp when cancelled.
+  - `transactionId`: Null while unmatched; points to at most one active canonical expense transaction.
+- **Derived status (never persisted)**:
+  - `upcoming`: Active (`cancelledAt === null`), unmatched (`transactionId === null`), `dueDate >= today`.
+  - `overdue`: Active (`cancelledAt === null`), unmatched (`transactionId === null`), `dueDate < today`.
+  - `paid`: Active (`cancelledAt === null`), matched to an active expense (`transactionId !== null`).
+  - `cancelled`: Inactive (`cancelledAt !== null`). Cannot be matched.
+- **Manual explicit matching**:
+  - Requires exact household, active transaction (`voidedAt === null`), kind `expense`, exact currency, and exact `amountMinor`.
+  - Mutually exclusive with active liability repayments and active BNPL purchases (one canonical transaction cannot satisfy multiple domain links).
+  - Unlink returns the obligation to active status (`upcoming` or `overdue`).
+- **Deferred recurrence**:
+  - Recurrence is intentionally kept out of persisted semantics in the MVP. Each obligation represents a discrete payment commitment. Automated recurring generation is explicitly deferred.
 
 ### Liability
 
@@ -309,6 +318,10 @@ Do not reduce them to a single main-screen balance such as `cash - total debt`.
 ### INV-014 — Forecast communicates uncertainty
 
 Estimated future values must not be represented as guaranteed actual balances.
+
+### INV-015 — Obligations are pure planning metadata with mutually exclusive transaction matching
+
+Obligations never alter ledger balances, snapshots, cash flow reporting, or available cash. An obligation is satisfied solely by explicit manual matching with an active canonical expense transaction of identical currency and minor amount. A canonical transaction cannot be simultaneously linked to an active obligation, active liability repayment, or active BNPL purchase.
 
 ## Reconciliation
 

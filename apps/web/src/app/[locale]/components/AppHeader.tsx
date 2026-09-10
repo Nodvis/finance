@@ -57,7 +57,7 @@ export async function AppHeader() {
             </div>
           ) : null}
         </div>
-        {session ? <AppNav labels={{ home: tNav("home"), accounts: tNav("accounts"), categories: tNav("categories"), imports: tNav("imports"), transfers: tNav("transfers"), liabilities: tNav("liabilities"), rules: tNav("rules"), recurring: tNav("recurring"), analytics: tNav("analytics") }} ariaLabel={tAccess("mainNavigation")} /> : null}
+        {session ? <AppNav labels={{ home: tNav("home"), accounts: tNav("accounts"), categories: tNav("categories"), imports: tNav("imports"), transfers: tNav("transfers"), liabilities: tNav("liabilities"), upcoming: tNav("upcoming"), rules: tNav("rules"), recurring: tNav("recurring"), analytics: tNav("analytics") }} ariaLabel={tAccess("mainNavigation")} /> : null}
       </div>
     </header>
   );

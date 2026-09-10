@@ -4,7 +4,9 @@ import {
   getHouseholdEligibleAccounts,
   getHouseholdPeriodCashFlow,
   getHouseholdPeriodCategorySpending,
+  getUpcomingObligationsSummary,
   isPersonInHousehold,
+  type UpcomingObligationsSummary,
 } from "@nodvis/finance-db";
 import {
   DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS,
@@ -66,6 +68,7 @@ export type HouseholdOverview = {
     transactionCount: number;
     percentage: number;
   }[];
+  upcoming?: UpcomingObligationsSummary;
 };
 
 export async function getHouseholdOverview(
@@ -113,7 +116,7 @@ export async function getHouseholdOverview(
   const nextMonthKey = getAdjacentMonthKey(baseMonthKey, 1);
 
   // Execute database queries
-  const [cashFlowRows, categoryRows, accountRows] = await Promise.all([
+  const [cashFlowRows, categoryRows, accountRows, upcomingSummary] = await Promise.all([
     getHouseholdPeriodCashFlow({
       householdId: context.householdId,
       startDate: period.startDate,
@@ -125,6 +128,13 @@ export async function getHouseholdOverview(
       endDate: period.endDate,
     }),
     getHouseholdEligibleAccounts(context.householdId),
+    getUpcomingObligationsSummary(context.householdId).catch(() => ({
+      upcomingCount: 0,
+      overdueCount: 0,
+      paidCount: 0,
+      upcomingByCurrency: [],
+      overdueByCurrency: [],
+    })),
   ]);
 
   // Aggregate Available Cash with honesty regarding stale and missing observations
@@ -226,5 +236,6 @@ export async function getHouseholdOverview(
       totalTransactionsCount,
     }),
     categorySpending: Object.freeze(categorySpending),
+    upcoming: upcomingSummary,
   });
 }

@@ -55,5 +55,20 @@ export function serializeOverview(
       transactionCount: cat.transactionCount,
       percentage: cat.percentage,
     })),
+    upcoming: overview.upcoming
+      ? {
+          upcomingCount: overview.upcoming.upcomingCount,
+          overdueCount: overview.upcoming.overdueCount,
+          paidCount: overview.upcoming.paidCount,
+          upcomingByCurrency: overview.upcoming.upcomingByCurrency.map((c) => ({
+            currency: c.currency,
+            totalMinor: c.totalMinor.toString(),
+          })),
+          overdueByCurrency: overview.upcoming.overdueByCurrency.map((c) => ({
+            currency: c.currency,
+            totalMinor: c.totalMinor.toString(),
+          })),
+        }
+      : undefined,
   };
 }

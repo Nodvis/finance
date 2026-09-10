@@ -87,23 +87,67 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
         </div>
       </article>
 
-      {/* 2. Upcoming Obligations Card (Preserving INV-014, not fabricating obligations) */}
+      {/* 2. Upcoming Obligations Card */}
       <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
-            {t("upcoming.title")}
-          </p>
-          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
-            —
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
+              {t("upcoming.title")}
+            </p>
+            {overview.upcoming && overview.upcoming.overdueCount > 0 ? (
+              <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/60">
+                {t("upcoming.overdueCount", { count: overview.upcoming.overdueCount })}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 space-y-1">
+            {overview.upcoming && overview.upcoming.upcomingByCurrency.length > 0 ? (
+              overview.upcoming.upcomingByCurrency.map((curr) => (
+                <p
+                  key={curr.currency}
+                  className="font-mono text-2xl font-semibold tracking-tight text-slate-900 dark:text-stone-100 sm:text-3xl"
+                >
+                  {formatAmountPresentation(
+                    curr.totalMinor,
+                    curr.currency,
+                    locale,
+                  )}
+                </p>
+              ))
+            ) : (
+              <p className="font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+                —
+              </p>
+            )}
+          </div>
         </div>
-        <div className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-stone-800/80 dark:text-stone-400">
-          <p className="font-medium text-slate-700 dark:text-stone-300">
-            {t("upcoming.notModeled")}
-          </p>
-          <p className="mt-0.5 text-slate-400 text-[11px] leading-relaxed dark:text-stone-500">
-            {t("upcoming.note")}
-          </p>
+
+        <div className="mt-4 border-t border-slate-100 pt-3 text-xs dark:border-stone-800/80">
+          {overview.upcoming ? (
+            <div className="flex flex-col gap-1">
+              <p className="text-slate-600 dark:text-stone-300">
+                {overview.upcoming.upcomingCount > 0
+                  ? t("upcoming.upcomingCount", { count: overview.upcoming.upcomingCount })
+                  : t("upcoming.empty")}
+              </p>
+              <Link
+                href={`/${locale}/upcoming`}
+                className="text-slate-500 hover:text-slate-800 underline underline-offset-2 dark:text-stone-400 dark:hover:text-stone-200"
+              >
+                {t("upcoming.viewAll")} →
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="font-medium text-slate-700 dark:text-stone-300">
+                {t("upcoming.notModeled")}
+              </p>
+              <p className="mt-0.5 text-slate-400 text-[11px] leading-relaxed dark:text-stone-500">
+                {t("upcoming.note")}
+              </p>
+            </>
+          )}
         </div>
       </article>
 

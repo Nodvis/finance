@@ -34,6 +34,7 @@ export {
   householdId,
   liabilityId,
   liabilityRepaymentId,
+  obligationId,
   personId,
   statementImportProfileId,
   transactionId,
@@ -47,6 +48,7 @@ export type {
   HouseholdId,
   LiabilityId,
   LiabilityRepaymentId,
+  ObligationId,
   PersonId,
   StatementImportProfileId,
   TransactionId,
@@ -299,3 +301,24 @@ export type {
   CreateBnplPurchaseInput,
   UpdateBnplPurchaseInput,
 } from "./bnpl";
+
+export {
+  MAX_OBLIGATION_NOTES_LENGTH,
+  MAX_OBLIGATION_TITLE_LENGTH,
+  cancelObligation,
+  createObligation,
+  getObligationStatus,
+  matchObligation,
+  unlinkObligation,
+  updateObligation,
+  validateCalendarDate,
+  validateObligationAmount,
+  validateObligationNotes,
+  validateObligationTitle,
+} from "./obligation";
+export type {
+  CreateObligationInput,
+  Obligation,
+  ObligationStatus,
+  UpdateObligationInput,
+} from "./obligation";
