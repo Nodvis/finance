@@ -311,5 +311,13 @@ describe("listTransactionsQuerySchema", () => {
     expect(() =>
       listTransactionsQuerySchema.parse({ to: "2026-04-31" }),
     ).toThrow(ZodError);
+
+    expect(() =>
+      listTransactionsQuerySchema.parse({ startDate: "2026-02-31" }),
+    ).toThrow(ZodError);
+
+    expect(() =>
+      listTransactionsQuerySchema.parse({ endDate: "2026-04-31" }),
+    ).toThrow(ZodError);
   });
 });

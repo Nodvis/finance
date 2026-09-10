@@ -5,6 +5,7 @@ import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { listHouseholdCategories } from "@/lib/categories/service";
 import { serializeOverview } from "@/lib/overview/serialization";
+import { overviewQuerySchema } from "@/lib/overview/schema";
 import { getHouseholdOverview } from "@/lib/overview/service";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
@@ -43,6 +44,14 @@ export default async function HomePage({
     typeof resolvedSearchParams.to === "string"
       ? resolvedSearchParams.to
       : undefined;
+  const overviewQueryResult = overviewQuerySchema.safeParse({
+    month: monthParam,
+    from: fromParam,
+    to: toParam,
+  });
+  const overviewQuery = overviewQueryResult.success
+    ? overviewQueryResult.data
+    : overviewQuerySchema.parse({});
 
   const t = await getTranslations("HomePage");
   const tAccess = await getTranslations("Accessibility");
@@ -121,9 +130,9 @@ export default async function HomePage({
       includeVoided: true,
     }),
     getHouseholdOverview(householdContext, {
-      month: monthParam,
-      from: fromParam,
-      to: toParam,
+      month: overviewQuery.month,
+      from: overviewQuery.from,
+      to: overviewQuery.to,
     }),
   ]);
 
