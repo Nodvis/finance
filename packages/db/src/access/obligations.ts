@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lte, lt, ne, or, sql } from "drizzle-orm";
 import {
   createObligation,
   getDefaultObligationSortOrder,
@@ -161,6 +161,8 @@ export type ListObligationsOptions = {
   sortBy?: "dueDate" | undefined;
   sortOrder?: "asc" | "desc" | undefined;
   today?: string | undefined;
+  dueFrom?: string | undefined;
+  dueTo?: string | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
 };
@@ -176,6 +178,9 @@ export async function listObligationsByHousehold(
     options?.sortOrder ?? getDefaultObligationSortOrder(filterStatus);
 
   const whereConditions = [eq(obligations.householdId, householdId)];
+
+  if (options?.dueFrom) whereConditions.push(gte(obligations.dueDate, options.dueFrom));
+  if (options?.dueTo) whereConditions.push(lte(obligations.dueDate, options.dueTo));
 
   if (options?.currency) {
     whereConditions.push(

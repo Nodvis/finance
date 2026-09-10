@@ -51,6 +51,17 @@
     "next": {
       "title": "Next stage",
       "description": "Household, accounts, cash, balances, categories, manual transactions and transfers — without double-counting money movements or collapsing available cash into debt."
+    },
+    "forecast": {
+      "title": "Cash safety outlook",
+      "subtitle": "Known unpaid obligations are subtracted from observed available cash. This is a planning view, not a promise.",
+      "horizon": "Next",
+      "days": "days",
+      "available": "Available now",
+      "obligations": "Known payments",
+      "projected": "After known payments",
+      "incomplete": "Incomplete data",
+      "included": "Included obligations"
     }
   },
   "Auth": {

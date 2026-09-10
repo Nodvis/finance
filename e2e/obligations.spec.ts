@@ -112,6 +112,30 @@ test.describe("obligations vertical slice", () => {
       // 7. Verify Overview displays upcoming obligation
       await page.goto(`/${locale}`);
       await expect(page.getByText(/149[,.]99/).first()).toBeVisible();
+      await expect(page.getByRole("heading", { name: locale === "pl" ? "Prognoza bezpieczeństwa gotówki" : "Cash safety outlook" })).toBeVisible();
+      await expect(
+        page
+          .getByRole("region", {
+            name: locale === "pl" ? "Prognoza bezpieczeństwa gotówki" : "Cash safety outlook",
+          })
+          .getByRole("definition")
+          .nth(2),
+      ).toHaveText(locale === "pl" ? /5000,00/ : /5,000\.00/);
+      const forecast7Response = await page.request.get(
+        `/api/households/${household.householdId}/forecast?horizon=7`,
+      );
+      expect(forecast7Response.ok(), await forecast7Response.text()).toBeTruthy();
+      const forecast7 = (await forecast7Response.json()).data.byCurrency[0];
+      expect(forecast7.availableCashMinor).toBe("500000");
+      expect(forecast7.includedObligationsMinor).toBe("0");
+      expect(forecast7.projectedCashMinor).toBe("500000");
+      const forecast30Response = await page.request.get(
+        `/api/households/${household.householdId}/forecast?horizon=30`,
+      );
+      expect(forecast30Response.ok()).toBeTruthy();
+      const forecast30 = (await forecast30Response.json()).data.byCurrency[0];
+      expect(forecast30.includedObligationsMinor).toBe("14999");
+      expect(forecast30.projectedCashMinor).toBe("485001");
 
       // 8. Record matching canonical expense transaction via API (exact currency and minor units)
       const txResponse = await page.request.post(

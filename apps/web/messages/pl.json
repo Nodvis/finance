@@ -51,6 +51,17 @@
     "next": {
       "title": "Następny etap",
       "description": "Household, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
+    },
+    "forecast": {
+      "title": "Prognoza bezpieczeństwa gotówki",
+      "subtitle": "Znane, niezapłacone zobowiązania są odejmowane od zaobserwowanej dostępnej gotówki. To widok planistyczny, nie obietnica.",
+      "horizon": "Najbliższe",
+      "days": "dni",
+      "available": "Dostępne teraz",
+      "obligations": "Znane płatności",
+      "projected": "Po znanych płatnościach",
+      "incomplete": "Niepełne dane",
+      "included": "Uwzględnione zobowiązania"
     }
   },
   "Auth": {

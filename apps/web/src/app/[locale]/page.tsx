@@ -7,10 +7,12 @@ import { listHouseholdCategories } from "@/lib/categories/service";
 import { serializeOverview } from "@/lib/overview/serialization";
 import { overviewQuerySchema } from "@/lib/overview/schema";
 import { getHouseholdOverview } from "@/lib/overview/service";
+import { getHouseholdCashForecast } from "@/lib/forecast/service";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
 
 import { CashFlowSection } from "./components/CashFlowSection";
+import { ForecastSection } from "./components/ForecastSection";
 import { CategorySpendingSection } from "./components/CategorySpendingSection";
 import { HouseholdSelectionCard } from "./components/HouseholdSelectionCard";
 import { NoHouseholdCard } from "./components/NoHouseholdCard";
@@ -54,6 +56,7 @@ export default async function HomePage({
     : overviewQuerySchema.parse({});
 
   const t = await getTranslations("HomePage");
+  const tForecast = await getTranslations("HomePage.forecast");
   const tAccess = await getTranslations("Accessibility");
 
   const session = await getCurrentSession();
@@ -117,7 +120,7 @@ export default async function HomePage({
   // 5. User with active household context: load truthful overview and financial data
   const householdContext = householdStatus.activeContext;
 
-  const [accounts, categories, rawTransactions, overview] = await Promise.all([
+  const [accounts, categories, rawTransactions, overview, forecast] = await Promise.all([
     listAccountsByHousehold(householdContext.householdId, {
       includeArchived: false,
     }),
@@ -133,6 +136,10 @@ export default async function HomePage({
       month: overviewQuery.month,
       from: overviewQuery.from,
       to: overviewQuery.to,
+    }),
+    getHouseholdCashForecast(householdContext, {
+      asOf: new Date().toISOString().slice(0, 10),
+      horizonDays: 7,
     }),
   ]);
 
@@ -168,6 +175,22 @@ export default async function HomePage({
       {serializedOverview ? (
         <OverviewCards overview={serializedOverview} locale={locale} />
       ) : null}
+
+      <ForecastSection
+        forecast={forecast}
+        locale={locale}
+        labels={{
+          title: tForecast("title"),
+          subtitle: tForecast("subtitle"),
+          horizon: tForecast("horizon"),
+          days: tForecast("days"),
+          available: tForecast("available"),
+          obligations: tForecast("obligations"),
+          projected: tForecast("projected"),
+          incomplete: tForecast("incomplete"),
+          included: tForecast("included"),
+        }}
+      />
 
       {/* Authenticated Finance Workspace */}
       {serializedOverview && (
