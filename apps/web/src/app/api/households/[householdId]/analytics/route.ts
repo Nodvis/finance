@@ -13,7 +13,7 @@ const analyticsQuerySchema = z.object({
 export async function GET(request: Request, { params }: { params: Promise<{ householdId: string }> }) {
   try {
     const { householdId } = await params;
-    await requireHouseholdAccess(householdId);
+    const context = await requireHouseholdAccess(householdId);
     const url = new URL(request.url);
     const query = analyticsQuerySchema.parse({
       from: url.searchParams.get("from") ?? undefined,
@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ hous
       ...(query.from ? { from: new Date(`${query.from}T00:00:00.000Z`) } : {}),
       ...(query.to ? { to: new Date(`${query.to}T23:59:59.999Z`) } : {}),
     };
-    return NextResponse.json({ data: await getHouseholdAnalytics(householdId, filters) });
+    return NextResponse.json({ data: await getHouseholdAnalytics(context, filters) });
   } catch (error) {
     if (error instanceof HouseholdAccessDeniedError) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (error instanceof ZodError) return NextResponse.json({ error: "Invalid query" }, { status: 400 });

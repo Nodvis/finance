@@ -1,6 +1,8 @@
 import "server-only";
 
 import { listHouseholdAnalyticsTransactions } from "@nodvis/finance-db";
+import type { AuthorizedHouseholdContext } from "@/lib/transactions/service";
+import { isPersonInHousehold } from "@nodvis/finance-db";
 
 export type AnalyticsFilters = { from?: Date; to?: Date };
 
@@ -16,8 +18,11 @@ type CurrencySummary = {
   largest: Array<{ id: string; amountMinor: bigint; occurredOn: Date; label: string }>;
 };
 
-export async function getHouseholdAnalytics(householdId: string, filters: AnalyticsFilters = {}) {
-  const rows = await listHouseholdAnalyticsTransactions(householdId, filters.from, filters.to);
+export async function getHouseholdAnalytics(context: AuthorizedHouseholdContext, filters: AnalyticsFilters = {}) {
+  if (!(await isPersonInHousehold(context.householdId, context.personId))) {
+    throw new Error("Household access denied");
+  }
+  const rows = await listHouseholdAnalyticsTransactions(context.householdId, filters.from, filters.to);
   const summaries = new Map<string, CurrencySummary>();
   for (const row of rows) {
     let summary = summaries.get(row.currency);

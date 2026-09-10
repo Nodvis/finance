@@ -19,6 +19,6 @@ export default async function AnalyticsPage({ params }: { params: Promise<{ loca
   if (status.status === "multiple_needs_selection") return <div className="mx-auto w-full max-w-6xl px-4 py-8"><HouseholdSelectionCard households={status.households} email={session.user.email} /></div>;
   if (status.status !== "single" && status.status !== "multiple_selected") return null;
   const context = status.activeContext;
-  const summaries = await getHouseholdAnalytics(context.householdId);
+  const summaries = await getHouseholdAnalytics(context);
   return <AnalyticsView locale={locale} summaries={summaries} />;
 }

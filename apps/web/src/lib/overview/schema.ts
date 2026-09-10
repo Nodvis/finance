@@ -5,14 +5,19 @@ import { calendarDateSchema } from "@/lib/obligations/schema";
 export const monthKeyPattern = /^\d{4}-(?:0[1-9]|1[0-2])$/;
 export const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
-export const overviewQuerySchema = z.object({
-  month: z
-    .string()
-    .regex(monthKeyPattern, "Month must be in YYYY-MM format")
-    .optional(),
-  from: calendarDateSchema.optional(),
-  to: calendarDateSchema.optional(),
-});
+export const overviewQuerySchema = z
+  .object({
+    month: z
+      .string()
+      .regex(monthKeyPattern, "Month must be in YYYY-MM format")
+      .optional(),
+    from: calendarDateSchema.optional(),
+    to: calendarDateSchema.optional(),
+  })
+  .refine((value) => Boolean(value.from) === Boolean(value.to), {
+    message: "Start and end dates must be provided together",
+    path: ["to"],
+  });
 
 export type OverviewQuery = z.infer<typeof overviewQuerySchema>;
 
