@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { calendarDateSchema } from "@/lib/obligations/schema";
+
 export const monthKeyPattern = /^\d{4}-(?:0[1-9]|1[0-2])$/;
 export const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -8,14 +10,8 @@ export const overviewQuerySchema = z.object({
     .string()
     .regex(monthKeyPattern, "Month must be in YYYY-MM format")
     .optional(),
-  from: z
-    .string()
-    .regex(datePattern, "Start date must be in YYYY-MM-DD format")
-    .optional(),
-  to: z
-    .string()
-    .regex(datePattern, "End date must be in YYYY-MM-DD format")
-    .optional(),
+  from: calendarDateSchema.optional(),
+  to: calendarDateSchema.optional(),
 });
 
 export type OverviewQuery = z.infer<typeof overviewQuerySchema>;

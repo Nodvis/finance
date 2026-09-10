@@ -303,5 +303,13 @@ describe("listTransactionsQuerySchema", () => {
     expect(() =>
       listTransactionsQuerySchema.parse({ accountId: "not-a-uuid" }),
     ).toThrow(ZodError);
+
+    expect(() =>
+      listTransactionsQuerySchema.parse({ from: "2026-02-31" }),
+    ).toThrow(ZodError);
+
+    expect(() =>
+      listTransactionsQuerySchema.parse({ to: "2026-04-31" }),
+    ).toThrow(ZodError);
   });
 });

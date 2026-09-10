@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { calendarDateSchema } from "@/lib/obligations/schema";
+
 const amountMinorSchema = z
   .union([
     z
@@ -195,14 +197,8 @@ export const listTransactionsQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-(?:0[1-9]|1[0-2])$/, "Month must be in YYYY-MM format")
     .optional(),
-  from: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be in YYYY-MM-DD format")
-    .optional(),
-  to: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format")
-    .optional(),
+  from: calendarDateSchema.optional(),
+  to: calendarDateSchema.optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   search: z.string().trim().max(100).optional(),
