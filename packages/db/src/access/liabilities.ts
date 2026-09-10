@@ -617,7 +617,26 @@ export async function recordLiabilityRepaymentInDb(params: {
             // The repayment row is the immutable idempotency record. The
             // owned ledger row may be corrected later without making a
             // retry create a second economic event.
-            sameCash = true;
+            const sameCommonCashIdentity =
+              params.cashTransaction.kind === cash.kind &&
+              params.cashTransaction.amount.amountMinor === cash.amount.amountMinor &&
+              params.cashTransaction.amount.currency === cash.amount.currency &&
+              params.cashTransaction.occurredOn.getTime() === cash.occurredOn.getTime() &&
+              params.cashTransaction.sourceAccountId === cash.sourceAccountId;
+            const sameKindSpecificCashIdentity =
+              params.cashTransaction.kind === "expense" && cash.kind === "expense"
+                ? params.cashTransaction.accountId === cash.accountId &&
+                  params.cashTransaction.payee === cash.payee &&
+                  params.cashTransaction.paidByPersonId === cash.paidByPersonId
+                : params.cashTransaction.kind === "transfer" && cash.kind === "transfer"
+                  ? params.cashTransaction.fromAccountId === cash.fromAccountId &&
+                    params.cashTransaction.toAccountId === cash.toAccountId
+                  : params.cashTransaction.kind === "income" && cash.kind === "income"
+                    ? params.cashTransaction.accountId === cash.accountId &&
+                      params.cashTransaction.source === cash.source &&
+                      params.cashTransaction.receivedByPersonId === cash.receivedByPersonId
+                    : false;
+            sameCash = sameCommonCashIdentity && sameKindSpecificCashIdentity;
           }
         }
       }

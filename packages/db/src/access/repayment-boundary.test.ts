@@ -121,6 +121,7 @@ describe.runIf(Boolean(process.env.DATABASE_URL))("canonical repayment boundary"
     const second = await recordLiabilityRepaymentInDb({ ...params, cashTransaction: { ...cashTransaction, id: transactionId(crypto.randomUUID()) } });
     expect(second.repayment.id).toBe(first.repayment.id);
     expect(second.transaction?.id).toBe(first.transaction?.id);
+    await expect(recordLiabilityRepaymentInDb({ ...params, cashTransaction: { ...cashTransaction, id: transactionId(crypto.randomUUID()), sourceAccountId: "different-source-account" } })).rejects.toThrow();
   });
   it("voiding a link does not void a pre-existing canonical payment", async () => {
     const a = await fixture();
