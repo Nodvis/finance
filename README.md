@@ -1,344 +1,94 @@
 # Nodvis Finance
 
-> Private, self-hosted household finance control center.
+Nodvis Finance is a privacy-respecting, self-hosted household finance control center. It helps a household understand available cash, upcoming obligations, debt, real spending and projected cash — without turning transfers into income or expenses.
 
-Nodvis Finance is a household finance application focused on a simple question:
+**First public release:** `v0.1.0` · **License:** AGPL-3.0-only · **Languages:** Polski / English
 
-**What do we actually have, what do we owe, what must we pay next, and what is the safest plan for improving our situation?**
+Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall and future products remain separate projects.
 
-It is not intended to be another accounting-style ledger or a pure envelope-budgeting clone. Its core is the combination of **available cash, obligations, debt, cash flow and forecasting** presented in a way that remains useful to non-technical users.
+## Why Finance
 
-> [!IMPORTANT]
-> **Project status: authenticated private finance foundation in active development.**
-> Household/account authorization, transactions, imports, overdraft, credit-card capacity and independent revolving-facility management are implemented and tested. BNPL financed purchases, repayment terms, upcoming-payment integration, 2FA and encrypted backup workflows remain in progress. Use only in a controlled private deployment; review `SECURITY.md` before handling real data.
+- Keep available cash separate from debt outstanding.
+- Treat planned obligations as planning data, not fake transactions.
+- Preserve exact integer money and explicit currencies.
+- Keep transfers and repayments from distorting spending.
+- Self-host sensitive data in PostgreSQL.
+- Work without mandatory AI, telemetry or paid APIs.
 
-## Product principles
+## Features
 
-- **Available cash is not debt outstanding.** Both matter, but they answer different questions.
-- **An obligation is not a transaction.** Planned payments affect forecasts, not actual balances.
-- **Transfers are not income or spending.** Moving money between owned accounts must not distort analytics.
-- **Credit-card purchases and card repayments are different events.** A repayment must not count the original purchase twice.
-- **Unknown is a valid state.** Preserve uncertainty instead of inventing financial history.
-- **The core works without AI or paid APIs.** Deterministic rules and financial math come first.
-- **Self-hosted first.** The first supported product is private/self-hosted.
-- **Security is part of the MVP.** Financial data, documents, backups and secrets are sensitive from the beginning.
-- **PL + EN from the first scaffold.** Dates, numbers, currencies and strings must be locale-aware.
-- **Progressive disclosure.** The home screen should answer questions; complexity belongs behind deeper views.
+- Accounts, balances, categories, income, expenses and transfers.
+- CSV import with review, provenance and deterministic duplicate protection.
+- Transaction search, filters, detail/history, voiding, stable pagination and CSV export.
+- Upcoming obligations and obligation history.
+- Recurring obligations with per-occurrence amount/date/title/note overrides and skip.
+- Liabilities and repayments with audit history.
+- 7- and 30-day deterministic cash forecast, currency-separated and explicit about incomplete data.
+- Polish and English localized interface.
 
-## What the product should answer
+## Quick start with Docker Compose
 
-After importing data and entering obligations, a household should be able to answer in under a minute:
+The release stack uses published images and does not require a source checkout.
 
-- How much money is available now?
-- How much debt is outstanding?
-- What must be paid soon?
-- How much are we actually spending and on what?
-- Does the current month work financially?
-- What is the safest realistic plan for improving the situation?
-
-## Current technology foundation
-
-The accepted foundation is documented in `docs/adr/`.
-
-- **Node.js 24 LTS**
-- **TypeScript 7** in strict mode
-- **pnpm 11 workspace**
-- **Next.js 16 / React 19**
-- **next-intl** with `/pl` and `/en` from the start
-- **Tailwind CSS 4**
-- **PostgreSQL 18**
-- **Drizzle ORM** stable line with reviewed SQL migrations
-- **Better Auth** for authentication
-- **Zod 4** at untrusted boundaries
-- **Vitest** for domain/unit tests
-- **Playwright** for browser smoke/E2E tests
-- **Docker Compose** as the initial self-hosted deployment reference
-
-The application is a **modular monolith**, not a microservice system.
-
-## Repository map
-
-```text
-.
-├── apps/
-│   └── web/                    # Next.js application, PL/EN UI
-├── packages/
-│   ├── domain/                 # framework-independent financial logic
-│   └── db/                     # PostgreSQL / Drizzle schema and access
-├── e2e/                        # Playwright tests
-├── docs/
-│   ├── README.md
-│   ├── product.md
-│   ├── mvp.md
-│   ├── domain.md
-│   ├── architecture.md
-│   ├── threat-model.md
-│   ├── ux.md
-│   ├── adr/
-│   │   ├── 0001-self-hosted-first.md
-│   │   ├── 0002-separate-application-boundary.md
-│   │   ├── 0003-i18n-from-the-first-commit.md
-│   │   ├── 0004-core-without-mandatory-ai.md
-│   │   ├── 0005-technology-stack.md
-│   │   ├── 0006-persistence-and-money.md
-│   │   ├── 0007-authentication.md
-│   │   └── 0008-deployment-topology.md
-│   └── reference/
-│       └── product-spec-2026-08-31.md
-├── AGENTS.md                    # mandatory rules for coding agents
-├── ROADMAP.md
-├── SECURITY.md
-├── CONTRIBUTING.md
-├── compose.dev.yaml
-├── compose.yaml
-├── Dockerfile
-├── package.json
-├── pnpm-workspace.yaml
-└── tsconfig.base.json
+```bash
+mkdir nodvis-finance && cd nodvis-finance
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.0/compose.release.yaml
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.0/.env.production.example
+cp .env.production.example .env
+# Edit .env: use unique POSTGRES_PASSWORD and BETTER_AUTH_SECRET.
+# Set DATABASE_URL with the same database password.
+docker compose -f compose.release.yaml up -d postgres
+docker compose -f compose.release.yaml --profile migration run --rm migrate
+docker compose -f compose.release.yaml up -d web
 ```
 
-## Development bootstrap
+Open `http://localhost:3000`. Set `ALLOW_SIGN_UP=true` only for initial bootstrap, then set it back to `false` and recreate `web`. For Portainer or Dockge, paste `compose.release.yaml` into a Stack and fill the same environment variables.
 
-Requirements:
+Read the complete [self-hosting guide](docs/SELF_HOSTING.md), [configuration](docs/CONFIGURATION.md), [backup and restore](docs/BACKUP_RESTORE.md) and [upgrade guide](docs/UPGRADING.md).
 
-- Node.js 24 LTS
-- pnpm 11 (the repository pins `pnpm@11.24.0` through `packageManager`)
-- Docker + Docker Compose for the development PostgreSQL service
+## Screenshots and demo
 
-### 1. Install dependencies
+The application intentionally shows truthful empty states rather than invented financial values. A shared writable public demo is not included in v0.1. A future demo must use isolated synthetic data and server-enforced read-only or reset behavior; see [docs/DEMO.md](docs/DEMO.md).
+
+## Security and privacy
+
+Self-hosting means the deployment operator controls the database, backups, network and logs. Use HTTPS or a private network for remote access, protect `.env` and PostgreSQL backups, and never expose PostgreSQL publicly. Read [SECURITY.md](SECURITY.md) before using real financial data. No formal security certification or regulatory compliance claim is made.
+
+## Architecture
+
+Nodvis Finance is a Next.js modular monolith: `apps/web` contains the localized UI and authorized server operations, `packages/domain` contains framework-independent financial rules, and `packages/db` contains PostgreSQL/Drizzle persistence. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the ADRs.
+
+## Development
+
+Requirements: Node.js 24 LTS, pnpm 11.24.0 and Docker Compose.
 
 ```bash
 pnpm install
-```
-
-### 2. Create local environment
-
-```bash
 cp .env.example .env
-```
-
-The provided values are development placeholders only. Never reuse them for a real deployment.
-
-### 3. Start PostgreSQL
-
-```bash
 docker compose -f compose.dev.yaml up -d
-```
-
-The development database binds only to `127.0.0.1:5432` by default.
-
-### 4. Database migrations
-
-Apply the committed, reviewed migrations before using the application:
-
-```bash
 pnpm db:migrate
-```
-
-After an intentional schema change, generate and review the next migration before applying it:
-
-```bash
-pnpm db:generate
-```
-
-Generated SQL migrations are source artifacts and should be reviewed and committed. `drizzle-kit push` is **not** the production migration workflow.
-
-### 5. Start the application
-
-```bash
 pnpm dev
 ```
 
-The initial UI supports:
+Before changing financial behavior, read `AGENTS.md`, domain documentation and relevant ADRs. Run `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build` and relevant browser tests. Use disposable databases for migrations and E2E.
 
-- `/pl`
-- `/en`
+## Contributing
 
-It intentionally displays empty financial values rather than fake sample money.
-
-## Production deployment (Docker Compose)
-
-The production reference deployment uses Docker Compose (`compose.yaml`) with a multi-stage standalone Next.js image, PostgreSQL 18, persistent DB volume, healthchecks, and controlled repeatable Drizzle migrations using committed SQL.
-
-### 1. Environment configuration
-
-Copy the production environment template:
-
-```bash
-cp .env.production.example .env
-```
-
-Generate secure secrets for `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` (e.g. using `openssl rand -base64 32`). Set `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` to the canonical domain or LAN address.
-
-For a private LAN-only instance, set `WEB_BIND_ADDRESS` to the host's private LAN address. The default is `127.0.0.1`, which intentionally does not allow other devices to connect.
-
-### 2. Build
-
-Build the production images:
-
-```bash
-docker compose build
-```
-
-### 3. Start PostgreSQL
-
-Start PostgreSQL and wait for its healthcheck:
-
-```bash
-docker compose up -d postgres
-```
-
-### 4. Database migrations
-
-Run pending migrations using committed SQL:
-
-```bash
-docker compose run --rm migrate
-```
-
-Migrations execute `drizzle-kit migrate` against committed SQL migrations in `packages/db/drizzle`. Schema push (`drizzle-kit push`) is never used in production.
-
-### 5. Start the web service
-
-After migrations complete, start the application:
-
-```bash
-docker compose up -d web
-```
-
-Compose waits for PostgreSQL to be healthy before starting `web`.
-
-### 6. Database backup and restore
-
-To create a consistent SQL backup while the database container is running:
-
-```bash
-docker compose exec -T postgres pg_dump -U ${POSTGRES_USER:-nodvis_finance} -d ${POSTGRES_DB:-nodvis_finance} > backup-$(date +%Y%m%d%H%M%S).sql
-```
-
-To restore from an existing backup file:
-
-```bash
-docker compose exec -T postgres psql -U ${POSTGRES_USER:-nodvis_finance} -d ${POSTGRES_DB:-nodvis_finance} < backup.sql
-```
-
-### 7. Stop
-
-Stop all running containers:
-
-```bash
-docker compose down
-```
-
-Database state persists across restarts in the named volume `nodvis-finance-postgres-data`.
-
-To inspect the stack, use `docker compose ps` and `docker compose logs -f web postgres`. Keep the same Compose project name when operating a separate instance, for example `docker compose --project-name nodvis-finance-private --env-file .env.private -f compose.yaml ps`.
-
-## Verification commands
-
-```bash
-pnpm typecheck
-pnpm test
-pnpm test:e2e
-pnpm build
-```
-
-Financial-domain tests have higher priority than cosmetic UI coverage.
-
-## Money representation
-
-Canonical money is not a floating-point `number`.
-
-The domain foundation uses:
-
-```text
-Money {
-  amountMinor: bigint
-  currency: explicit currency code
-}
-```
-
-Example:
-
-```text
-12.34 PLN -> 1234n + PLN
-```
-
-Cross-currency arithmetic must be explicit and cannot happen accidentally through the `Money` primitive.
-
-## Planned product areas
-
-### Primary experience
-
-- **Home / Summary** — available funds, upcoming obligations, debt and month status.
-- **Plan** — forecast and realistic financial scenarios.
-- **Upcoming** — what must be paid in the next days and weeks.
-
-### Deeper views
-
-- Transactions
-- Accounts and cash
-- Debts, credit cards, installments and BNPL
-- Budget
-- Documents
-- Analytics
-- Import
-- Settings
-
-## Data sources
-
-The first versions will not require direct bank login or bank credentials. Planned inputs include:
-
-- bank statements,
-- CSV files,
-- PDFs and payment confirmations,
-- loan/installment schedules,
-- receipts and invoices,
-- manual entries.
-
-Initial import adapters are expected to focus on Credit Agricole, PKO BP, mBank, Revolut and generic CSV.
-
-## Architecture and ADRs
-
-Start with:
-
-- [`docs/architecture.md`](docs/architecture.md)
-- [`docs/domain.md`](docs/domain.md)
-- [`docs/threat-model.md`](docs/threat-model.md)
-- [`docs/adr/README.md`](docs/adr/README.md)
-
-Material architectural decisions are recorded rather than being silently embedded in implementation.
-
-## AI coding agents
-
-`AGENTS.md` is repository-wide mandatory context for coding agents.
-
-Among other rules, agents must preserve the financial invariants, exact-money model, security boundaries, PL/EN requirement and reviewed migration workflow. Implementation convenience does not override the documented domain model.
-
-## Security
-
-Do **not** commit:
-
-- real bank statements,
-- credentials or production secrets,
-- passwords/PINs/session tokens,
-- personally sensitive financial documents,
-- real production backups.
-
-Self-hosted defaults must not require analytics, telemetry, external crash reporting or external AI.
-
-See [`SECURITY.md`](SECURITY.md) and [`docs/threat-model.md`](docs/threat-model.md).
-
-## Related Nodvis projects
-
-Nodvis Finance is intentionally a separate application from Nodvis Recall and other Nodvis products. It has its own repository, persistence and authentication boundary. Any future integration must use an explicit interface rather than a shared database.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bugs involving security or private financial data should be reported privately as described in [SECURITY.md](SECURITY.md).
 
 ## Roadmap
 
-See [`ROADMAP.md`](ROADMAP.md).
+See [ROADMAP.md](ROADMAP.md). Dates are deliberately not promised. Nodvis Finance does not promise bank sync, AI categorization or hosted service availability in this release.
 
-The next implementation work should stay narrow: establish the first Phase 1 household/account/transaction model and authentication boundary while preserving the documented invariants. Imports, debt planning, documents and advanced forecasting come in later phases rather than being built all at once.
+## Support Nodvis
 
----
+Nodvis Finance remains usable without payment. Support helps maintain Finance, develop Nodvis Recall and build future open-source Nodvis projects.
 
-**Nodvis Finance** — know what you have, what you owe, and what comes next.
+- Patreon: https://www.patreon.com/9Erza
+- Buy Me a Coffee: https://www.buymeacoffee.com/9erza
+
+## License and brand
+
+Nodvis Finance Core is licensed under [AGPL-3.0-only](LICENSE). Nodvis, Nodvis Finance and Nodvis Recall names and logos are brand identifiers; see [TRADEMARKS.md](TRADEMARKS.md).
+
+Nodvis ecosystem: **Nodvis Finance — available** · **Nodvis Recall — coming later**.
