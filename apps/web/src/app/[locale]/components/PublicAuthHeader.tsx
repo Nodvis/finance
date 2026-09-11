@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeToggle } from "./ThemeToggle";
+import { FinanceBrand } from "./FinanceBrand";
 
 export async function PublicAuthHeader() {
   const tNav = await getTranslations("Navigation");
@@ -17,14 +18,10 @@ export async function PublicAuthHeader() {
       <div className="mx-auto flex min-h-16 max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link
           href="/"
-          className="flex items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          aria-label={tNav("brand")}
+          className="flex items-center rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.8.9.7c1.2.9 3.1.9 4.2 0 1.2-.9 1.2-2.3 0-3.2-.6-.4-1.3-.7-2.1-.7-.7 0-1.5-.2-2-.7-1.1-.9-1.1-2.3 0-3.2 1.1-.9 2.9-.9 4 0l.4.3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-          </span>
-          <span className="text-sm font-semibold tracking-tight text-slate-900 dark:text-stone-100">{tNav("brand")}</span>
+          <span className="w-[166px]"><FinanceBrand /></span>
         </Link>
         <div className="flex items-center gap-2" role="region" aria-label={tAccess("languageNavigation")}>
           <ThemeToggle />

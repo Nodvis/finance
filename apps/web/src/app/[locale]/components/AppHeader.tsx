@@ -7,6 +7,7 @@ import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { AppNav } from "./AppNav";
 import { ProfileMenu } from "./ProfileMenu";
 import { ThemeToggle } from "./ThemeToggle";
+import { FinanceBrand } from "./FinanceBrand";
 
 export async function AppHeader() {
   const tNav = await getTranslations("Navigation");
@@ -35,11 +36,9 @@ export async function AppHeader() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-16 items-center justify-between gap-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <Link href="/" className="group flex shrink-0 items-center gap-2.5 rounded-xl p-1 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-950">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-xs dark:border-stone-700 dark:bg-stone-900 dark:text-emerald-400">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-              </span>
-              <span className="block min-w-0"><span className="block truncate text-sm font-semibold tracking-tight text-slate-950 dark:text-stone-50">{tNav("brand")}</span><span className="hidden text-[11px] text-slate-500 dark:text-stone-400 sm:block">{tNav("tagline")}</span></span>
+            <Link href="/" aria-label={tNav("brand")} className="group flex min-w-0 shrink-0 items-center rounded-xl p-1 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-950">
+              <span className="hidden w-[166px] sm:block"><FinanceBrand /></span>
+              <span className="w-[52px] sm:hidden"><FinanceBrand compact /></span>
             </Link>
             {activeHousehold ? (
               <div className="hidden min-w-0 border-l border-slate-200 pl-3 dark:border-stone-800 sm:block">
