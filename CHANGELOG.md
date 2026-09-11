@@ -5,7 +5,7 @@
 This patch completes the first public self-hosting experience.
 
 - One `ghcr.io/nodvis/finance` image waits for PostgreSQL, migrates safely, then starts Finance.
-- One root `docker-compose.yml` works in Docker Compose, Dockge and Portainer.
+- One short root `docker-compose.yml` works in Docker Compose, Dockge and Portainer; edit the two secrets and the Docker server address, then deploy.
 - Secrets are entered once and the database URL is constructed safely at startup.
 - Self-hosting, backup/restore, upgrade and system-requirement guidance is simplified.
 

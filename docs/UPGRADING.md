@@ -5,7 +5,7 @@
 1. Back up the existing database with the old deployment.
 2. Keep the existing PostgreSQL volume; never use `down -v`.
 3. Replace the old Compose file with the root `docker-compose.yml`.
-4. Copy the same PostgreSQL credentials into the two YAML anchors and keep the existing database name/user.
+4. Copy the same PostgreSQL credentials into `POSTGRES_PASSWORD` and `DB_PASSWORD`, and keep the existing database name/user.
 5. Set the Finance image to `ghcr.io/nodvis/finance:0.1.1`.
 6. Run `docker compose up -d`.
 7. Wait for the Finance healthcheck and verify a known household, account and transaction.
