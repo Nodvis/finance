@@ -1,6 +1,9 @@
-# Nodvis Finance
+<p align="center">
+  <img src="apps/web/public/brand/nodvis-finance-logo-primary.png#gh-light-mode-only" alt="Nodvis Finance" width="360">
+  <img src="apps/web/public/brand/nodvis-finance-logo-primary-dark.png#gh-dark-mode-only" alt="Nodvis Finance" width="360">
+</p>
 
-A self-hosted household finance app for tracking money, upcoming payments and your near-term cash position.
+<p align="center">A calm, self-hosted view of household money, upcoming payments and near-term cash position.</p>
 
 [![Version](https://img.shields.io/github/v/release/Nodvis/finance?label=version)](https://github.com/Nodvis/finance/releases) [![Docker](https://img.shields.io/badge/Docker-amd64%20%2F%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/Nodvis/finance/pkgs/container/finance) [![License](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
 
