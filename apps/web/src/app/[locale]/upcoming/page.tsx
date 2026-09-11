@@ -18,6 +18,8 @@ import { UpcomingView } from "./UpcomingView";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 100;
+
 type UpcomingPageProps = {
   params: Promise<{ locale: string }>;
   searchParams?: Promise<{
@@ -47,11 +49,11 @@ export default async function UpcomingPage({
     currency: firstSearchParam(resolvedSearchParams?.currency),
     sortOrder: firstSearchParam(resolvedSearchParams?.sortOrder),
     offset: firstSearchParam(resolvedSearchParams?.offset),
-    limit: 100,
+    limit: PAGE_SIZE + 1,
   });
   const query = queryResult.success
     ? queryResult.data
-    : obligationQuerySchema.parse({ limit: 100, offset: 0 });
+    : obligationQuerySchema.parse({ limit: PAGE_SIZE + 1, offset: 0 });
 
   const session = await getCurrentSession();
   if (!session) {
@@ -94,12 +96,13 @@ export default async function UpcomingPage({
   ]);
 
   const summary = serializeUpcomingObligationsSummary(rawSummary);
+  const pageObligations = obligations.slice(0, PAGE_SIZE);
 
   return (
     <UpcomingView
       key={`${query.status ?? "all"}:${query.currency ?? "all"}:${query.sortOrder ?? "default"}`}
       householdContext={context}
-      initialObligations={obligations}
+      initialObligations={pageObligations}
       initialSummary={summary}
       locale={locale}
       initialStatus={query.status}
@@ -110,7 +113,7 @@ export default async function UpcomingPage({
           : undefined
       }
       initialOffset={query.offset ?? 0}
-      initialHasMore={obligations.length === (query.limit ?? 100)}
+      initialHasMore={obligations.length > PAGE_SIZE}
     />
   );
 }
