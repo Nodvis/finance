@@ -1,6 +1,10 @@
 # Security status
 
-Nodvis Finance handles highly sensitive household financial data. This document is an evidence-based status report, not an OWASP certification and not a claim that the application is fully secure.
+Nodvis Finance handles highly sensitive household financial data. This document is an evidence-based status report, not an OWASP certification and not a claim that the application is fully secure. The project accepts private security reports; please do not publish exploitable vulnerability details in a public issue.
+
+## Reporting a vulnerability
+
+Use GitHub private vulnerability reporting for this repository when available. If it is unavailable, contact the maintainer through the private channel listed on the Nodvis project profile. Include the affected version, reproduction steps, impact and a safe contact method. Do not include live credentials or real household data.
 
 ## Current controls
 
