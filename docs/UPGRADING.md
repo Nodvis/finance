@@ -8,7 +8,7 @@
 4. Copy the same PostgreSQL credentials into `POSTGRES_PASSWORD` and `DB_PASSWORD`, and keep the existing database name/user.
 5. Set the Finance image to `ghcr.io/nodvis/finance:0.1.1`.
 6. Run `docker compose up -d`.
-7. Wait for the Finance healthcheck and verify a known household, account and transaction.
+7. Open Finance on port 3000 and verify a known household, account and transaction.
 
 The v0.1.1 Finance container waits for PostgreSQL, runs pending migrations once through Drizzle's migration journal, and starts the web process only after migration succeeds. Existing data remains in `nodvis-finance-data`.
 
