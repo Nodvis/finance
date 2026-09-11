@@ -1,0 +1,66 @@
+# Nodvis Finance — copy this file into Dockge, Portainer or a folder.
+# Change the two required secrets below. Set the URL only when using a domain.
+x-db-password: &db-password "CHANGE_ME_DATABASE_PASSWORD"
+x-auth-secret: &auth-secret "CHANGE_ME_AUTH_SECRET"
+x-app-url: &app-url "http://localhost:3000"
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    container_name: nodvis-finance-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nodvis_finance
+      POSTGRES_USER: nodvis_finance
+      # REQUIRED: change this to a strong random password.
+      POSTGRES_PASSWORD: *db-password
+    volumes:
+      - nodvis-finance-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  finance:
+    image: ghcr.io/nodvis/finance:0.1.1
+    container_name: nodvis-finance
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: nodvis_finance
+      DB_USER: nodvis_finance
+      DB_PASSWORD: *db-password
+      # REQUIRED: change this to another strong random secret.
+      BETTER_AUTH_SECRET: *auth-secret
+      BETTER_AUTH_URL: *app-url
+      NEXT_PUBLIC_APP_URL: *app-url
+      # First account setup: leave true until the owner account exists,
+      # then change to false and recreate the finance service.
+      ALLOW_SIGN_UP: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+
+volumes:
+  nodvis-finance-data:

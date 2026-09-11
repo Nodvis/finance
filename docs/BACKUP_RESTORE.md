@@ -4,16 +4,20 @@ Backups contain account balances, transactions, household membership and authent
 
 ## Backup
 
-1. From the directory containing the Compose file and `.env`, run `./scripts/backup.sh backup.sql` (or set `COMPOSE_ENV_FILE=/path/to/.env`).
-2. Check that the file is non-empty and store it in protected offline or separately managed storage.
-3. Keep multiple generations and test restoration regularly.
+From the directory containing `docker-compose.yml` and the scripts:
+
+```bash
+./scripts/backup.sh backup.sql
+```
+
+The script uses the `postgres` service in the canonical Compose file and verifies that the dump is non-empty. Store multiple generations outside the application host where possible.
 
 ## Restore checklist
 
-1. Stop `web` and make a separate copy of the current database/volume if it must be preserved.
-2. Start PostgreSQL only.
-3. Restore with `CONFIRM_RESTORE=yes COMPOSE_ENV_FILE=/path/to/.env ./scripts/restore.sh backup.sql`.
-4. Run pending migrations if the backup predates the target release.
-5. Start `web` and verify login, household, account balance and a known transaction.
+1. Make a separate copy of the current backup if it must be preserved.
+2. Ensure PostgreSQL is running and Finance is stopped by the restore script.
+3. Run `CONFIRM_RESTORE=yes ./scripts/restore.sh backup.sql`.
+4. Start Finance with `docker compose up -d`.
+5. Verify login, a known account balance and a known transaction.
 
-Always test this procedure first against a disposable Compose project. Never run `down -v` against a valuable deployment.
+The restore confirmation is intentionally destructive. Never use `docker compose down -v` against a valuable deployment.

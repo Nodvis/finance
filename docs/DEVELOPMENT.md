@@ -5,7 +5,7 @@ Requirements: Node.js 24 LTS, pnpm 11.24.0 and Docker Compose.
 ```bash
 pnpm install
 cp .env.example .env
-docker compose -f compose.dev.yaml up -d
+docker compose -f docker-compose.dev.yml up -d
 pnpm db:migrate
 pnpm dev
 ```

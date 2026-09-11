@@ -1,11 +1,15 @@
 # Upgrading
 
-1. Read the release notes and check the supported Node/image version.
-2. Create and verify a PostgreSQL backup.
-3. Pin the new `FINANCE_VERSION` in the Compose environment.
-4. Pull/recreate the image.
-5. Run the one-shot `migrate` service exactly once.
-6. Start/recreate `web` and wait for its healthcheck.
-7. Verify sign-in and a few known financial records.
+## v0.1.0 → v0.1.1
 
-Keep the PostgreSQL named volume and the same Compose project. Do not use `drizzle-kit push` or delete the database volume as an upgrade step. If an upgrade fails, stop the web service and restore the verified backup before investigating.
+1. Back up the existing database with the old deployment.
+2. Keep the existing PostgreSQL volume; never use `down -v`.
+3. Replace the old Compose file with the root `docker-compose.yml`.
+4. Copy the same PostgreSQL credentials into the two YAML anchors and keep the existing database name/user.
+5. Set the Finance image to `ghcr.io/nodvis/finance:0.1.1`.
+6. Run `docker compose up -d`.
+7. Wait for the Finance healthcheck and verify a known household, account and transaction.
+
+The v0.1.1 Finance container waits for PostgreSQL, runs pending migrations once through Drizzle's migration journal, and starts the web process only after migration succeeds. Existing data remains in `nodvis-finance-data`.
+
+Back up before every update. If startup fails, inspect `docker compose logs finance`, stop the service and restore the verified backup before investigating. Do not use `drizzle-kit push` or delete the database volume.

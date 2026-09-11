@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.1] — Single-image self-hosting patch
+
+This patch completes the first public self-hosting experience.
+
+- One `ghcr.io/nodvis/finance` image waits for PostgreSQL, migrates safely, then starts Finance.
+- One root `docker-compose.yml` works in Docker Compose, Dockge and Portainer.
+- Secrets are entered once and the database URL is constructed safely at startup.
+- Self-hosting, backup/restore, upgrade and system-requirement guidance is simplified.
+
+Upgrade from `v0.1.0` by keeping the PostgreSQL volume, replacing the Compose file and running `docker compose up -d`.
+
 ## [0.1.0] — First public release
 
 Nodvis Finance is an open-source, self-hosted household finance application.
