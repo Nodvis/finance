@@ -28,7 +28,7 @@ Use HTTPS through a reverse proxy or a VPN. Do not expose PostgreSQL. The defaul
 1. Run `./backup.sh backup.sql` from the directory containing `docker-compose.yml` and the downloaded helper scripts.
 2. Change `ghcr.io/nodvis/finance:0.1.1` to the target release in `docker-compose.yml`.
 3. Run `docker compose up -d` again.
-4. Wait for the Finance healthcheck and verify a known account and transaction.
+4. Open Finance on port 3000 and verify a known account and transaction.
 
 The same Finance image performs any required migration before serving requests. Keep the same Compose project and `nodvis-finance-data` volume.
 

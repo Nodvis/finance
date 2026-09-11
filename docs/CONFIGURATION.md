@@ -13,6 +13,6 @@ Optional:
 - `ghcr.io/nodvis/finance:<version>` — pin a newer release during an update;
 - `ALLOW_SIGN_UP` — set to `"false"` after the first owner account exists.
 
-No `DATABASE_URL` is needed in the public Compose file. Finance safely constructs it from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` and `DB_PASSWORD` at startup. `NODE_ENV`, `PORT` and `HOSTNAME` are already set by the production image.
+No `DATABASE_URL` is needed in the public Compose file. `DB_PORT` remains explicit because the v0.1.1 image requires it; Finance safely constructs the database URL at startup. `NODE_ENV`, `PORT` and `HOSTNAME` are already set by the production image.
 
 Development uses `.env.example` and `docker-compose.dev.yml`; those settings are separate from the public self-hosting path.
