@@ -371,6 +371,7 @@
       "noAccounts": "No accounts in the household yet. Please add an account to record transactions.",
       "amountRequired": "Enter a valid positive amount greater than zero (e.g. 123.45).",
       "payeeRequired": "Payee is required.",
+      "dateRequired": "Date is required.",
       "sourceRequired": "Income source is required."
     },
     "actions": {

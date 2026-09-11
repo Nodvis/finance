@@ -465,7 +465,7 @@ export function TransactionList({
     }
 
     if (!editDate) {
-      setFormError("Date is required.");
+      setFormError(t("form.dateRequired"));
       return;
     }
 
