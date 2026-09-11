@@ -1,0 +1,74 @@
+{
+  "symbol_native_size": [
+    786,
+    431
+  ],
+  "symbol_alpha_bbox": [
+    0,
+    0,
+    786,
+    431
+  ],
+  "app_icon_1024": {
+    "canvas": [
+      1024,
+      1024
+    ],
+    "symbol_size": [
+      900,
+      494
+    ],
+    "position": [
+      62,
+      265
+    ],
+    "margins": {
+      "left": 62,
+      "right": 62,
+      "top": 265,
+      "bottom": 265
+    }
+  },
+  "favicons": {
+    "64": {
+      "position": [
+        2,
+        15
+      ],
+      "symbol_size": [
+        60,
+        33
+      ]
+    },
+    "48": {
+      "position": [
+        1,
+        11
+      ],
+      "symbol_size": [
+        45,
+        25
+      ]
+    },
+    "32": {
+      "position": [
+        1,
+        8
+      ],
+      "symbol_size": [
+        30,
+        16
+      ]
+    },
+    "16": {
+      "position": [
+        0,
+        4
+      ],
+      "symbol_size": [
+        15,
+        8
+      ]
+    }
+  }
+}
