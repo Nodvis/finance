@@ -13,5 +13,6 @@ if [ "${CONFIRM_RESTORE:-}" != "yes" ]; then
   exit 3
 fi
 printf 'Restoring %s\n' "$backup"
+docker compose --env-file "$compose_env" -f compose.release.yaml stop web >/dev/null
 docker compose --env-file "$compose_env" -f compose.release.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --set ON_ERROR_STOP=1 --quiet' < "$backup"
 printf 'Restore completed.\n'
