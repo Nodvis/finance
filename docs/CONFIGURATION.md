@@ -1,18 +1,18 @@
 # Configuration
 
-Required production variables:
+The canonical `docker-compose.yml` is designed for copy/paste installation and does not require an external `.env` file.
 
-- `POSTGRES_PASSWORD` — PostgreSQL password; secret; generate a unique random value.
-- `DATABASE_URL` — connection used by web and migration services; keep credentials private.
-- `BETTER_AUTH_SECRET` — session signing/encryption secret; secret; use at least 32 random bytes.
+## Values to change
 
-Common variables:
+- `CHANGE_ME_DATABASE_PASSWORD` — strong random PostgreSQL password. The YAML anchor supplies it to both PostgreSQL and Finance.
+- `CHANGE_ME_AUTH_SECRET` — a different random secret of at least 32 random bytes.
 
-- `POSTGRES_DB`, `POSTGRES_USER` — database name and role.
-- `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` — canonical browser URL.
-- `WEB_PORT` — host port, default `3000`.
-- `WEB_BIND_ADDRESS` — bind address, default `127.0.0.1`.
-- `ALLOW_SIGN_UP` — default `false`; enable only for a controlled bootstrap window.
-- `FINANCE_VERSION` — pinned release tag for the published image.
+Optional:
 
-Do not commit `.env`. The examples are placeholders and are not production secrets.
+- the `x-app-url` value — use the LAN address or HTTPS domain when links and authentication should use that address;
+- `ghcr.io/nodvis/finance:<version>` — pin a newer release during an update;
+- `ALLOW_SIGN_UP` — set to `"false"` after the first owner account exists.
+
+No `DATABASE_URL` is needed in the public Compose file. Finance safely constructs it from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` and `DB_PASSWORD` at startup.
+
+Development uses `.env.example` and `docker-compose.dev.yml`; those settings are separate from the public self-hosting path.

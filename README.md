@@ -1,62 +1,162 @@
 # Nodvis Finance
 
-Nodvis Finance is a privacy-respecting, self-hosted household finance control center. It helps a household understand available cash, upcoming obligations, debt, real spending and projected cash — without turning transfers into income or expenses.
+A self-hosted household finance app for tracking money, upcoming payments and your near-term cash position.
 
-**First public release:** `v0.1.0` · **License:** AGPL-3.0-only · **Languages:** Polski / English
+[![Version](https://img.shields.io/github/v/release/Nodvis/finance?label=version)](https://github.com/Nodvis/finance/releases) [![Docker](https://img.shields.io/badge/Docker-amd64%20%2F%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/Nodvis/finance/pkgs/container/finance) [![License](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
 
-Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall and future products remain separate projects.
+Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall is a separate product coming later.
 
-## Why Finance
+## What can I do with it?
 
-- Keep available cash separate from debt outstanding.
-- Treat planned obligations as planning data, not fake transactions.
-- Preserve exact integer money and explicit currencies.
-- Keep transfers and repayments from distorting spending.
-- Self-host sensitive data in PostgreSQL.
-- Work without mandatory AI, telemetry or paid APIs.
+- Accounts and balances
+- Income, expenses and transfers
+- Transaction search, filters and CSV import/export
+- Upcoming payments and recurring bills
+- Debts and repayments
+- 7- and 30-day cash forecast
+- Polish and English interface
 
-## Features
+## Quick Start
 
-- Accounts, balances, categories, income, expenses and transfers.
-- CSV import with review, provenance and deterministic duplicate protection.
-- Transaction search, filters, detail/history, voiding, stable pagination and CSV export.
-- Upcoming obligations and obligation history.
-- Recurring obligations with per-occurrence amount/date/title/note overrides and skip.
-- Liabilities and repayments with audit history.
-- 7- and 30-day deterministic cash forecast, currency-separated and explicit about incomplete data.
-- Polish and English localized interface.
+The normal installation is one Compose file, two secrets and one deploy action. PostgreSQL is the database; Nodvis Finance is the application. The Finance container waits for PostgreSQL, applies its own migrations, then starts the app.
 
-## Quick start with Docker Compose
+### Portainer / Dockge
 
-The release stack uses published images and does not require a source checkout.
+1. Add a new Stack or Compose project.
+2. Copy the complete [`docker-compose.yml`](docker-compose.yml) below into the editor.
+3. Change the two values marked `CHANGE_ME`. Change the URL anchor too if you use a domain or want the LAN address shown in links.
+4. Click **Deploy**.
+5. Open `http://SERVER-IP:3000`.
+
+The database is stored in the named volume `nodvis-finance-data`. **Do not delete this volume unless you intentionally want to delete your Finance data.**
+
+### Docker Compose
+
+Save the same file as `docker-compose.yml`, edit the marked values and run:
 
 ```bash
-mkdir nodvis-finance && cd nodvis-finance
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.0/compose.release.yaml
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.0/.env.production.example
-cp .env.production.example .env
-# Edit .env: use unique POSTGRES_PASSWORD and BETTER_AUTH_SECRET.
-# Set DATABASE_URL with the same database password.
-docker compose -f compose.release.yaml up -d postgres
-docker compose -f compose.release.yaml --profile migration run --rm migrate
-docker compose -f compose.release.yaml up -d web
+docker compose up -d
 ```
 
-Open `http://localhost:3000`. Set `ALLOW_SIGN_UP=true` only for initial bootstrap, then set it back to `false` and recreate `web`. For Portainer or Dockge, paste `compose.release.yaml` into a Stack and fill the same environment variables.
+That is the only startup command. Open `http://SERVER-IP:3000`; for internet exposure use HTTPS through a reverse proxy or VPN. PostgreSQL has no host port.
 
-Read the complete [self-hosting guide](docs/SELF_HOSTING.md), [configuration](docs/CONFIGURATION.md), [backup and restore](docs/BACKUP_RESTORE.md) and [upgrade guide](docs/UPGRADING.md).
+<details>
+<summary>Complete docker-compose.yml</summary>
 
-## Screenshots and demo
+```yaml
+# Nodvis Finance — copy this file into Dockge, Portainer or a folder.
+# Change the two required secrets below. Set the URL only when using a domain.
+x-db-password: &db-password "CHANGE_ME_DATABASE_PASSWORD"
+x-auth-secret: &auth-secret "CHANGE_ME_AUTH_SECRET"
+x-app-url: &app-url "http://localhost:3000"
 
-The application intentionally shows truthful empty states rather than invented financial values. A shared writable public demo is not included in v0.1. A future demo must use isolated synthetic data and server-enforced read-only or reset behavior; see [docs/DEMO.md](docs/DEMO.md).
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    container_name: nodvis-finance-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nodvis_finance
+      POSTGRES_USER: nodvis_finance
+      # REQUIRED: change this to a strong random password.
+      POSTGRES_PASSWORD: *db-password
+    volumes:
+      - nodvis-finance-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  finance:
+    image: ghcr.io/nodvis/finance:0.1.1
+    container_name: nodvis-finance
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: nodvis_finance
+      DB_USER: nodvis_finance
+      DB_PASSWORD: *db-password
+      # REQUIRED: change this to another strong random secret.
+      BETTER_AUTH_SECRET: *auth-secret
+      BETTER_AUTH_URL: *app-url
+      NEXT_PUBLIC_APP_URL: *app-url
+      # First account setup: leave true until the owner account exists,
+      # then change to false and recreate the finance service.
+      ALLOW_SIGN_UP: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+
+volumes:
+  nodvis-finance-data:
+```
+
+</details>
+
+## First account
+
+The example allows registration for first setup. Create the owner account in the browser, then set `ALLOW_SIGN_UP` to `"false"` in the Compose file and redeploy the Finance service. This closes public registration while keeping existing users. Broader signup is never enabled automatically.
+
+## System requirements
+
+Measured on a disposable synthetic household stack after warm-up; actual needs depend on household size, history and backups.
+
+### Minimum
+
+- CPU: 2 vCPU
+- RAM: 1 GB
+- Storage: 4 GB free
+- Architecture: amd64 or arm64
+
+### Recommended
+
+- CPU: 2 vCPU
+- RAM: 2 GB
+- Storage: 10 GB+
+- Architecture: amd64 or arm64
+
+For details and measurement methodology see [system requirements](docs/SYSTEM_REQUIREMENTS.md).
+
+## Backup, restore and updates
+
+```bash
+./scripts/backup.sh backup.sql
+CONFIRM_RESTORE=yes ./scripts/restore.sh backup.sql
+```
+
+Back up before every update. Change the Finance image tag in `docker-compose.yml`, then run `docker compose up -d` again. The container migrates the existing database before starting. See [self-hosting](docs/SELF_HOSTING.md), [backup and restore](docs/BACKUP_RESTORE.md) and [upgrading](docs/UPGRADING.md).
 
 ## Security and privacy
 
-Self-hosting means the deployment operator controls the database, backups, network and logs. Use HTTPS or a private network for remote access, protect `.env` and PostgreSQL backups, and never expose PostgreSQL publicly. Read [SECURITY.md](SECURITY.md) before using real financial data. No formal security certification or regulatory compliance claim is made.
+Self-hosted means the operator controls the database, backups, network and logs. Never expose PostgreSQL publicly. Use HTTPS or a private network for remote access. No mandatory AI, telemetry or paid API is required. Read [SECURITY.md](SECURITY.md).
 
-## Architecture
+## Product website and documentation
 
-Nodvis Finance is a Next.js modular monolith: `apps/web` contains the localized UI and authorized server operations, `packages/domain` contains framework-independent financial rules, and `packages/db` contains PostgreSQL/Drizzle persistence. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the ADRs.
+- Product website: https://finance.nodvis.com
+- Documentation/wiki: https://finance.nodvis.dev
+- Source and releases: https://github.com/Nodvis/finance
+- Demo: coming soon; no unsafe writable demo is published
 
 ## Development
 
@@ -65,30 +165,18 @@ Requirements: Node.js 24 LTS, pnpm 11.24.0 and Docker Compose.
 ```bash
 pnpm install
 cp .env.example .env
-docker compose -f compose.dev.yaml up -d
+docker compose -f docker-compose.dev.yml up -d
 pnpm db:migrate
 pnpm dev
 ```
 
-Before changing financial behavior, read `AGENTS.md`, domain documentation and relevant ADRs. Run `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build` and relevant browser tests. Use disposable databases for migrations and E2E.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Bugs involving security or private financial data should be reported privately as described in [SECURITY.md](SECURITY.md).
-
-## Roadmap
-
-See [ROADMAP.md](ROADMAP.md). Dates are deliberately not promised. Nodvis Finance does not promise bank sync, AI categorization or hosted service availability in this release.
+For architecture, exact-money rules, security, contribution and support, see the [documentation](docs/).
 
 ## Support Nodvis
-
-Nodvis Finance remains usable without payment. Support helps maintain Finance, develop Nodvis Recall and build future open-source Nodvis projects.
 
 - Patreon: https://www.patreon.com/9Erza
 - Buy Me a Coffee: https://www.buymeacoffee.com/9erza
 
 ## License and brand
 
-Nodvis Finance Core is licensed under [AGPL-3.0-only](LICENSE). Nodvis, Nodvis Finance and Nodvis Recall names and logos are brand identifiers; see [TRADEMARKS.md](TRADEMARKS.md).
-
-Nodvis ecosystem: **Nodvis Finance — available** · **Nodvis Recall — coming later**.
+Nodvis Finance Core is [AGPL-3.0-only](LICENSE). Nodvis is the umbrella brand; Nodvis Finance and Nodvis Recall are separate product names. See [TRADEMARKS.md](TRADEMARKS.md).

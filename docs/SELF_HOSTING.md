@@ -1,47 +1,47 @@
 # Self-hosting Nodvis Finance
 
-Nodvis Finance is designed for a private single-server deployment. The supported reference is Docker Compose with PostgreSQL.
+Nodvis Finance is a two-container self-hosted deployment: the `finance` application and internal PostgreSQL storage. You do not run migrations manually.
 
-## Before you start
+## Installation
 
-Use a trusted host or private network. For remote access, put the application behind HTTPS or a VPN. Do not expose PostgreSQL to the internet.
+1. Copy the complete root [`docker-compose.yml`](../docker-compose.yml) into Dockge, Portainer or a new directory.
+2. Change `CHANGE_ME_DATABASE_PASSWORD` and `CHANGE_ME_AUTH_SECRET` to strong, different values.
+3. Leave the URL as `http://localhost:3000` for a first local test. For LAN links, set the URL anchor to `http://SERVER-IP:3000`; for a domain, use the HTTPS URL.
+4. Deploy, or run `docker compose up -d`.
+5. Open `http://SERVER-IP:3000`.
 
-Create an environment file from `.env.production.example`. Set `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` to unique random values; never use the examples in production. Generate them with `openssl rand -base64 32`.
+PostgreSQL is not exposed on a host port. The single named volume `nodvis-finance-data` contains your Finance database. Do not delete it unless you intentionally want to delete your Finance data.
 
-## CLI deployment
+At startup the Finance container validates configuration, waits for PostgreSQL, applies pending migrations, and only then starts the web server. A migration error stops Finance and is visible in its logs.
 
-The release Compose file uses the published image `ghcr.io/nodvis/finance:<version>` and a named PostgreSQL volume. Set `FINANCE_VERSION` to a pinned release, then:
+## First account
 
-```bash
-cp .env.production.example .env
-# edit .env, including secrets and FINANCE_VERSION
-export FINANCE_VERSION=0.1.0
-docker compose -f compose.release.yaml up -d postgres
-docker compose -f compose.release.yaml --profile migration run --rm migrate
-docker compose -f compose.release.yaml up -d web
-docker compose -f compose.release.yaml ps
-```
+The canonical example temporarily allows the first account to be created. Create the owner account, change `ALLOW_SIGN_UP` to `"false"`, and redeploy Finance. Do not leave open registration enabled on an internet-facing deployment.
 
-Open the configured `WEB_PORT`. Enable signup only during initial bootstrap, then set `ALLOW_SIGN_UP=false` and recreate the web service.
+Automatic zero-user bootstrap is not enabled in this release because Better Auth's signup switch is process configuration, not a transactional per-request policy. The explicit close-after-first-account step is the safe supported workflow.
 
-## Portainer / Dockge
+## Internet access
 
-Create a Stack from `compose.release.yaml`, paste the contents into the editor, and fill the variables from `.env.production.example`. Change the image version, database password, auth secret and canonical URLs. Deploy, wait for PostgreSQL health, then run the one-shot `migrate` service once from the Stack interface before starting `web`.
-
-PostgreSQL data lives in the named volume `nodvis-finance-postgres-data`. Do not remove that volume during ordinary updates.
+Use HTTPS through a reverse proxy or a VPN. Do not expose PostgreSQL. The default `3000:3000` mapping is intentional for LAN access and can be restricted at the host firewall or reverse proxy.
 
 ## Updates
 
-Back up first, change the pinned image version, run the migration service once, then recreate `web`. Keep the same Compose project and volume.
+1. Run `./scripts/backup.sh backup.sql`.
+2. Change `ghcr.io/nodvis/finance:0.1.1` to the target release in `docker-compose.yml`.
+3. Run `docker compose up -d` again.
+4. Wait for the Finance healthcheck and verify a known account and transaction.
+
+The same Finance image performs any required migration before serving requests. Keep the same Compose project and `nodvis-finance-data` volume.
+
+For the tested `v0.1.0` to `v0.1.1` transition, see [UPGRADING.md](UPGRADING.md).
 
 ## Backups
 
-Use `pg_dump` from the PostgreSQL container and store the result outside the application host when possible:
+From the repository containing the scripts and the canonical Compose file:
 
 ```bash
-docker compose -f compose.release.yaml exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > backup.sql
+./scripts/backup.sh backup.sql
+CONFIRM_RESTORE=yes ./scripts/restore.sh backup.sql
 ```
 
-Restore only into a stopped/isolated disposable or intentionally selected database after verifying the backup file. Financial backups contain sensitive data.
-
-See `docs/BACKUP_RESTORE.md` for a tested recovery checklist.
+Restore stops Finance first, restores PostgreSQL, and leaves Finance stopped so you can verify the result before starting it again. Backups contain sensitive financial and authentication data.
