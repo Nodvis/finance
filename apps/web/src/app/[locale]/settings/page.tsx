@@ -36,6 +36,26 @@ export default async function SettingsPage() {
           <h2 className="text-base font-semibold text-slate-900 dark:text-stone-100">{t("account")}</h2>
           <p className="mt-3 truncate text-sm text-slate-600 dark:text-stone-400">{session.user.name || session.user.email}</p>
         </section>
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-stone-800 dark:bg-stone-900">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-stone-100">{t("about")}</h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-stone-400">{t("aboutDescription")}</p>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+            <div className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-stone-950">
+              <dt className="text-xs text-slate-500 dark:text-stone-400">{t("version")}</dt>
+              <dd className="mt-1 font-medium text-slate-800 dark:text-stone-200">
+                {process.env.NEXT_PUBLIC_APP_VERSION ? `v${process.env.NEXT_PUBLIC_APP_VERSION}` : t("developmentVersion")}
+              </dd>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-stone-950">
+              <dt className="text-xs text-slate-500 dark:text-stone-400">{t("license")}</dt>
+              <dd className="mt-1 font-medium text-slate-800 dark:text-stone-200">AGPL-3.0-only</dd>
+            </div>
+          </dl>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            <a className="font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400" href="https://github.com/Nodvis/finance" rel="noreferrer" target="_blank">{t("repository")}</a>
+            <a className="font-medium text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-400" href="https://github.com/Nodvis/finance/releases" rel="noreferrer" target="_blank">{t("releases")}</a>
+          </div>
+        </section>
       </div>
     </main>
   );

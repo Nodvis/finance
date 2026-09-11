@@ -258,14 +258,19 @@ At minimum:
 - [ ] dependencies and update process defined,
 - [ ] production security checklist created.
 
-## Open questions
+## Current decisions and remaining questions
 
-- Which authentication solution will be used?
+The following questions have concrete answers for the current public v0.1.x scope:
+
+- Authentication uses Better Auth; authentication and household authorization remain separate boundaries.
+- The supported self-hosting deployment is the Finance container plus PostgreSQL through the root Docker Compose file. Public cloud hosting is out of scope.
+- PostgreSQL backup and restore use the documented `scripts/backup.sh` and `scripts/restore.sh` workflow; operators must protect the resulting backup files.
+
+Questions intentionally left open for future scope:
+
 - Which data/files require application-level encryption at rest?
 - How are encryption keys stored and recovered?
-- What is the supported backup format and restore workflow?
 - Will document parsing occur in-process or in a restricted worker?
-- What deployment modes will be officially supported?
 - When/if public cloud hosting exists, how does the threat model change?
 
 This document should be updated whenever a new trust boundary, external integration or sensitive data flow is introduced.

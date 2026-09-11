@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3] — Release polish and application identity
+
+- Official Nodvis Finance branding is integrated into the application shell and public authentication surfaces.
+- Favicon, Apple touch icon, Android icons and web manifest now use the approved Finance identity.
+- Responsive branding is polished for narrow mobile screens.
+- Settings now includes localized About/version information, repository and release links, and the AGPL-3.0-only license.
+- Public documentation is aligned with the current v0.1.x self-hosted application.
+- No database migration is required for this release.
+
 ## [0.1.2] — Standard production port
 
 - Finance now listens on port `3990` inside and outside the production container.

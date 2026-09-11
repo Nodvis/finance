@@ -1,6 +1,6 @@
 # Nodvis Finance documentation
 
-This directory is the design source of truth for Nodvis Finance. The project has moved from pure pre-implementation planning into a **Phase 0 foundation scaffold**, but the documentation remains authoritative for domain, security and architecture decisions.
+This directory is the design source of truth for Nodvis Finance. The project is now a **public v0.1.x self-hosted application**, while the documentation remains authoritative for domain, security and architecture decisions.
 
 ## Start here
 
@@ -31,7 +31,7 @@ A code implementation must not silently override a financial invariant.
 
 ## Current design status
 
-The repository is in **Phase 0 / foundation scaffold**.
+The repository is in **Public v0.1.x self-hosted application**.
 
 Already accepted:
 

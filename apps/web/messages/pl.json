@@ -839,6 +839,13 @@
     "languageLabel": "Język interfejsu",
     "languageDescription": "Wybierz język używany w całej przestrzeni finansów.",
     "account": "Twoje konto",
+    "about": "O aplikacji",
+    "aboutDescription": "Informacje o tej instalacji Nodvis Finance.",
+    "version": "Wersja",
+    "developmentVersion": "Wersja deweloperska",
+    "repository": "Repozytorium GitHub",
+    "releases": "Wydania GitHub",
+    "license": "Licencja",
     "openSettings": "Otwórz ustawienia"
   },
   "Obligations": {
