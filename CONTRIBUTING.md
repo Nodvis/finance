@@ -1,6 +1,6 @@
 # Contributing to Nodvis Finance
 
-Nodvis Finance is currently a private, pre-implementation project. Contributions should prioritize domain correctness, security and clear product behavior over speed or feature count.
+Nodvis Finance is currently a public, self-hosted household finance application. Contributions should prioritize domain correctness, security and clear product behavior over speed or feature count.
 
 ## Before making a change
 

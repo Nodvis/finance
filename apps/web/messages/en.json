@@ -862,6 +862,13 @@
     "languageLabel": "Interface language",
     "languageDescription": "Choose the language used across your finance workspace.",
     "account": "Your account",
+    "about": "About",
+    "aboutDescription": "Information about this Nodvis Finance installation.",
+    "version": "Version",
+    "developmentVersion": "Development build",
+    "repository": "GitHub repository",
+    "releases": "GitHub Releases",
+    "license": "License",
     "openSettings": "Open settings"
   },
   "Obligations": {

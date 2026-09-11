@@ -26,21 +26,21 @@ Use HTTPS through a reverse proxy or a VPN. Do not expose PostgreSQL. The defaul
 ## Updates
 
 1. Run `./backup.sh backup.sql` from the directory containing `docker-compose.yml` and the downloaded helper scripts.
-2. Change `ghcr.io/nodvis/finance:0.1.2` to the target release in `docker-compose.yml`.
+2. Change `ghcr.io/nodvis/finance:0.1.3` to the target release in `docker-compose.yml`.
 3. Run `docker compose up -d` again.
 4. Open Finance on port 3990 and verify a known account and transaction.
 
 The same Finance image performs any required migration before serving requests. Keep the same Compose project and `nodvis-finance-data` volume.
 
-For the tested `v0.1.0` to `v0.1.1` transition, see [UPGRADING.md](UPGRADING.md).
+For the current `v0.1.2` to `v0.1.3` transition, see [UPGRADING.md](UPGRADING.md).
 
 ## Backups
 
 If you copied only the Compose file, download the helpers next to it:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.2/scripts/backup.sh
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.2/scripts/restore.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.3/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.3/scripts/restore.sh
 chmod +x backup.sh restore.sh
 ```
 
