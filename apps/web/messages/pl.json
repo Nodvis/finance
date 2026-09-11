@@ -52,7 +52,7 @@
     },
     "next": {
       "title": "Następny etap",
-      "description": "Household, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
+      "description": "Gospodarstwo domowe, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
     },
     "forecast": {
       "title": "Prognoza bezpieczeństwa gotówki",
@@ -348,6 +348,7 @@
       "noAccounts": "Brak kont w gospodarstwie domowym. Dodaj konto, aby rejestrować operacje.",
       "amountRequired": "Wprowadź prawidłową kwotę większą od zera (np. 123,45).",
       "payeeRequired": "Podanie odbiorcy jest wymagane.",
+      "dateRequired": "Podanie daty jest wymagane.",
       "sourceRequired": "Podanie źródła przychodu jest wymagane."
     },
     "actions": {
