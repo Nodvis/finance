@@ -37,11 +37,21 @@ For the tested `v0.1.0` to `v0.1.1` transition, see [UPGRADING.md](UPGRADING.md)
 
 ## Backups
 
-From the repository containing the scripts and the canonical Compose file:
+If you copied only the Compose file, download the helpers next to it:
 
 ```bash
-./scripts/backup.sh backup.sql
-CONFIRM_RESTORE=yes ./scripts/restore.sh backup.sql
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.1/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.1/scripts/restore.sh
+chmod +x backup.sh restore.sh
 ```
 
-Restore stops Finance first, restores PostgreSQL, and leaves Finance stopped so you can verify the result before starting it again. Backups contain sensitive financial and authentication data.
+From the directory containing `docker-compose.yml` and the scripts:
+
+```bash
+./backup.sh backup.sql
+CONFIRM_RESTORE=yes ./restore.sh backup.sql
+```
+
+Restore stops Finance first, restores PostgreSQL, and leaves Finance stopped. Run `docker compose up -d` afterward, then verify the result. Backups contain sensitive financial and authentication data.
+
+For product problems use https://github.com/Nodvis/finance/issues. Never publish private financial data or credentials in an issue.

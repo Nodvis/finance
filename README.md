@@ -140,9 +140,17 @@ For details and measurement methodology see [system requirements](docs/SYSTEM_RE
 
 ## Backup, restore and updates
 
+If you installed only the Compose file, download the two helper scripts once:
+
 ```bash
-./scripts/backup.sh backup.sql
-CONFIRM_RESTORE=yes ./scripts/restore.sh backup.sql
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.1/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.1/scripts/restore.sh
+chmod +x backup.sh restore.sh
+```
+
+```bash
+./backup.sh backup.sql
+CONFIRM_RESTORE=yes ./restore.sh backup.sql
 ```
 
 Back up before every update. Change the Finance image tag in `docker-compose.yml`, then run `docker compose up -d` again. The container migrates the existing database before starting. See [self-hosting](docs/SELF_HOSTING.md), [backup and restore](docs/BACKUP_RESTORE.md) and [upgrading](docs/UPGRADING.md).
@@ -171,6 +179,10 @@ pnpm dev
 ```
 
 For architecture, exact-money rules, security, contribution and support, see the [documentation](docs/).
+
+## Support and bug reports
+
+For a product problem, open an issue at https://github.com/Nodvis/finance/issues. Do not include passwords, tokens, private URLs, database dumps or real financial data. Security vulnerabilities belong in [SECURITY.md](SECURITY.md), not a public issue.
 
 ## Support Nodvis
 

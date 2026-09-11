@@ -4,4 +4,4 @@ The reference Compose deployment runs the Finance service as a non-root image us
 
 The private deployment currently uses HTTP on the LAN. HSTS is intentionally absent until HTTPS is actually deployed. For remote or hostile networks, terminate TLS at a trusted reverse proxy/VPN and configure Better Auth/app URLs and Secure cookies consistently.
 
-Do not use `docker compose down -v` on the private project. Before migrations, create and verify a backup, apply additive migrations through the migrator, repeat the migration idempotently, then rebuild only the required service.
+Do not use `docker compose down -v` on the private project. Before an update, create and verify a backup. Start the Finance image with `docker compose up -d`; it waits for PostgreSQL and applies additive migrations before serving requests. Verify the healthcheck and migration journal, then test a known account and transaction.
