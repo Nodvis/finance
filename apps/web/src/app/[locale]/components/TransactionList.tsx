@@ -9,6 +9,7 @@ import type {
   HouseholdCategorySummary,
 } from "@nodvis/finance-db";
 import { parseNaturalDecimalToMinor } from "@/lib/transactions/money-entry";
+import { listTransactionsQuerySchema } from "@/lib/transactions/schema";
 import {
   formatAmountPresentation,
   minorUnitsToDecimalString,
@@ -22,6 +23,7 @@ type TransactionListProps = {
   categories?: HouseholdCategorySummary[] | undefined;
   locale: string;
   householdId?: string | undefined;
+  initialTotalCount?: number;
   initialInspectTx?: SerializedTransaction | null | undefined;
   initialActiveInspectTab?: "details" | "history" | undefined;
   initialHistoryData?: TransactionHistoryEntry[] | null | undefined;
@@ -46,6 +48,7 @@ export function TransactionList({
   categories = [],
   locale,
   householdId,
+  initialTotalCount = transactions.length,
   initialInspectTx = null,
   initialActiveInspectTab = "details",
   initialHistoryData = null,
@@ -70,12 +73,13 @@ export function TransactionList({
   const [to, setTo] = useState<string>("");
   const [status, setStatus] = useState<"active" | "voided" | "all">("active");
   const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(20);
+  const [limit, setLimit] = useState<number>(50);
 
   // Paginated items and count
   const [items, setItems] = useState<SerializedTransaction[]>(transactions);
-  const [totalCount, setTotalCount] = useState<number>(transactions.length);
+  const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -115,8 +119,8 @@ export function TransactionList({
 
   useEffect(() => {
     setItems(transactions);
-    setTotalCount(transactions.length);
-  }, [transactions]);
+    setTotalCount(initialTotalCount);
+  }, [transactions, initialTotalCount]);
 
   const fetchFilteredTransactions = useCallback(
     async (overrideParams: FilterOverrides = {}) => {
@@ -155,7 +159,7 @@ export function TransactionList({
         if (effectiveTo) sp.set("to", effectiveTo);
         if (effectiveStatus) sp.set("status", effectiveStatus);
         if (effectivePage > 1) sp.set("page", String(effectivePage));
-        if (effectiveLimit !== 20) sp.set("limit", String(effectiveLimit));
+        if (effectiveLimit !== 50) sp.set("limit", String(effectiveLimit));
 
         // Sync URL in browser without full reload
         if (typeof window !== "undefined") {
@@ -163,7 +167,10 @@ export function TransactionList({
           const newUrl = queryStr
             ? `${window.location.pathname}?${queryStr}`
             : window.location.pathname;
-          window.history.replaceState(null, "", newUrl);
+          const currentUrl = `${window.location.pathname}${window.location.search}`;
+          if (newUrl !== currentUrl) {
+            window.history.pushState(null, "", newUrl);
+          }
         }
 
         const fetchQuery = new URLSearchParams(sp);
@@ -202,6 +209,10 @@ export function TransactionList({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
+    if (!listTransactionsQuerySchema.safeParse(Object.fromEntries(sp.entries())).success) {
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
     const urlSearch = sp.get("search") ?? sp.get("q") ?? "";
     const urlType = sp.get("type") ?? sp.get("kind") ?? "";
     const urlAccount = sp.get("accountId") ?? "";
@@ -217,7 +228,7 @@ export function TransactionList({
           ? "all"
           : "active";
     const urlPage = parseInt(sp.get("page") ?? "1", 10) || 1;
-    const urlLimit = parseInt(sp.get("limit") ?? "20", 10) || 20;
+    const urlLimit = parseInt(sp.get("limit") ?? "50", 10) || 50;
 
     let hasUrlParams = false;
     if (urlSearch) { setSearch(urlSearch); hasUrlParams = true; }
@@ -229,7 +240,7 @@ export function TransactionList({
     if (urlTo) { setTo(urlTo); hasUrlParams = true; }
     if (urlStatus !== "active") { setStatus(urlStatus); hasUrlParams = true; }
     if (urlPage > 1) { setPage(urlPage); hasUrlParams = true; }
-    if (urlLimit !== 20) { setLimit(urlLimit); hasUrlParams = true; }
+    if (urlLimit !== 50) { setLimit(urlLimit); hasUrlParams = true; }
 
     if (hasUrlParams && householdId) {
       fetchFilteredTransactions({
@@ -245,6 +256,14 @@ export function TransactionList({
         limit: urlLimit,
       });
     }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      window.location.reload();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   const exportCsvUrl = useMemo(() => {
@@ -589,7 +608,7 @@ export function TransactionList({
               download
               role="button"
               aria-label={tAccess("csvExport")}
-              className="inline-flex items-center gap-2 rounded-xl border border-stone-700 bg-stone-800/90 px-3.5 py-2 text-xs font-medium text-stone-200 shadow-xs transition-colors hover:border-stone-600 hover:bg-stone-700/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-stone-500"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-xs transition-colors hover:border-emerald-300 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/70"
             >
               <svg
                 className="h-4 w-4 text-slate-600 dark:text-stone-400"
@@ -616,6 +635,11 @@ export function TransactionList({
         aria-label={tAccess("transactionFilters")}
         className="mb-6 rounded-xl border border-slate-200 dark:border-stone-800/80 bg-slate-50 dark:bg-stone-950/60 p-4"
       >
+        {filterError ? (
+          <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+            {filterError}
+          </p>
+        ) : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {/* Text Search */}
           <div className="relative">
@@ -839,6 +863,11 @@ export function TransactionList({
                   const val = e.target.value;
                   setFrom(val);
                   if (val) setMonth("");
+                  if ((val && !to) || (!val && to) || (val && to && val > to)) {
+                    setFilterError(tFilters("dateRangeError"));
+                    return;
+                  }
+                  setFilterError(null);
                   setPage(1);
                   fetchFilteredTransactions({
                     from: val,
@@ -862,6 +891,11 @@ export function TransactionList({
                   const val = e.target.value;
                   setTo(val);
                   if (val) setMonth("");
+                  if ((val && !from) || (!val && from) || (from && val && from > val)) {
+                    setFilterError(tFilters("dateRangeError"));
+                    return;
+                  }
+                  setFilterError(null);
                   setPage(1);
                   fetchFilteredTransactions({
                     to: val,

@@ -8,6 +8,7 @@
     "tagline": "Personal finance",
     "home": "Overview",
     "accounts": "Accounts",
+    "transactions": "Transactions",
     "categories": "Categories",
     "imports": "Imports",
     "transfers": "Transfers",
@@ -325,6 +326,9 @@
     "voidForm": { "title": "Void repayment", "description": "Voiding will mark this repayment as void and also void any linked cash transaction with an audit log.", "reason": "Reason for voiding (optional)", "reasonPlaceholder": "e.g. Bank correction, erroneous duplicate entry", "submit": "Confirm void", "submitting": "Voiding...", "success": "Repayment voided successfully.", "errorGeneric": "An error occurred while voiding the repayment." }
   },
   "Transactions": {
+    "pageEyebrow": "Household finance",
+    "pageTitle": "Transactions",
+    "pageDescription": "Explore household income, expenses and transfers with shareable filters.",
     "sectionTitle": "Manual transactions",
     "sectionDescription": "Record expenses, income, and transfers between owned accounts while preserving financial rules.",
     "tabs": {
@@ -511,6 +515,7 @@
       "monthLabel": "Month",
       "dateFromLabel": "From",
       "dateToLabel": "To",
+      "dateRangeError": "Choose both a start and end date to filter by date range.",
       "statusLabel": "Status",
       "statusActive": "Active",
       "statusVoided": "Voided",
