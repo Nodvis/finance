@@ -8,6 +8,7 @@
     "tagline": "Finanse domowe",
     "home": "Podsumowanie",
     "accounts": "Konta",
+    "transactions": "Transakcje",
     "categories": "Kategorie",
     "imports": "Importy",
     "transfers": "Przelewy",
@@ -302,6 +303,9 @@
     "voidForm": { "title": "Anuluj spłatę", "description": "Anulowanie oznaczy tę spłatę jako wycofaną oraz unieważni powiązaną transakcję gotówkową w śladzie rewizyjnym.", "reason": "Powód anulowania (opcjonalnie)", "reasonPlaceholder": "np. Korekta bankowa, błędny duplikat", "submit": "Potwierdź anulowanie", "submitting": "Anulowanie...", "success": "Spłata została pomyślnie anulowana.", "errorGeneric": "Wystąpił błąd podczas anulowania spłaty." }
   },
   "Transactions": {
+    "pageEyebrow": "Finanse gospodarstwa",
+    "pageTitle": "Transakcje",
+    "pageDescription": "Przeglądaj przychody, wydatki i przelewy z filtrami zapisanymi w adresie strony.",
     "sectionTitle": "Ręczne transakcje",
     "sectionDescription": "Wprowadzaj wydatki, przychody oraz przelewy między kontami z zachowaniem reguł finansowych.",
     "tabs": {
@@ -488,6 +492,7 @@
       "monthLabel": "Miesiąc",
       "dateFromLabel": "Od",
       "dateToLabel": "Do",
+      "dateRangeError": "Wybierz datę początkową i końcową, aby filtrować zakres dat.",
       "statusLabel": "Status",
       "statusActive": "Aktywne",
       "statusVoided": "Anulowane",

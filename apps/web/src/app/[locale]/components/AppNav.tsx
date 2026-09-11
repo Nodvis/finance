@@ -5,6 +5,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 const ITEMS = [
   ["/", "home"],
   ["/accounts", "accounts"],
+  ["/transactions", "transactions"],
   ["/categories", "categories"],
   ["/imports", "imports"],
   ["/transfers", "transfers"],
