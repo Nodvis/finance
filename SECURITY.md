@@ -8,7 +8,7 @@ Use GitHub private vulnerability reporting for this repository when available. I
 
 ## Current controls
 
-- **Authentication:** Better Auth 1.7.2 with email/password and its database-backed sessions. Password handling remains inside Better Auth; the application does not store plaintext passwords or implement custom password cryptography. Passwords are configured for 12–128 characters. Private Compose disables new signup by default; set `ALLOW_SIGN_UP=true` only for an explicit bootstrap window, then restart with it disabled. CI may enable signup through `CI=true`.
+- **Authentication:** Better Auth 1.7.2 with email/password and its database-backed sessions. Password handling remains inside Better Auth; the application does not store plaintext passwords or implement custom password cryptography. Passwords are configured for 12–128 characters. The canonical Compose enables signup for first-account bootstrap; operators should set `ALLOW_SIGN_UP=false` after creating the owner account. CI may enable signup through `CI=true`.
 - **Authorization:** server routes resolve the authenticated user to household membership before accessing household resources. Client-side navigation is not the authorization boundary.
 - **Origin/CSRF boundary:** custom mutating `/api/*` requests with an `Origin` header must use `BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL`; Better Auth routes retain Better Auth's own origin checks. Automated coverage is in `apps/web/src/proxy.test.ts`. Requests without Origin are still accepted for non-browser/API clients and require separate authentication/authorization.
 - **Rate limiting:** Better Auth rate limiting is enabled. CI signup relaxation is explicit and scoped to CI.
@@ -31,7 +31,7 @@ The current application does **not** provide application-level encryption for fi
 
 - TOTP/2FA and passkeys are not yet implemented. Passkeys require an HTTPS origin and are not forced onto the current HTTP LAN deployment.
 - Encrypted backup workflow and application-level field encryption are not yet implemented. Existing unencrypted backups must be treated as sensitive.
-- Database role separation between web, migrator and backup identities is not yet implemented; do not expose PostgreSQL beyond the private host/network.
+- Database role separation between the Finance application and backup tooling is not yet implemented; do not expose PostgreSQL beyond the private host/network. Schema migrations run inside the Finance startup process.
 - A complete CSP, formal ASVS evidence set, DAST baseline, exhaustive BOLA matrix, security-event audit log and session-management UI remain open.
 - The current private URL uses HTTP. Use a trusted HTTPS reverse proxy/VPN for sensitive remote access; do not expose the service publicly.
 - No formal security certification is claimed.
