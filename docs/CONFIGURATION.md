@@ -10,9 +10,9 @@ The canonical `docker-compose.yml` is designed for copy/paste installation and d
 Optional:
 
 - both `SERVER-IP` URL values — replace them with the IP address/hostname of the Docker server or the same HTTPS reverse-proxy URL;
-- `ghcr.io/nodvis/finance:<version>` — pin a newer release during an update;
+- `ghcr.io/nodvis/finance:<version>` — pin a newer release during an update; production Finance listens on port `3990`;
 - `ALLOW_SIGN_UP` — set to `"false"` after the first owner account exists.
 
-No `DATABASE_URL` is needed in the public Compose file. `DB_PORT` remains explicit because the v0.1.1 image requires it; Finance safely constructs the database URL at startup. `NODE_ENV`, `PORT` and `HOSTNAME` are already set by the production image.
+No `DATABASE_URL` is needed in the public Compose file. `DB_PORT` remains explicit because the v0.1.2 image requires it; Finance safely constructs the database URL at startup. The production image sets `NODE_ENV`, `PORT=3990` and `HOSTNAME` internally.
 
 Development uses `.env.example` and `docker-compose.dev.yml`; those settings are separate from the public self-hosting path.

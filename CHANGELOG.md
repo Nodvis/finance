@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] — Standard production port
+
+- Finance now listens on port `3990` inside and outside the production container.
+- The canonical Compose mapping is `3990:3990`; update URLs from `:3000` to `:3990` when upgrading.
+- The `v0.1.1` image and tag remain immutable.
+
 ## [0.1.1] — Single-image self-hosting patch
 
 This patch completes the first public self-hosting experience.

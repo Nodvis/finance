@@ -1,9 +1,9 @@
 services:
   finance:
-    image: ghcr.io/nodvis/finance:0.1.1
+    image: ghcr.io/nodvis/finance:0.1.2
     container_name: nodvis-finance
     ports:
-      - "3000:3000"
+      - "3990:3990"
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"
@@ -11,8 +11,8 @@ services:
       DB_USER: nodvis_finance
       DB_PASSWORD: "CHANGE_ME_DATABASE_PASSWORD"
       BETTER_AUTH_SECRET: "CHANGE_ME_AUTH_SECRET"
-      BETTER_AUTH_URL: "http://SERVER-IP:3000"
-      NEXT_PUBLIC_APP_URL: "http://SERVER-IP:3000"
+      BETTER_AUTH_URL: "http://SERVER-IP:3990"
+      NEXT_PUBLIC_APP_URL: "http://SERVER-IP:3990"
       ALLOW_SIGN_UP: "true"
     depends_on:
       postgres:

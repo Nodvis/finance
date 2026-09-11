@@ -42,7 +42,7 @@ The `finance` image waits for PostgreSQL, applies pending migrations, and starts
 
 ### Reverse proxy and TLS
 
-The application container should not be documented as a raw public `http://server:3000` service.
+The application container should not be documented as a raw public `http://server:3990` service.
 
 Supported/recommended exposure patterns:
 

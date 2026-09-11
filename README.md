@@ -26,7 +26,7 @@ Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall is 
    - `CHANGE_ME_AUTH_SECRET`
    - `SERVER-IP` with the IP address or hostname of the machine running Docker
 3. Click **Deploy**.
-4. Open `http://SERVER-IP:3000`.
+4. Open `http://SERVER-IP:3990`.
 
 Use a different random value for each secret. For example, generate one with `openssl rand -hex 32`. PostgreSQL is the internal database used by Finance. Your data is stored in the named Docker volume `nodvis-finance-data`; do not delete it unless you intentionally want to delete your Finance data.
 
@@ -43,10 +43,10 @@ That is the only normal startup command. PostgreSQL has no host port. For a doma
 ```yaml
 services:
   finance:
-    image: ghcr.io/nodvis/finance:0.1.1
+    image: ghcr.io/nodvis/finance:0.1.2
     container_name: nodvis-finance
     ports:
-      - "3000:3000"
+      - "3990:3990"
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"
@@ -54,8 +54,8 @@ services:
       DB_USER: nodvis_finance
       DB_PASSWORD: "CHANGE_ME_DATABASE_PASSWORD"
       BETTER_AUTH_SECRET: "CHANGE_ME_AUTH_SECRET"
-      BETTER_AUTH_URL: "http://SERVER-IP:3000"
-      NEXT_PUBLIC_APP_URL: "http://SERVER-IP:3000"
+      BETTER_AUTH_URL: "http://SERVER-IP:3990"
+      NEXT_PUBLIC_APP_URL: "http://SERVER-IP:3990"
       ALLOW_SIGN_UP: "true"
     depends_on:
       postgres:
@@ -118,8 +118,8 @@ For details and measurement methodology see [system requirements](docs/SYSTEM_RE
 If you installed only the Compose file, download the two helper scripts once. Replace `SERVER-IP` only in the application URL fields; the helper commands use the Compose service names.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.1/scripts/backup.sh
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.1/scripts/restore.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.2/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.2/scripts/restore.sh
 chmod +x backup.sh restore.sh
 ```
 
