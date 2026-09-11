@@ -33,12 +33,12 @@ PostgreSQL 18
 
 Docker Compose is the initial reference deployment format.
 
-The production stack is expected to contain at least:
+The canonical production stack contains exactly:
 
-- `web`
+- `finance`
 - `postgres`
 
-The repository may initially provide a development PostgreSQL compose file before the production application image is ready.
+The `finance` image waits for PostgreSQL, applies pending migrations, and starts the web process. The separate development file may contain build-only helpers, but they are not part of the public deployment.
 
 ### Reverse proxy and TLS
 
@@ -70,7 +70,7 @@ When document storage is introduced, the backup/restore definition must expand t
 
 ### Health and startup
 
-The eventual production image should expose a minimal health/readiness mechanism that can distinguish:
+The production image exposes a minimal health/readiness mechanism that can distinguish:
 
 - application process available,
 - database connectivity/migrations ready.
@@ -115,7 +115,6 @@ Not a reference deployment target. It may work in the future, but the project wi
 
 ## Follow-up
 
-- Add a development PostgreSQL Compose configuration.
-- Add production Dockerfile/Compose only when the web scaffold can build and run end-to-end.
-- Design backup/restore verification before declaring the application production-ready.
+- Keep the development PostgreSQL Compose configuration separate from the public `docker-compose.yml`.
+- Keep backup/restore verification in the release gates.
 - Record a separate ADR if durable background jobs or sensitive document storage are introduced.
