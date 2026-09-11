@@ -21,7 +21,7 @@ export async function PublicAuthHeader() {
           aria-label={tNav("brand")}
           className="flex items-center rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          <span className="w-[166px]"><FinanceBrand /></span>
+          <span className="w-[130px] sm:w-[166px]"><FinanceBrand /></span>
         </Link>
         <div className="flex items-center gap-2" role="region" aria-label={tAccess("languageNavigation")}>
           <ThemeToggle />
