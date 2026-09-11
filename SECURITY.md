@@ -13,7 +13,7 @@ Use GitHub private vulnerability reporting for this repository when available. I
 - **Origin/CSRF boundary:** custom mutating `/api/*` requests with an `Origin` header must use `BETTER_AUTH_URL` or `NEXT_PUBLIC_APP_URL`; Better Auth routes retain Better Auth's own origin checks. Automated coverage is in `apps/web/src/proxy.test.ts`. Requests without Origin are still accepted for non-browser/API clients and require separate authentication/authorization.
 - **Rate limiting:** Better Auth rate limiting is enabled. CI signup relaxation is explicit and scoped to CI.
 - **Browser headers:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and private no-store caching for API responses are configured in `apps/web/next.config.ts`. HSTS is intentionally not enabled while the supported private deployment is plain HTTP.
-- **Runtime:** the Finance image runs as a non-root user. Compose adds `no-new-privileges`, drops all Linux capabilities, uses a read-only root filesystem and a restricted `/tmp` tmpfs. PostgreSQL is internal to the Compose network in `docker-compose.yml`.
+- **Runtime:** the Finance image runs as a non-root user. The default Compose keeps PostgreSQL internal to the Compose network and exposes only Finance on port 3990. Optional Docker hardening is documented separately in `docs/security/deployment-security.md`.
 - **Privacy defaults:** no external analytics, crash reporting, AI processing or financial-data integrations are enabled by default.
 
 ## Data classification and boundaries

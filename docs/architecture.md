@@ -89,7 +89,7 @@ Recommended exposure:
 - VPN/Tailscale,
 - reverse proxy + TLS.
 
-A raw public `http://server:3000` deployment is not a supported recommendation.
+A raw public `http://server:3990` deployment is not a supported recommendation.
 
 ### Standalone application boundary
 

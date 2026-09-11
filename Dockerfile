@@ -17,7 +17,7 @@ COPY tsconfig.base.json ./
 COPY packages/domain ./packages/domain
 COPY packages/db ./packages/db
 COPY apps/web ./apps/web
-ARG VERSION=0.1.1
+ARG VERSION=0.1.2
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_VERSION=$VERSION
 RUN mkdir -p /app/apps/web/public
@@ -28,9 +28,9 @@ RUN DATABASE_URL="postgresql://build@localhost:5432/build" \
     pnpm --filter @nodvis/finance-web build
 
 FROM node:24-alpine AS runner
-ARG VERSION=0.1.1
+ARG VERSION=0.1.2
 WORKDIR /app
-ENV NODE_ENV=production PORT=3000 HOSTNAME="0.0.0.0" NEXT_PUBLIC_APP_VERSION=$VERSION
+ENV NODE_ENV=production PORT=3990 HOSTNAME="0.0.0.0" NEXT_PUBLIC_APP_VERSION=$VERSION
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 LABEL org.opencontainers.image.title="Nodvis Finance" \
       org.opencontainers.image.description="Self-hosted household finance control center" \
@@ -48,5 +48,5 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/messages ./apps/web/messages
 RUN npm install --no-save --omit=dev --no-package-lock drizzle-orm@0.45.2 pg@8.23.0
 USER nextjs
-EXPOSE 3000
+EXPOSE 3990
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
