@@ -8,12 +8,14 @@ import { routing } from "./i18n/routing";
 const nextIntlMiddleware = createMiddleware(routing);
 
 export default function proxy(request: NextRequest) {
-  const host = request.headers.get("host");
+  const trustedProxyHeaders = process.env.BETTER_AUTH_TRUSTED_PROXY_HEADERS === "true";
+  const host = trustedProxyHeaders
+    ? request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || request.headers.get("host")
+    : request.headers.get("host");
   const configuredHost = process.env.BETTER_AUTH_URL
     ? new URL(process.env.BETTER_AUTH_URL).host
     : null;
   const forwardedProto = request.headers.get("x-forwarded-proto");
-  const trustedProxyHeaders = process.env.BETTER_AUTH_TRUSTED_PROXY_HEADERS === "true";
   const protocol = trustedProxyHeaders && forwardedProto
     ? `${forwardedProto.replace(/:$/, "")}:`
     : request.nextUrl.protocol;

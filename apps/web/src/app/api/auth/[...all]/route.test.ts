@@ -50,6 +50,22 @@ describe("Better Auth sign-up gate", () => {
     expect(response.status).toBe(403);
   });
 
+  it("accepts a configured HTTPS reverse proxy only with trusted forwarded headers", () => {
+    const request = new Request("http://internal/api/auth/get-session", {
+      headers: {
+        host: "finance.internal",
+        "x-forwarded-host": "finance.example.com",
+        "x-forwarded-proto": "https",
+      },
+    });
+
+    vi.stubEnv("BETTER_AUTH_TRUSTED_PROXY_HEADERS", "true");
+    expect(isAllowedAuthHost(request, "https://finance.example.com")).toBe(true);
+
+    vi.stubEnv("BETTER_AUTH_TRUSTED_PROXY_HEADERS", "false");
+    expect(isAllowedAuthHost(request, "https://finance.example.com")).toBe(false);
+  });
+
   it("allows the first-run sign-up route before bootstrap", async () => {
     vi.mocked(isInstanceInitialized).mockResolvedValueOnce(false);
 

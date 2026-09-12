@@ -43,7 +43,9 @@ const trustedOrigins = (request?: Request) => {
   if (request) {
     try {
       const requestUrl = new URL(request.url);
-      const host = request.headers.get("host");
+      const host = trustedProxyHeaders
+        ? request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || request.headers.get("host")
+        : request.headers.get("host");
       const configuredHost = configuredOrigin ? new URL(configuredOrigin).host : null;
       const configuredProtocol = configuredOrigin ? new URL(configuredOrigin).protocol : null;
       const forwardedProto = request.headers.get("x-forwarded-proto");

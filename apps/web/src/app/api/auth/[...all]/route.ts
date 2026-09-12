@@ -33,7 +33,10 @@ export async function POST(request: Request) {
 
 export function isAllowedAuthHost(request: Request, configuredOrigin = process.env.BETTER_AUTH_URL): boolean {
   try {
-    const host = request.headers.get("host");
+    const trustedProxyHeaders = process.env.BETTER_AUTH_TRUSTED_PROXY_HEADERS === "true";
+    const host = trustedProxyHeaders
+      ? request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || request.headers.get("host")
+      : request.headers.get("host");
     if (!host) return false;
     if (!configuredOrigin) return isSafeDirectHost(host);
     const configured = new URL(configuredOrigin);
