@@ -10,8 +10,7 @@ test("renders the Polish public application shell", async ({ page }) => {
     await expect(page.locator("#signin-email")).toBeVisible();
     await expect(page.locator("#signin-password")).toBeVisible();
   } else {
-    await expect(page.locator("#onboarding-name")).toBeVisible();
-    await expect(page.locator("#onboarding-person")).toBeVisible();
+    await expect(page.locator("#setup-title")).toBeVisible();
   }
 
   // Ensure authenticated navigation and metrics are strictly absent for unauthenticated visitors
@@ -31,8 +30,7 @@ test("renders the English public application shell", async ({ page }) => {
     await expect(page.locator("#signin-email")).toBeVisible();
     await expect(page.locator("#signin-password")).toBeVisible();
   } else {
-    await expect(page.locator("#onboarding-name")).toBeVisible();
-    await expect(page.locator("#onboarding-person")).toBeVisible();
+    await expect(page.locator("#setup-title")).toBeVisible();
   }
 
   // Ensure authenticated navigation and metrics are strictly absent for unauthenticated visitors
