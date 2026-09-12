@@ -4,7 +4,6 @@ import { isTrustedMutation } from "./lib/security/request-origin";
 describe("API mutation origin protection", () => {
   test("accepts a configured same-origin mutation", () => {
     vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
 
     const request = { method: "POST", pathname: "/api/households", origin: "http://localhost:3000" };
 
@@ -13,7 +12,6 @@ describe("API mutation origin protection", () => {
 
   test("rejects a cross-origin mutation", () => {
     vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
 
     const request = { method: "POST", pathname: "/api/households", origin: "https://attacker.example" };
 
@@ -24,6 +22,19 @@ describe("API mutation origin protection", () => {
     vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
 
     const request = { method: "POST", pathname: "/api/auth/sign-in/email", origin: "https://attacker.example" };
+
+    expect(isTrustedMutation(request)).toBe(true);
+  });
+
+  test("accepts direct self-hosting when Origin matches the request origin", () => {
+    vi.stubEnv("BETTER_AUTH_URL", "");
+
+    const request = {
+      method: "POST",
+      pathname: "/api/households",
+      origin: "http://finance-host:3990",
+      requestOrigin: "http://finance-host:3990",
+    };
 
     expect(isTrustedMutation(request)).toBe(true);
   });

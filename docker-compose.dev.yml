@@ -43,7 +43,7 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      ALLOW_SIGN_UP: ${ALLOW_SIGN_UP:-false}
+
     depends_on:
       postgres:
         condition: service_healthy

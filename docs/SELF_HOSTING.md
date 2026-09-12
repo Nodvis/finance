@@ -5,19 +5,21 @@ Nodvis Finance is a two-container self-hosted deployment: the `finance` applicat
 ## Installation
 
 1. Copy the complete root [`docker-compose.yml`](../docker-compose.yml) into Dockge, Portainer or a new directory.
-2. Replace `CHANGE_ME_DATABASE_PASSWORD`, `CHANGE_ME_AUTH_SECRET` and `SERVER-IP`. Use the same database password in both database password fields. Replace `SERVER-IP` with the IP address or hostname of the machine running Docker.
+2. Set the stack variables `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` to different strong random values. `BETTER_AUTH_SECRET` must contain at least 32 characters; `POSTGRES_PASSWORD` is the only database password value an operator maintains.
 3. Deploy, or run `docker compose up -d`.
-4. Open `http://SERVER-IP:3990`.
+4. Open `http://<docker-host>:3990`.
 
 PostgreSQL is not exposed on a host port. The single named volume `nodvis-finance-data` contains your Finance database. Do not delete it unless you intentionally want to delete your Finance data.
 
-At startup the Finance container validates configuration, waits for PostgreSQL, applies pending migrations, and only then starts the web server. A migration error stops Finance and is visible in its logs.
+Direct access on a private LAN hostname or IP is supported without copying the host into Compose. Nodvis accepts only validated loopback/RFC1918/ULA hosts on port `3990`; arbitrary public hostnames remain rejected unless a reverse proxy supplies an explicit `BETTER_AUTH_URL`.
+
+At startup the Finance container validates configuration, waits for PostgreSQL, applies pending migrations, and only then starts the web server. A migration error stops Finance and is visible in its logs. Compose reports Finance as healthy only after `/api/health` returns an OK status.
 
 ## First account
 
-The canonical example temporarily allows the first account to be created. Create the owner account, change `ALLOW_SIGN_UP` to `"false"`, and redeploy Finance. Do not leave open registration enabled on an internet-facing deployment.
+Fresh empty installations open a localized setup wizard instead of a generic sign-in/sign-up screen. The wizard creates the first owner and household and closes public registration automatically. A bootstrap race is serialized in PostgreSQL; only one visitor can claim the first owner slot.
 
-Automatic zero-user bootstrap is not enabled in this release because Better Auth's signup switch is process configuration, not a transactional per-request policy. The explicit close-after-first-account step is the safe supported workflow.
+Existing installations are not reset or reinitialized. The bootstrap state is derived from the persisted instance state and existing authentication records.
 
 ## Internet access
 

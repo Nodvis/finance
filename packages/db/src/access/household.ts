@@ -17,6 +17,8 @@ import {
   personAuthLinks,
   persons,
 } from "../schema/foundation";
+import { instanceState } from "../schema/instance";
+import { InstanceAlreadyInitializedError } from "./instance";
 
 export type HouseholdAccessSummary = {
   householdId: string;
@@ -186,6 +188,7 @@ export type CreateHouseholdOnboardingInput = {
   householdName: string;
   defaultCurrency: string;
   personDisplayName?: string | undefined;
+  bootstrap?: boolean | undefined;
 };
 
 /**
@@ -201,6 +204,18 @@ export async function createHouseholdOnboarding(
   const db = getDb();
 
   return await db.transaction(async (tx) => {
+    if (input.bootstrap) {
+      const [state] = await tx
+        .select({ initializedAt: instanceState.initializedAt })
+        .from(instanceState)
+        .where(eq(instanceState.id, 1))
+        .for("update")
+        .limit(1);
+      if (!state || state.initializedAt !== null) {
+        throw new InstanceAlreadyInitializedError();
+      }
+    }
+
     // 1. Ensure person & personAuthLink exist for this auth user
     let personId: string;
     let personDisplayName: string;
@@ -228,6 +243,9 @@ export async function createHouseholdOnboarding(
         .orderBy(asc(householdMemberships.createdAt))
         .limit(1);
       if (existingMembership) {
+        if (input.bootstrap) {
+          throw new InstanceAlreadyInitializedError();
+        }
         const [existingHousehold] = await tx
           .select({
             householdId: households.id,
@@ -237,7 +255,7 @@ export async function createHouseholdOnboarding(
           .from(households)
           .where(eq(households.id, existingMembership.householdId))
           .limit(1);
-        if (existingHousehold) {
+        if (existingHousehold && !input.bootstrap) {
           return {
             ...existingHousehold,
             personId,
@@ -298,6 +316,13 @@ export async function createHouseholdOnboarding(
       householdId: newHouseholdDomain.id,
       personId,
     });
+
+    if (input.bootstrap) {
+      await tx
+        .update(instanceState)
+        .set({ initializedAt: new Date(), ownerAuthUserId: input.authUserId })
+        .where(eq(instanceState.id, 1));
+    }
 
     // 4. Seed modest Polish default categories for the new household
     for (const def of DEFAULT_POLISH_CATEGORIES) {
