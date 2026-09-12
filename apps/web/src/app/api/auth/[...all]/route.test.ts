@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -20,6 +20,10 @@ describe("Better Auth sign-up gate", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("closes public sign-up after instance bootstrap", async () => {
     vi.mocked(isInstanceInitialized).mockResolvedValueOnce(true);
 
@@ -32,6 +36,18 @@ describe("Better Auth sign-up gate", () => {
       code: "SIGN_UP_CLOSED",
       message: "Public sign-up is closed for this instance",
     });
+  });
+
+  it("keeps public sign-up closed in production even with the CI marker", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NODVIS_CI_E2E", "true");
+    vi.mocked(isInstanceInitialized).mockResolvedValueOnce(true);
+
+    const response = await POST(
+      new Request("http://127.0.0.1:3990/api/auth/sign-up/email", { method: "POST", headers: { host: "127.0.0.1:3990" } }),
+    );
+
+    expect(response.status).toBe(403);
   });
 
   it("allows the first-run sign-up route before bootstrap", async () => {
