@@ -145,6 +145,19 @@ export type {
   PeriodCashFlowSummary,
 } from "./overview";
 
+export { calculateHistoricalNetWorthSeries, calculateNetWorth } from "./net-worth";
+export type {
+  HistoricalNetWorthPoint,
+  HistoricalSeriesByCurrency,
+  HistoricalSeriesObservation,
+  HistoricalSeriesSubject,
+  NetWorthAccountObservation,
+  NetWorthConfidence,
+  NetWorthCurrencySummary,
+  NetWorthHistorySummary,
+  NetWorthSummary,
+} from "./net-worth";
+
 export * from "./forecast";
 
 export {

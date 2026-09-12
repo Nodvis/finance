@@ -211,6 +211,13 @@
       "when": 1789221900000,
       "tag": "0029_ci_only_auth_signup",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1789245814654,
+      "tag": "0030_happy_enchantress",
+      "breakpoints": true
     }
   ]
 }

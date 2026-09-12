@@ -2,14 +2,16 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import type { SerializedHouseholdOverview } from "@/lib/overview/schema";
+import type { SerializedNetWorthSummary } from "@/lib/net-worth/serialization";
 import { formatAmountPresentation } from "@/lib/transactions/presentation";
 
 type OverviewCardsProps = {
   overview: SerializedHouseholdOverview;
+  netWorth?: SerializedNetWorthSummary | null;
   locale: string;
 };
 
-export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
+export async function OverviewCards({ overview, netWorth, locale }: OverviewCardsProps) {
   const t = await getTranslations("Overview");
   const tAccess = await getTranslations("Accessibility");
 
@@ -151,23 +153,55 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
         </div>
       </article>
 
-      {/* 3. Debt & Liabilities Card (Preserving INV-013, not fabricating debts) */}
+      {/* 3. Debt & Net Worth Position Card */}
       <article className="flex flex-col justify-between finance-card p-5 transition-colors hover:border-[var(--finance-signal-dark)] dark:hover:border-stone-700/80">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
-            {t("debt.title")}
-          </p>
-          <p className="mt-3 font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
-            —
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
+              {t("debt.title")}
+            </p>
+            {netWorth && netWorth.byCurrency.some((c) => c.currentConfidence !== "no_data") ? (
+              <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 dark:text-stone-400 dark:bg-stone-800">
+                {netWorth.byCurrency[0]?.currentIsComplete ? t("availableCash.allFresh", { count: 1 }) : t("availableCash.partialWarning", { count: 1 })}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 space-y-1">
+            {netWorth && netWorth.byCurrency.some((c) => c.currentConfidence !== "no_data") ? (
+              netWorth.byCurrency.map((curr) => (
+                <p
+                  key={curr.currency}
+                  className="font-mono text-2xl font-semibold tracking-tight text-slate-900 dark:text-stone-100 sm:text-3xl"
+                >
+                  {formatAmountPresentation(
+                    curr.currentNetWorthMinor,
+                    curr.currency,
+                    locale,
+                  )}
+                </p>
+              ))
+            ) : (
+              <p className="font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+                —
+              </p>
+            )}
+          </div>
         </div>
         <div className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-stone-800/80 dark:text-stone-400">
-          <p className="font-medium text-slate-700 dark:text-stone-300">
-            {t("debt.notModeled")}
-          </p>
-          <p className="mt-0.5 text-slate-400 text-[11px] leading-relaxed dark:text-stone-500">
-            {t("debt.note")}
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="font-medium text-slate-700 dark:text-stone-300">
+              {netWorth && netWorth.byCurrency.some((c) => c.currentConfidence !== "no_data")
+                ? t("debt.modeled")
+                : t("debt.notModeled")}
+            </p>
+            <Link
+              href={`/${locale}/net-worth`}
+              className="text-slate-500 hover:text-slate-800 underline underline-offset-2 dark:text-stone-400 dark:hover:text-stone-200"
+            >
+              {t("debt.viewDetails")} →
+            </Link>
+          </div>
         </div>
       </article>
     </section>

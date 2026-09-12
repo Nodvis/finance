@@ -10,6 +10,7 @@
     "accounts": "Accounts",
     "transactions": "Transactions",
     "categories": "Categories",
+    "netWorth": "Net Worth",
     "imports": "Imports",
     "transfers": "Transfers",
     "liabilities": "Liabilities",
@@ -70,6 +71,21 @@
       "projected": "After known payments",
       "incomplete": "Incomplete data",
       "included": "Included obligations"
+    },
+    "netWorth": {
+      "eyebrow": "Long-term position",
+      "title": "Net Worth & Balance History",
+      "viewDetails": "View full history",
+      "assets": "Assets",
+      "liabilities": "Liabilities",
+      "netWorth": "Net Worth",
+      "complete": "Complete history",
+      "incomplete": "Incomplete history",
+      "missing": "Missing",
+      "explanation": "Calculated strictly per currency as observed assets minus observed liabilities. Missing or unobserved balances are never treated as zero.",
+      "emptyTitle": "No balance observations yet",
+      "emptyDescription": "Record balance observations for your accounts and liabilities to track your net worth over time.",
+      "recordObservation": "Record balance"
     }
   },
   "Setup": {
@@ -627,7 +643,9 @@
     "transactionHistoryTimeline": "Transaction change history timeline",
     "transfersList": "Transfer candidates list",
     "transfersTabs": "Transfer review categories",
-    "accountIdentifiersModal": "Manage account identifiers dialog"
+    "accountIdentifiersModal": "Manage account identifiers dialog",
+    "netWorthSection": "Household net worth summary and history",
+    "netWorthChart": "Historical net worth trend chart"
   },
   "Imports": {
     "title": "Import a CSV statement",
@@ -693,7 +711,8 @@
       "reviewOnly": "Needs review",
       "oneSidedPending": "Pending counterpart",
       "ambiguous": "Ambiguous",
-      "reconciled": "Reconciled"
+      "reconciled": "Reconciled",
+      "legacy": "Migrated legacy snapshot"
     },
     "actions": {
       "autoMatchAll": "Auto-match all confirmed ({count})",
@@ -770,6 +789,8 @@
     "debt": {
       "title": "Debt & liabilities",
       "notModeled": "Debt obligations are not yet modeled",
+      "modeled": "Tracked across accounts & liabilities",
+      "viewDetails": "View Net Worth & History",
       "note": "Loans and liability schedules are kept strictly separate from available cash."
     },
     "cashFlow": {
@@ -1047,5 +1068,52 @@
     "due": "Due {date}",
     "deficit": "Projected deficit",
     "zero": "Projected cash reaches zero"
+  },
+  "NetWorth": {
+    "title": "Net Worth & Balance History",
+    "subtitle": "Track your household net worth across currencies with verified balance observations and explicit historical confidence.",
+    "currentNetWorth": "Net Worth",
+    "totalAssets": "Assets",
+    "totalLiabilities": "Liabilities",
+    "calculationExplanation": "Net worth = Observed Assets − Observed Liabilities (strictly per currency, no FX assumptions).",
+    "calculationExplanationDetails": "Each point in the series evaluates known balances as of that date. If any active account or liability has no observation on or before that date, the point is flagged as incomplete history and unobserved items are explicitly listed rather than assumed to be zero.",
+    "confidence": {
+      "complete": "Complete history",
+      "incomplete": "Incomplete history",
+      "missingLabel": "Missing"
+    },
+    "empty": {
+      "title": "No balance observations recorded",
+      "description": "Record your current or historical balances for accounts and liabilities to start building your net worth timeline.",
+      "action": "Record balance observation"
+    },
+    "history": {
+      "title": "Balance observation history",
+      "date": "Date",
+      "account": "Account / Liability",
+      "balance": "Balance",
+      "source": "Source",
+      "note": "Note",
+      "manual": "Manual",
+      "imported": "Imported",
+      "reconciled": "Reconciled",
+      "legacy": "Migrated legacy snapshot"
+    },
+    "form": {
+      "title": "Record balance observation",
+      "subject": "Type",
+      "target": "Target account or liability",
+      "amount": "Balance amount",
+      "amountPlaceholder": "0.00",
+      "observedAt": "Observation date",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g. Monthly statement",
+      "submit": "Save observation",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "subjectAccount": "Assets (Account)",
+      "subjectLiability": "Liabilities (Liability)",
+      "success": "Balance observation recorded successfully"
+    }
   }
 }

@@ -10,6 +10,7 @@
     "accounts": "Konta",
     "transactions": "Transakcje",
     "categories": "Kategorie",
+    "netWorth": "Majątek netto",
     "imports": "Importy",
     "transfers": "Przelewy",
     "liabilities": "Zobowiązania",
@@ -70,6 +71,21 @@
       "projected": "Po znanych płatnościach",
       "incomplete": "Niepełne dane",
       "included": "Uwzględnione zobowiązania"
+    },
+    "netWorth": {
+      "eyebrow": "Pozycja długoterminowa",
+      "title": "Majątek netto i historia sald",
+      "viewDetails": "Zobacz pełną historię",
+      "assets": "Aktywa",
+      "liabilities": "Zobowiązania",
+      "netWorth": "Majątek netto",
+      "complete": "Pełna historia",
+      "incomplete": "Niepełna historia",
+      "missing": "Brakujące",
+      "explanation": "Obliczane ściśle w ramach waluty jako zaobserwowane aktywa pomniejszone o zaobserwowane zobowiązania. Brakujące salda nigdy nie są traktowane jako zero.",
+      "emptyTitle": "Brak zarejestrowanych sald",
+      "emptyDescription": "Zarejestruj obserwacje sald dla swoich kont i zobowiązań, aby śledzić majątek netto w czasie.",
+      "recordObservation": "Zarejestruj saldo"
     }
   },
   "Setup": {
@@ -604,7 +620,9 @@
     "transactionHistoryTimeline": "Oś czasu historii zmian transakcji",
     "transfersList": "Lista kandydatów na przelewy",
     "transfersTabs": "Kategorie przeglądu przelewów",
-    "accountIdentifiersModal": "Okno dialogowe zarządzania identyfikatorami rachunku"
+    "accountIdentifiersModal": "Okno dialogowe zarządzania identyfikatorami rachunku",
+    "netWorthSection": "Podsumowanie i historia majątku netto gospodarstwa domowego",
+    "netWorthChart": "Wykres trendu majątku netto w czasie"
   },
   "Imports": {
     "title": "Importuj wyciąg CSV",
@@ -670,7 +688,8 @@
       "reviewOnly": "Weryfikacja",
       "oneSidedPending": "Oczekujące",
       "ambiguous": "Niejednoznaczne",
-      "reconciled": "Uzgodnione"
+      "reconciled": "Uzgodnione",
+      "legacy": "Przeniesione ze starszego snapshotu"
     },
     "actions": {
       "autoMatchAll": "Połącz automatycznie wszystkie potwierdzone ({count})",
@@ -747,6 +766,8 @@
     "debt": {
       "title": "Zadłużenie i zobowiązania",
       "notModeled": "Zobowiązania dłużne nie są jeszcze modelowane",
+      "modeled": "Śledzone w ramach kont i zobowiązań",
+      "viewDetails": "Zobacz majątek netto i historię",
       "note": "Kredyty i harmonogramy spłat są ściśle oddzielone od dostępnych środków."
     },
     "cashFlow": {
@@ -1024,5 +1045,52 @@
     "due": "Termin {date}",
     "deficit": "Prognozowany deficyt",
     "zero": "Prognozowana gotówka spada do zera"
+  },
+  "NetWorth": {
+    "title": "Majątek netto i historia sald",
+    "subtitle": "Śledź majątek netto gospodarstwa domowego w poszczególnych walutach na podstawie zweryfikowanych obserwacji sald i jednoznacznego statusu kompletności.",
+    "currentNetWorth": "Majątek netto",
+    "totalAssets": "Aktywa",
+    "totalLiabilities": "Zobowiązania",
+    "calculationExplanation": "Majątek netto = Zaobserwowane aktywa − Zaobserwowane zobowiązania (ściśle w ramach waluty, bez przeliczania FX).",
+    "calculationExplanationDetails": "Każdy punkt w serii ewaluuje znane salda na dany dzień. Jeśli jakiekolwiek aktywne konto lub zobowiązanie nie posiada obserwacji z tej daty lub wcześniejszej, punkt oznaczany jest jako niekompletny, a brakujące pozycje są wymieniane zamiast zakładania zera.",
+    "confidence": {
+      "complete": "Pełna historia",
+      "incomplete": "Niepełna historia",
+      "missingLabel": "Brakujące"
+    },
+    "empty": {
+      "title": "Brak zarejestrowanych obserwacji salda",
+      "description": "Zarejestruj bieżące lub historyczne salda dla kont i zobowiązań, aby zacząć budować oś czasu majątku netto.",
+      "action": "Zarejestruj obserwację salda"
+    },
+    "history": {
+      "title": "Historia obserwacji sald",
+      "date": "Data",
+      "account": "Konto / Zobowiązanie",
+      "balance": "Saldo",
+      "source": "Źródło",
+      "note": "Notatka",
+      "manual": "Ręczne",
+      "imported": "Zaimportowane",
+      "reconciled": "Uzgodnione",
+      "legacy": "Przeniesione ze starszego snapshotu"
+    },
+    "form": {
+      "title": "Zarejestruj obserwację salda",
+      "subject": "Typ",
+      "target": "Docelowe konto lub zobowiązanie",
+      "amount": "Kwota salda",
+      "amountPlaceholder": "0,00",
+      "observedAt": "Data obserwacji",
+      "note": "Notatka (opcjonalnie)",
+      "notePlaceholder": "np. Wyciąg miesięczny",
+      "submit": "Zapisz obserwację",
+      "saving": "Zapisywanie...",
+      "cancel": "Anuluj",
+      "subjectAccount": "Aktywa (Konto)",
+      "subjectLiability": "Zobowiązania",
+      "success": "Obserwacja salda została pomyślnie zarejestrowana"
+    }
   }
 }

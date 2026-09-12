@@ -46,6 +46,14 @@ vi.mock("@/lib/forecast/service", () => ({
   getHouseholdCashForecast: vi.fn(),
 }));
 
+vi.mock("@/lib/net-worth/service", () => ({
+  getHouseholdNetWorthSummary: vi.fn(),
+}));
+
+vi.mock("@/lib/net-worth/serialization", () => ({
+  serializeNetWorthSummary: vi.fn((s) => s),
+}));
+
 import { isInstanceInitialized, listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";

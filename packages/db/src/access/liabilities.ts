@@ -34,6 +34,7 @@ import {
 } from "../schema/liabilities";
 import { bnplPurchases } from "../schema/bnpl-purchases";
 import { obligations } from "../schema/obligations";
+import { balanceObservations } from "../schema/balance-observations";
 import {
   transactionAuditEntries,
   transactions,
@@ -293,9 +294,10 @@ export async function insertLiabilityInDb(
     }
   }
 
-  const [inserted] = await db
-    .insert(liabilities)
-    .values({
+  return await db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(liabilities)
+      .values({
       id: liability.id,
       householdId,
       name: liability.name,
@@ -311,14 +313,27 @@ export async function insertLiabilityInDb(
       archivedAt: liability.archivedAt,
       createdAt: liability.createdAt,
       updatedAt: liability.updatedAt,
-    })
-    .returning();
+      })
+      .returning();
 
-  if (!inserted) {
-    throw new Error("Failed to insert liability");
-  }
+    if (!inserted) {
+      throw new Error("Failed to insert liability");
+    }
 
-  return mapRowToLiability(inserted);
+    if (liability.observedOutstanding !== null && liability.observedOutstandingAt !== null) {
+      await tx.insert(balanceObservations).values({
+      householdId,
+      liabilityId: inserted.id,
+      amountMinor: liability.observedOutstanding.amountMinor,
+      currency: liability.currency,
+      observedAt: liability.observedOutstandingAt,
+      source: "manual",
+      note: "Initial liability balance",
+      });
+    }
+
+    return mapRowToLiability(inserted);
+  });
 }
 
 export async function updateLiabilityInDb(params: {
@@ -354,29 +369,45 @@ export async function updateLiabilityInDb(params: {
     }
   }
 
-  const [updated] = await db
-    .update(liabilities)
-    .set({
-      name: next.name,
-      kind: next.kind,
-      observedOutstandingMinor: next.observedOutstanding?.amountMinor ?? null,
-      observedOutstandingAt: next.observedOutstandingAt,
-      responsiblePersonId: next.responsiblePersonId,
-      lender: next.lender,
-      destinationAccountId: next.destinationAccountId,
-      notes: next.notes,
-      version: params.expectedVersion + 1,
-      archivedAt: next.archivedAt,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(liabilities.householdId, params.householdId),
-        eq(liabilities.id, params.id),
-        eq(liabilities.version, params.expectedVersion),
-      ),
-    )
-    .returning();
+  const [updated] = await db.transaction(async (tx) => {
+    const [result] = await tx
+      .update(liabilities)
+      .set({
+        name: next.name,
+        kind: next.kind,
+        observedOutstandingMinor: next.observedOutstanding?.amountMinor ?? null,
+        observedOutstandingAt: next.observedOutstandingAt,
+        responsiblePersonId: next.responsiblePersonId,
+        lender: next.lender,
+        destinationAccountId: next.destinationAccountId,
+        notes: next.notes,
+        version: params.expectedVersion + 1,
+        archivedAt: next.archivedAt,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(liabilities.householdId, params.householdId),
+          eq(liabilities.id, params.id),
+          eq(liabilities.version, params.expectedVersion),
+        ),
+      )
+      .returning();
+
+    if (result && next.observedOutstanding !== null && next.observedOutstandingAt !== null) {
+      await tx.insert(balanceObservations).values({
+        householdId: params.householdId,
+        liabilityId: params.id,
+        amountMinor: next.observedOutstanding.amountMinor,
+        currency: next.currency,
+        observedAt: next.observedOutstandingAt,
+        source: "manual",
+        note: "Liability balance updated",
+      });
+    }
+
+    return [result] as const;
+  });
 
   if (!updated) {
     const [existing] = await db
