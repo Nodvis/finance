@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { getCurrencyFractionDigits } from "@/lib/transactions/money-entry";
 
 type CurrencyFlow = { currency: string; incomeMinor: string; spendingMinor: string; netCashFlowMinor: string; transactionCount: number };
 type Category = { categoryName: string | null; categoryId: string | null; amountMinor: string; currency: string; percentage: number; transactionCount: number };
@@ -17,17 +18,16 @@ function boundedMinor(value: string) {
   }
 }
 
-function formatMinor(value: string, currency: string, locale: string) {
+function formatMinor(value: string, currency: string, locale: string, fallback: string) {
   try {
     const minor = BigInt(value);
     const sign = minor < 0n ? "−" : "";
     const absolute = minor < 0n ? -minor : minor;
-    const whole = absolute / 100n;
-    const fraction = (absolute % 100n).toString().padStart(2, "0");
-    const formattedWhole = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Number(whole));
-    return `${sign}${formattedWhole},${fraction} ${currency}`;
+    const fractionDigits = getCurrencyFractionDigits(currency);
+    const formatted = new Intl.NumberFormat(locale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(absolute);
+    return `${sign}${formatted} ${currency}`;
   } catch {
-    return `— ${currency}`;
+    return fallback;
   }
 }
 
@@ -44,10 +44,10 @@ export function OverviewCharts({ flows, categories, locale, labels }: Props) {
           <div><p className="finance-eyebrow">{labels.cashFlow}</p><h2 id="cash-flow-chart-title" className="finance-section-title">{labels.income} / {labels.spending}</h2></div>
           {flows.length ? <span className="finance-chart-legend"><i className="bg-[var(--finance-signal)]" />{labels.income}<i className="ml-2 bg-slate-400" />{labels.spending}</span> : null}
         </div>
-        {chartData.length ? <div className="mt-5 h-56 w-full" role="img" aria-label={`${labels.cashFlow}: ${chartData.map((item) => `${item.currency}, ${formatMinor(item.netCashFlowMinor, item.currency, locale)}`).join("; ")}`}>
-          <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}><CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} /><XAxis dataKey="currency" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)} /><Tooltip formatter={(value, name) => [formatMinor(String(value), chartData[0]?.currency ?? "", locale), String(name)]} /><Bar dataKey="income" name={labels.income} fill="#C7F36A" radius={[5, 5, 0, 0]} /><Bar dataKey="spending" name={labels.spending} fill="#858C96" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer>
+        {chartData.length ? <div className="mt-5 h-56 w-full" role="img" aria-label={`${labels.cashFlow}: ${chartData.map((item) => `${item.currency}, ${formatMinor(item.netCashFlowMinor, item.currency, locale, labels.empty)}`).join("; ")}`}>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}><CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} /><XAxis dataKey="currency" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} tickFormatter={(value) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)} /><Tooltip formatter={(value, name, item) => { const currency = (item as { payload?: { currency?: string } }).payload?.currency ?? ""; return [formatMinor(String(value), currency, locale, labels.empty), String(name)]; }} /><Bar dataKey="income" name={labels.income} fill="#C7F36A" radius={[5, 5, 0, 0]} /><Bar dataKey="spending" name={labels.spending} fill="#858C96" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer>
         </div> : <div className="mt-5"><EmptyChart label={labels.empty} /></div>}
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">{chartData.map((item) => <div key={item.currency} className="rounded-xl bg-[var(--surface-muted)] p-3"><p className="text-xs text-[var(--muted-foreground)]">{item.currency} · {labels.net}</p><p className="mt-1 font-mono text-sm font-semibold text-[var(--foreground)]">{formatMinor(item.netCashFlowMinor, item.currency, locale)}</p></div>)}</div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">{chartData.map((item) => <div key={item.currency} className="rounded-xl bg-[var(--surface-muted)] p-3"><p className="text-xs text-[var(--muted-foreground)]">{item.currency} · {labels.net}</p><p className="mt-1 font-mono text-sm font-semibold text-[var(--foreground)]">{formatMinor(item.netCashFlowMinor, item.currency, locale, labels.empty)}</p></div>)}</div>
       </section>
       <section className="finance-card p-5" aria-labelledby="spending-chart-title">
         <p className="finance-eyebrow">{labels.spendingBreakdown}</p><h2 id="spending-chart-title" className="finance-section-title">{labels.spending}</h2>
