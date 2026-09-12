@@ -8,11 +8,14 @@ import { serializeOverview } from "@/lib/overview/serialization";
 import { overviewQuerySchema } from "@/lib/overview/schema";
 import { getHouseholdOverview } from "@/lib/overview/service";
 import { getHouseholdCashForecast } from "@/lib/forecast/service";
+import { getHouseholdNetWorthSummary } from "@/lib/net-worth/service";
+import { serializeNetWorthSummary } from "@/lib/net-worth/serialization";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
 
 import { CashFlowSection } from "./components/CashFlowSection";
 import { ForecastSection } from "./components/ForecastSection";
+import { NetWorthSection } from "./components/NetWorthSection";
 import { CategorySpendingSection } from "./components/CategorySpendingSection";
 import { HouseholdSelectionCard } from "./components/HouseholdSelectionCard";
 import { NoHouseholdCard } from "./components/NoHouseholdCard";
@@ -59,6 +62,7 @@ export default async function HomePage({
 
   const t = await getTranslations("HomePage");
   const tForecast = await getTranslations("HomePage.forecast");
+  const tNetWorth = await getTranslations("HomePage.netWorth");
   const tAccess = await getTranslations("Accessibility");
 
   const session = await getCurrentSession();
@@ -126,7 +130,7 @@ export default async function HomePage({
   // 5. User with active household context: load truthful overview and financial data
   const householdContext = householdStatus.activeContext;
 
-  const [accounts, categories, rawTransactions, overview, forecast] = await Promise.all([
+  const [accounts, categories, rawTransactions, overview, forecast, rawNetWorth] = await Promise.all([
     listAccountsByHousehold(householdContext.householdId, {
       includeArchived: false,
     }),
@@ -147,10 +151,12 @@ export default async function HomePage({
       asOf: new Date().toISOString().slice(0, 10),
       horizonDays: 7,
     }),
+    getHouseholdNetWorthSummary(householdContext),
   ]);
 
   const serializedTransactions = rawTransactions.map(serializeTransaction);
   const serializedOverview = overview ? serializeOverview(overview) : null;
+  const serializedNetWorth = rawNetWorth ? serializeNetWorthSummary(rawNetWorth) : null;
 
   return (
     <main className="mx-auto flex w-full max-w-[92rem] flex-col gap-7 px-4 py-7 sm:px-6 lg:px-10 lg:py-9">
@@ -179,7 +185,11 @@ export default async function HomePage({
 
       {/* Honest Financial Summary Cards */}
       {serializedOverview ? (
-        <OverviewCards overview={serializedOverview} locale={locale} />
+        <OverviewCards
+          overview={serializedOverview}
+          netWorth={serializedNetWorth}
+          locale={locale}
+        />
       ) : null}
 
       <ForecastSection
@@ -197,6 +207,28 @@ export default async function HomePage({
           included: tForecast("included"),
         }}
       />
+
+      {serializedNetWorth ? (
+        <NetWorthSection
+          summary={serializedNetWorth}
+          locale={locale}
+          labels={{
+            title: tNetWorth("title"),
+            eyebrow: tNetWorth("eyebrow"),
+            viewDetails: tNetWorth("viewDetails"),
+            assets: tNetWorth("assets"),
+            liabilities: tNetWorth("liabilities"),
+            netWorth: tNetWorth("netWorth"),
+            complete: tNetWorth("complete"),
+            incomplete: tNetWorth("incomplete"),
+            missing: tNetWorth("missing"),
+            explanation: tNetWorth("explanation"),
+            emptyTitle: tNetWorth("emptyTitle"),
+            emptyDescription: tNetWorth("emptyDescription"),
+            recordObservation: tNetWorth("recordObservation"),
+          }}
+        />
+      ) : null}
 
       {serializedOverview ? <OverviewCharts flows={serializedOverview.cashFlow.byCurrency} categories={serializedOverview.categorySpending} locale={locale} labels={{ cashFlow: t("charts.cashFlow"), income: t("charts.income"), spending: t("charts.spending"), net: t("charts.net"), spendingBreakdown: t("charts.spendingBreakdown"), empty: t("charts.empty"), spendingDescription: t("charts.spendingDescription"), uncategorized: t("charts.uncategorized") }} /> : null}
 

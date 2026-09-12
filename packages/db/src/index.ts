@@ -1,5 +1,16 @@
 export { closeDb, getDb } from "./client";
 export {
+  listBalanceObservationsForSubject,
+  listHouseholdBalanceObservations,
+  listLatestBalanceObservations,
+  recordAccountBalanceObservation,
+  recordLiabilityBalanceObservation,
+} from "./access/balance-observations";
+export type {
+  BalanceObservationRecord,
+  BalanceObservationSource,
+} from "./access/balance-observations";
+export {
   InstanceAlreadyInitializedError,
   isInstanceInitialized,
 } from "./access/instance";

@@ -16,6 +16,7 @@ import {
   persons,
 } from "../schema/foundation";
 import { creditFacilities } from "../schema/credit-facilities";
+import { balanceObservations } from "../schema/balance-observations";
 
 export class AccountNotFoundError extends Error {
   constructor(message: string = "Account not found in household") {
@@ -235,6 +236,18 @@ export async function createHouseholdAccount(
       balanceSnapshotAt: snapshotAt,
       archivedAt: null,
     });
+
+    if (snapshotMinor !== null && snapshotAt !== null) {
+      await tx.insert(balanceObservations).values({
+        householdId: input.householdId,
+        accountId: domainAccount.id,
+        amountMinor: snapshotMinor,
+        currency: domainAccount.currency,
+        observedAt: snapshotAt,
+        source: "manual",
+        note: "Initial balance snapshot",
+      });
+    }
 
     for (const ownerId of uniqueOwnerIds) {
       await tx.insert(accountOwners).values({

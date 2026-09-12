@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, BarChart3, CalendarDays, CreditCard, LayoutDashboard, ListFilter, MoreHorizontal, ReceiptText, Repeat2, Tags, Upload, WalletCards, X } from "lucide-react";
+import { ArrowLeftRight, BarChart3, CalendarDays, CreditCard, LayoutDashboard, ListFilter, MoreHorizontal, ReceiptText, Repeat2, Scale, Tags, Upload, WalletCards, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { FinanceBrand } from "./FinanceBrand";
 
 const ITEMS = [
-  ["/", "home", LayoutDashboard], ["/accounts", "accounts", WalletCards], ["/transactions", "transactions", ReceiptText], ["/categories", "categories", Tags], ["/imports", "imports", Upload], ["/transfers", "transfers", ArrowLeftRight], ["/liabilities", "liabilities", CreditCard], ["/upcoming", "upcoming", CalendarDays], ["/rules", "rules", ListFilter], ["/recurring", "recurring", Repeat2], ["/analytics", "analytics", BarChart3], ["/forecast", "forecast", BarChart3],
+  ["/", "home", LayoutDashboard], ["/accounts", "accounts", WalletCards], ["/transactions", "transactions", ReceiptText], ["/categories", "categories", Tags], ["/net-worth", "netWorth", Scale], ["/imports", "imports", Upload], ["/transfers", "transfers", ArrowLeftRight], ["/liabilities", "liabilities", CreditCard], ["/upcoming", "upcoming", CalendarDays], ["/rules", "rules", ListFilter], ["/recurring", "recurring", Repeat2], ["/analytics", "analytics", BarChart3], ["/forecast", "forecast", BarChart3],
 ] as const;
 type Key = (typeof ITEMS)[number][1];
 type Props = { labels: Record<Key, string> & { more: string; closeMore: string; primary: string; planning: string; settings: string }; ariaLabel: string };
@@ -20,8 +20,8 @@ export function AppNav({ labels, ariaLabel }: Props) {
   useEffect(() => { if (!moreOpen) return; closeButtonRef.current?.focus(); const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") closeMore(); }; window.addEventListener("keydown", onKeyDown); return () => window.removeEventListener("keydown", onKeyDown); }, [moreOpen]);
   const active = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
   const primary = ITEMS.slice(0, 4);
-  const planning = ITEMS.slice(4, 8);
-  const secondary = ITEMS.slice(8);
+  const planning = ITEMS.slice(4, 9);
+  const secondary = ITEMS.slice(9);
   const renderItem = ([href, key, Icon]: (typeof ITEMS)[number]) => <Link key={href} href={href} aria-current={active(href) ? "page" : undefined} className={`finance-nav-item ${active(href) ? "finance-nav-item-active" : ""}`}><Icon size={18} strokeWidth={1.8} aria-hidden="true" /><span>{labels[key]}</span></Link>;
 
   return <>
