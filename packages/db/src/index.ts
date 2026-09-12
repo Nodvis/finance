@@ -1,5 +1,9 @@
 export { closeDb, getDb } from "./client";
 export {
+  InstanceAlreadyInitializedError,
+  isInstanceInitialized,
+} from "./access/instance";
+export {
   createHouseholdOnboarding,
   findDefaultHouseholdForAuthUser,
   findHouseholdAccessForAuthUser,

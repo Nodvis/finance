@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -16,8 +16,17 @@ export function SignInCard() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const passwordScore = useMemo(() => {
+    let score = 0;
+    if (password.length >= 12) score += 1;
+    if (password.length >= 16) score += 1;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+    if (/\d/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 1;
+    return score;
+  }, [password]);
 
   // Restore email draft across language switches
   useEffect(() => {
@@ -46,6 +55,20 @@ export function SignInCard() {
     setErrorMessage(null);
 
     try {
+      if (mode === "signup") {
+        if (password.length < 12) {
+          setErrorMessage(t("passwordTooShort", { count: 12 }));
+          return;
+        }
+        if (password.length > 128) {
+          setErrorMessage(t("passwordTooLong", { count: 128 }));
+          return;
+        }
+        if (password !== confirmPassword) {
+          setErrorMessage(t("passwordMismatch"));
+          return;
+        }
+      }
       if (mode === "signin") {
         const res = await authClient.signIn.email({
           email: email.trim(),
@@ -53,7 +76,15 @@ export function SignInCard() {
         });
 
         if (res.error) {
-          setErrorMessage(res.error.message || t("errorInvalidCredentials"));
+          const code = "code" in res.error ? res.error.code : undefined;
+          const message = res.error.message?.toLowerCase() ?? "";
+          setErrorMessage(
+            code === "SIGN_UP_CLOSED"
+              ? t("signUpClosed")
+              : message.includes("invalid origin")
+                ? t("errorInvalidOrigin")
+                : t("errorInvalidCredentials"),
+          );
         } else {
           try {
             sessionStorage.removeItem(EMAIL_DRAFT_KEY);
@@ -70,7 +101,15 @@ export function SignInCard() {
         });
 
         if (res.error) {
-          setErrorMessage(res.error.message || t("errorSignUp"));
+          const code = "code" in res.error ? res.error.code : undefined;
+          const message = res.error.message?.toLowerCase() ?? "";
+          setErrorMessage(
+            code === "SIGN_UP_CLOSED"
+              ? t("signUpClosed")
+              : message.includes("invalid origin")
+                ? t("errorInvalidOrigin")
+                : t("errorSignUp"),
+          );
         } else {
           try {
             sessionStorage.removeItem(EMAIL_DRAFT_KEY);
@@ -190,9 +229,37 @@ export function SignInCard() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
               className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           </div>
+
+          {mode === "signup" && (
+            <>
+              <div aria-live="polite" className="text-xs text-slate-500 dark:text-stone-400">
+                {t("passwordStrength", { score: passwordScore })}
+              </div>
+              <div>
+                <label
+                  htmlFor="signup-confirm-password"
+                  className="block text-sm font-medium text-slate-700 dark:text-stone-300"
+                >
+                  {t("confirmPasswordLabel")}
+                </label>
+                <input
+                  id="signup-confirm-password"
+                  type="password"
+                  required
+                  minLength={12}
+                  maxLength={128}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500"
+                />
+              </div>
+            </>
+          )}
 
           <button
             type="submit"

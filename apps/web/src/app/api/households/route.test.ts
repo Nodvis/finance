@@ -13,6 +13,7 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 
 vi.mock("@nodvis/finance-db", () => ({
+  InstanceAlreadyInitializedError: class InstanceAlreadyInitializedError extends Error {},
   createHouseholdOnboarding: vi.fn(),
   listHouseholdsForAuthUser: vi.fn(),
 }));
@@ -123,6 +124,7 @@ describe("/api/households (Onboarding & Listing)", () => {
         householdName: "New Home",
         defaultCurrency: "PLN",
         personDisplayName: undefined,
+        bootstrap: undefined,
       });
     });
   });

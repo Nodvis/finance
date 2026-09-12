@@ -9,14 +9,18 @@ services:
       DB_PORT: "5432"
       DB_NAME: nodvis_finance
       DB_USER: nodvis_finance
-      DB_PASSWORD: "CHANGE_ME_DATABASE_PASSWORD"
-      BETTER_AUTH_SECRET: "CHANGE_ME_AUTH_SECRET"
-      BETTER_AUTH_URL: "http://SERVER-IP:3990"
-      NEXT_PUBLIC_APP_URL: "http://SERVER-IP:3990"
-      ALLOW_SIGN_UP: "true"
+      DB_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong random value}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET to a random value of at least 32 characters}"
+
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3990/api/health | grep -q '\"status\":\"ok\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     restart: unless-stopped
 
   postgres:
@@ -25,8 +29,8 @@ services:
     environment:
       POSTGRES_DB: nodvis_finance
       POSTGRES_USER: nodvis_finance
-      # Use the same password in both database password fields.
-      POSTGRES_PASSWORD: "CHANGE_ME_DATABASE_PASSWORD"
+      # This is the only operator-facing database password value.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong random value}"
     volumes:
       - nodvis-finance-data:/var/lib/postgresql
     healthcheck:

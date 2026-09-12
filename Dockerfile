@@ -23,8 +23,6 @@ ENV NEXT_PUBLIC_APP_VERSION=$VERSION
 RUN mkdir -p /app/apps/web/public
 RUN DATABASE_URL="postgresql://build@localhost:5432/build" \
     BETTER_AUTH_SECRET="build-only-placeholder-not-a-runtime-secret" \
-    BETTER_AUTH_URL="http://localhost:3000" \
-    NEXT_PUBLIC_APP_URL="http://localhost:3000" \
     pnpm --filter @nodvis/finance-web build
 
 FROM node:24-alpine AS runner
@@ -41,7 +39,7 @@ LABEL org.opencontainers.image.title="Nodvis Finance" \
 COPY --from=builder --chown=nextjs:nodejs /app/packages/domain ./packages/domain
 COPY --from=builder --chown=nextjs:nodejs /app/packages/db/package.json ./packages/db/package.json
 COPY --from=builder --chown=nextjs:nodejs /app/packages/db/drizzle ./drizzle
-COPY --chown=nextjs:nodejs scripts/database-url.mjs scripts/migrate.mjs scripts/docker-entrypoint.sh ./scripts/
+COPY --chown=nextjs:nodejs scripts/database-url.mjs scripts/migrate.mjs scripts/validate-runtime-config.mjs scripts/docker-entrypoint.sh ./scripts/
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public

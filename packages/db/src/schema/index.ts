@@ -14,3 +14,4 @@ export * from "./credit-facilities";
 export * from "./bnpl-purchases";
 export * from "./obligations";
 export * from "./recurring-obligations";
+export * from "./instance";

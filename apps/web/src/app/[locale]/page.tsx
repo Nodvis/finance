@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { listAccountsByHousehold } from "@nodvis/finance-db";
+import { isInstanceInitialized, listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { listHouseholdCategories } from "@/lib/categories/service";
@@ -20,6 +20,7 @@ import { ObservationWarnings } from "./components/ObservationWarnings";
 import { OverviewCards } from "./components/OverviewCards";
 import { PeriodHeader } from "./components/PeriodHeader";
 import { SignInCard } from "./components/SignInCard";
+import { SetupWizard } from "./components/SetupWizard";
 import { TransactionForms } from "./components/TransactionForms";
 import { TransactionList } from "./components/TransactionList";
 
@@ -64,6 +65,10 @@ export default async function HomePage({
   // 1. Unauthenticated presentation: strictly public hero and sign-in card.
   // Shows NO dashboard metrics, NO authenticated navigation, NO household bars, and NO admin copy.
   if (!session) {
+    const instanceInitialized = await isInstanceInitialized();
+    if (!instanceInitialized) {
+      return <SetupWizard locale={locale} />;
+    }
     return (
       <div className="mx-auto flex w-full max-w-lg flex-col items-center justify-center gap-8 px-4 py-12 sm:px-6 lg:py-16">
         <section aria-label={tAccess("publicShell")} className="w-full text-center">

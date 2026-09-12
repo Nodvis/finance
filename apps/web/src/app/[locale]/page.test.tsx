@@ -14,6 +14,7 @@ vi.mock("next-intl/server", () => ({
 }));
 
 vi.mock("@nodvis/finance-db", () => ({
+  isInstanceInitialized: vi.fn().mockResolvedValue(true),
   listAccountsByHousehold: vi.fn(),
 }));
 
@@ -45,7 +46,7 @@ vi.mock("@/lib/forecast/service", () => ({
   getHouseholdCashForecast: vi.fn(),
 }));
 
-import { listAccountsByHousehold } from "@nodvis/finance-db";
+import { isInstanceInitialized, listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";
 import { listHouseholdCategories } from "@/lib/categories/service";
@@ -74,6 +75,19 @@ describe("HomePage Server Component", () => {
 
     expect(result).toBeDefined();
     expect(getCurrentSession).toHaveBeenCalled();
+    expect(getCurrentUserHouseholdsStatus).not.toHaveBeenCalled();
+  });
+
+  it("renders setup wizard for an unauthenticated fresh instance", async () => {
+    vi.mocked(getCurrentSession).mockResolvedValueOnce(null);
+    vi.mocked(isInstanceInitialized).mockResolvedValueOnce(false);
+
+    const result = await HomePage({
+      params: Promise.resolve({ locale: "en" }),
+    });
+
+    expect(result).toBeDefined();
+    expect(isInstanceInitialized).toHaveBeenCalled();
     expect(getCurrentUserHouseholdsStatus).not.toHaveBeenCalled();
   });
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 
 import {
+  InstanceAlreadyInitializedError,
   createHouseholdOnboarding,
   listHouseholdsForAuthUser,
 } from "@nodvis/finance-db";
@@ -28,6 +29,7 @@ const createHouseholdOnboardingSchema = z.object({
     .min(1)
     .max(160)
     .optional(),
+  bootstrap: z.boolean().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {
@@ -60,6 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       householdName: parsed.name,
       defaultCurrency: parsed.defaultCurrency,
       personDisplayName: parsed.personDisplayName,
+      bootstrap: parsed.bootstrap,
     });
 
     const response = NextResponse.json({ data: created }, { status: 201 });
@@ -81,6 +84,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json(
         { error: "Validation error", issues: error.issues },
         { status: 400 },
+      );
+    }
+    if (error instanceof InstanceAlreadyInitializedError) {
+      return NextResponse.json(
+        { error: "Instance setup has already been completed" },
+        { status: 409 },
       );
     }
     if (error instanceof Error && error.message.includes("Invalid")) {
