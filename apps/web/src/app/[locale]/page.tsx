@@ -153,7 +153,7 @@ export default async function HomePage({
   const serializedOverview = overview ? serializeOverview(overview) : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-7 px-4 py-7 sm:px-6 lg:px-10 lg:py-9">
+    <main id="main-content" className="mx-auto flex w-full max-w-[92rem] flex-col gap-7 px-4 py-7 sm:px-6 lg:px-10 lg:py-9">
       <header className="flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border)] pb-6">
         <div>
           <p className="finance-eyebrow text-[var(--finance-signal-dark)] dark:text-[var(--finance-signal)]">
@@ -270,6 +270,6 @@ export default async function HomePage({
           </div>
         </section>
       )}
-    </div>
+    </main>
   );
 }

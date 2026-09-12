@@ -15,8 +15,9 @@ export function AppNav({ labels, ariaLabel }: Props) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const closeMore = () => { setMoreOpen(false); moreButtonRef.current?.focus(); };
-  useEffect(() => { if (!moreOpen) return; const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") closeMore(); }; window.addEventListener("keydown", onKeyDown); return () => window.removeEventListener("keydown", onKeyDown); }, [moreOpen]);
+  useEffect(() => { if (!moreOpen) return; closeButtonRef.current?.focus(); const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") closeMore(); }; window.addEventListener("keydown", onKeyDown); return () => window.removeEventListener("keydown", onKeyDown); }, [moreOpen]);
   const active = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
   const primary = ITEMS.slice(0, 4);
   const planning = ITEMS.slice(4, 8);
@@ -34,6 +35,6 @@ export function AppNav({ labels, ariaLabel }: Props) {
       {primary.slice(0, 3).map(renderItem)}
       <button ref={moreButtonRef} type="button" onClick={() => setMoreOpen((open) => !open)} aria-expanded={moreOpen} aria-controls="mobile-more-menu" className={`finance-nav-item ${moreOpen ? "finance-nav-item-active" : ""}`}><MoreHorizontal size={18} strokeWidth={1.8} aria-hidden="true" /><span>{moreOpen ? labels.closeMore : labels.more}</span></button>
     </nav>
-    {moreOpen ? <div id="mobile-more-menu" className="finance-mobile-more" role="dialog" aria-modal="true" aria-label={labels.more}><div className="flex items-center justify-between border-b border-[var(--border)] pb-3"><p className="finance-section-title">{labels.more}</p><button type="button" className="finance-icon-button" aria-label={labels.closeMore} onClick={closeMore}><X size={18} aria-hidden="true" /></button></div><div className="mt-3 grid gap-1">{[ITEMS[3], ...planning, ...secondary].map(renderItem)}</div></div> : null}
+    {moreOpen ? <div id="mobile-more-menu" className="finance-mobile-more" role="dialog" aria-modal="true" aria-label={labels.more} onKeyDown={(event) => { if (event.key !== "Tab") return; const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("a,button")); const first = focusable[0]; const last = focusable.at(-1); if (!first || !last) return; if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } }}><div className="flex items-center justify-between border-b border-[var(--border)] pb-3"><p className="finance-section-title">{labels.more}</p><button ref={closeButtonRef} type="button" className="finance-icon-button" aria-label={labels.closeMore} onClick={closeMore}><X size={18} aria-hidden="true" /></button></div><div className="mt-3 grid gap-1">{[ITEMS[3], ...planning, ...secondary].map(renderItem)}</div></div> : null}
   </>;
 }
