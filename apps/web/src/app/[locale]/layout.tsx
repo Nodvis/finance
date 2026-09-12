@@ -84,11 +84,11 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-slate-200 selection:text-slate-900 dark:bg-stone-950 dark:text-stone-100 dark:selection:bg-stone-800 dark:selection:text-stone-100">
+      <body className="min-h-screen bg-[var(--bg-canvas)] text-[var(--foreground)] antialiased selection:bg-slate-200 selection:text-slate-900 dark:selection:bg-stone-800 dark:selection:text-stone-100">
         <NextIntlClientProvider messages={messages}>
-          <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-stone-950 dark:text-stone-100">
+          <div className="flex min-h-screen flex-col bg-[var(--bg-canvas)] text-[var(--foreground)]">
             {session ? <AppHeader /> : <PublicAuthHeader />}
-            <div id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
+            <div id="main-content" tabIndex={-1} className={`flex-1 focus:outline-none ${session ? "lg:pl-64 pb-20 lg:pb-0" : ""}`}>
               {children}
             </div>
             <AppFooter />

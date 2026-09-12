@@ -5,7 +5,7 @@ type Props = { forecast: CashForecast; locale: string; labels: { title: string; 
 
 export function ForecastSection({ forecast, locale, labels }: Props) {
   return (
-    <section aria-labelledby="cash-forecast-title" className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 dark:border-emerald-900/70 dark:bg-emerald-950/20">
+    <section aria-labelledby="cash-forecast-title" className="finance-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="cash-forecast-title" className="text-lg font-semibold text-slate-900 dark:text-stone-100">{labels.title}</h2>

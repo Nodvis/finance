@@ -65,7 +65,7 @@ export async function CashFlowSection({
                 className="grid gap-4 sm:grid-cols-3"
               >
                 {/* Actual Income Card */}
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors dark:border-stone-800 dark:bg-stone-900/60">
+                <article className="finance-card p-5 transition-colors">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400/90">
                       {t("cashFlow.actualIncome")}
@@ -87,7 +87,7 @@ export async function CashFlowSection({
                 </article>
 
                 {/* Actual Spending Card */}
-                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors dark:border-stone-800 dark:bg-stone-900/60">
+                <article className="finance-card p-5 transition-colors">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-stone-300">
                       {t("cashFlow.actualSpending")}

@@ -19,7 +19,12 @@
     "analytics": "Analytics",
     "forecast": "Forecast",
     "skipToContent": "Skip to main content",
-    "privateBadge": "Private"
+    "privateBadge": "Private",
+    "more": "More",
+    "closeMore": "Close menu",
+    "primary": "Main",
+    "planning": "Planning",
+    "settings": "Workspace"
   },
   "Theme": {
     "toggle": "Toggle theme",
@@ -43,6 +48,7 @@
     "publicHeroTitle": "Your household finances in clear order",
     "publicHeroSubtitle": "Effortlessly manage accounts, spending, and savings in one clear place.",
     "quickActions": { "viewTransactions": "View transactions", "addTransaction": "Add a transaction" },
+    "charts": { "cashFlow": "Cash flow", "income": "Income", "spending": "Spending", "net": "Net flow", "spendingBreakdown": "Spending breakdown", "empty": "Not enough recorded data for a chart yet.", "incomeDescription": "Recorded income", "spendingDescription": "Recorded spending categories", "uncategorized": "Uncategorized" },
     "summaryLabel": "Financial summary",
     "noData": "No data for the selected period.",
     "cards": {

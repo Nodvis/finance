@@ -8,6 +8,7 @@ import { AppNav } from "./AppNav";
 import { ProfileMenu } from "./ProfileMenu";
 import { ThemeToggle } from "./ThemeToggle";
 import { FinanceBrand } from "./FinanceBrand";
+import { Settings } from "lucide-react";
 
 export async function AppHeader() {
   const tNav = await getTranslations("Navigation");
@@ -29,35 +30,29 @@ export async function AppHeader() {
   }
 
   return (
-    <header role="banner" className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-stone-800/80 dark:bg-stone-950/90">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:bg-stone-100 dark:focus:text-stone-900">
+    <>
+      <header role="banner" className="finance-topbar">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-lime-300 dark:focus:bg-stone-100 dark:focus:text-stone-900">
         {tNav("skipToContent")}
       </a>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-16 items-center justify-between gap-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link href="/" aria-label={tNav("brand")} className="group flex min-w-0 shrink-0 items-center rounded-xl p-1 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-950">
-              <span className="hidden w-[166px] sm:block"><FinanceBrand /></span>
-              <span className="w-[52px] sm:hidden"><FinanceBrand compact /></span>
-            </Link>
-            {activeHousehold ? (
-              <div className="hidden min-w-0 border-l border-slate-200 pl-3 dark:border-stone-800 sm:block">
-                <p className="truncate text-sm font-medium text-slate-800 dark:text-stone-200">{activeHousehold.householdName}</p>
-              </div>
-            ) : null}
+      <div className="finance-topbar-inner">
+          <Link href="/" aria-label={tNav("brand")} className="finance-mobile-brand"><FinanceBrand /></Link>
+          <div className="min-w-0">
+            <p className="finance-topbar-kicker">{tNav("tagline")}</p>
+            {activeHousehold ? <p className="truncate text-sm font-semibold text-[var(--foreground)]">{activeHousehold.householdName}</p> : null}
           </div>
           {session ? (
             <div className="flex shrink-0 items-center gap-2">
               <ThemeToggle />
-              <Link href="/settings" aria-label={tSettings("openSettings")} title={tSettings("openSettings")} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-stone-100 dark:focus-visible:ring-offset-stone-950">
-                <span aria-hidden="true">⚙</span>
+              <Link href="/settings" aria-label={tSettings("openSettings")} title={tSettings("openSettings")} className="finance-icon-button">
+                <Settings size={17} strokeWidth={1.8} aria-hidden="true" />
               </Link>
               <ProfileMenu name={session.user.name} email={session.user.email} labels={{ open: tProfile("open", { name: "{name}" }), account: tProfile("account"), profile: tProfile("profile") }} />
             </div>
           ) : null}
-        </div>
-        {session ? <AppNav labels={{ home: tNav("home"), accounts: tNav("accounts"), transactions: tNav("transactions"), categories: tNav("categories"), imports: tNav("imports"), transfers: tNav("transfers"), liabilities: tNav("liabilities"), upcoming: tNav("upcoming"), rules: tNav("rules"), recurring: tNav("recurring"), analytics: tNav("analytics"), forecast: tNav("forecast") }} ariaLabel={tAccess("mainNavigation")} /> : null}
       </div>
     </header>
+    {session ? <AppNav labels={{ home: tNav("home"), accounts: tNav("accounts"), transactions: tNav("transactions"), categories: tNav("categories"), imports: tNav("imports"), transfers: tNav("transfers"), liabilities: tNav("liabilities"), upcoming: tNav("upcoming"), rules: tNav("rules"), recurring: tNav("recurring"), analytics: tNav("analytics"), forecast: tNav("forecast"), more: tNav("more"), closeMore: tNav("closeMore"), primary: tNav("primary"), planning: tNav("planning"), settings: tNav("settings") }} ariaLabel={tAccess("mainNavigation")} /> : null}
+    </>
   );
 }

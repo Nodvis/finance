@@ -53,7 +53,7 @@ export async function CategorySpendingSection({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-stone-800 dark:bg-stone-900/60">
+        <div className="finance-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-stone-800 dark:bg-stone-950/40 dark:text-stone-400">

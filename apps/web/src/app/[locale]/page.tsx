@@ -23,6 +23,7 @@ import { SignInCard } from "./components/SignInCard";
 import { SetupWizard } from "./components/SetupWizard";
 import { TransactionForms } from "./components/TransactionForms";
 import { TransactionList } from "./components/TransactionList";
+import { OverviewCharts } from "./components/OverviewCharts";
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;
@@ -152,24 +153,24 @@ export default async function HomePage({
   const serializedOverview = overview ? serializeOverview(overview) : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5 dark:border-stone-800/80">
+    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-7 px-4 py-7 sm:px-6 lg:px-10 lg:py-9">
+      <header className="flex flex-wrap items-end justify-between gap-5 border-b border-[var(--border)] pb-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400/80">
+          <p className="finance-eyebrow text-[var(--finance-signal-dark)] dark:text-[var(--finance-signal)]">
             {t("eyebrow")}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-stone-100">
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--foreground)] sm:text-4xl">
             {t("title")}
           </h1>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-stone-400">
-          <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 font-medium text-slate-700 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-300">
+        <div className="flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
+          <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-1.5 font-medium text-[var(--foreground)]">
             {householdContext.defaultCurrency}
           </span>
           <a
             href="#transaction-list"
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-400 dark:text-stone-950 dark:hover:bg-emerald-300"
+            className="rounded-lg bg-[var(--foreground)] px-3 py-1.5 font-semibold text-[var(--surface)] transition hover:opacity-80"
           >
             {t("quickActions.viewTransactions")}
           </a>
@@ -196,6 +197,8 @@ export default async function HomePage({
           included: tForecast("included"),
         }}
       />
+
+      {serializedOverview ? <OverviewCharts flows={serializedOverview.cashFlow.byCurrency} categories={serializedOverview.categorySpending} locale={locale} labels={{ cashFlow: t("charts.cashFlow"), income: t("charts.income"), spending: t("charts.spending"), net: t("charts.net"), spendingBreakdown: t("charts.spendingBreakdown"), empty: t("charts.empty"), incomeDescription: t("charts.incomeDescription"), spendingDescription: t("charts.spendingDescription"), uncategorized: t("charts.uncategorized") }} /> : null}
 
       {/* Authenticated Finance Workspace */}
       {serializedOverview && (
