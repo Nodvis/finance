@@ -5,6 +5,7 @@ test("renders the Polish public application shell", async ({ page }) => {
   await expect(page.locator('header[role="banner"]')).toBeVisible();
   await expect(page.locator("#theme-toggle")).toBeVisible();
   await expect(page.getByRole("region", { name: "Wybór języka interfejsu" })).toBeVisible();
+  await expect(page.locator("#signin-email, #onboarding-name")).toBeVisible({ timeout: 30_000 });
   if (await page.locator("#signin-email").count()) {
     await expect(page.locator("#signin-email")).toBeVisible();
     await expect(page.locator("#signin-password")).toBeVisible();
@@ -25,6 +26,7 @@ test("renders the English public application shell", async ({ page }) => {
   await expect(page.locator('header[role="banner"]')).toBeVisible();
   await expect(page.locator("#theme-toggle")).toBeVisible();
   await expect(page.getByRole("region", { name: "Interface language selection" })).toBeVisible();
+  await expect(page.locator("#signin-email, #onboarding-name")).toBeVisible({ timeout: 30_000 });
   if (await page.locator("#signin-email").count()) {
     await expect(page.locator("#signin-email")).toBeVisible();
     await expect(page.locator("#signin-password")).toBeVisible();
