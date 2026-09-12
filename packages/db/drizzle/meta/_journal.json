@@ -218,6 +218,13 @@
       "when": 1789245814654,
       "tag": "0030_happy_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1789253831507,
+      "tag": "0031_luxuriant_dark_beast",
+      "breakpoints": true
     }
   ]
 }

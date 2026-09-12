@@ -36,6 +36,7 @@ export {
   liabilityRepaymentId,
   obligationId,
   personId,
+  savingsGoalId,
   statementImportProfileId,
   transactionId,
 } from "./identity";
@@ -50,6 +51,7 @@ export type {
   LiabilityRepaymentId,
   ObligationId,
   PersonId,
+  SavingsGoalId,
   StatementImportProfileId,
   TransactionId,
 } from "./identity";
@@ -346,3 +348,30 @@ export type {
   ObligationStatus,
   UpdateObligationInput,
 } from "./obligation";
+
+export {
+  MAX_SAVINGS_GOAL_NAME_LENGTH,
+  MAX_SAVINGS_GOAL_NOTES_LENGTH,
+  SAVINGS_GOAL_STATUSES,
+  archiveSavingsGoal,
+  calculateSavingsGoalContribution,
+  completeSavingsGoal,
+  contributeToSavingsGoal,
+  createSavingsGoal,
+  isSavingsGoalStatus,
+  unarchiveSavingsGoal,
+  uncompleteSavingsGoal,
+  updateSavingsGoal,
+  validateSavingsGoalName,
+  validateSavingsGoalNotes,
+  validateTargetAmount,
+  validateCurrentAmount,
+} from "./savings-goal";
+export type {
+  CreateSavingsGoalInput,
+  SavingsGoal,
+  SavingsGoalCalculationExplanation,
+  SavingsGoalContributionCalculation,
+  SavingsGoalStatus,
+  UpdateSavingsGoalInput,
+} from "./savings-goal";
