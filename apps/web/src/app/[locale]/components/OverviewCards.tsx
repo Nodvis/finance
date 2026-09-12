@@ -23,7 +23,7 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
       className="grid gap-4 sm:grid-cols-3"
     >
       {/* 1. Observed Available Cash Card */}
-      <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
+      <article className="flex flex-col justify-between finance-card p-5 transition-colors hover:border-[var(--finance-signal-dark)] dark:hover:border-stone-700/80">
         <div>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
@@ -88,7 +88,7 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
       </article>
 
       {/* 2. Upcoming Obligations Card */}
-      <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
+      <article className="flex flex-col justify-between finance-card p-5 transition-colors hover:border-[var(--finance-signal-dark)] dark:hover:border-stone-700/80">
         <div>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
@@ -152,7 +152,7 @@ export async function OverviewCards({ overview, locale }: OverviewCardsProps) {
       </article>
 
       {/* 3. Debt & Liabilities Card (Preserving INV-013, not fabricating debts) */}
-      <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-slate-300 dark:border-stone-800 dark:bg-stone-900/70 dark:hover:border-stone-700/80">
+      <article className="flex flex-col justify-between finance-card p-5 transition-colors hover:border-[var(--finance-signal-dark)] dark:hover:border-stone-700/80">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
             {t("debt.title")}

@@ -19,7 +19,12 @@
     "analytics": "Analiza",
     "forecast": "Prognoza",
     "skipToContent": "Przejdź do treści głównej",
-    "privateBadge": "Prywatne"
+    "privateBadge": "Prywatne",
+    "more": "Więcej",
+    "closeMore": "Zamknij menu",
+    "primary": "Główne",
+    "planning": "Planowanie",
+    "settings": "Przestrzeń"
   },
   "Theme": {
     "toggle": "Przełącz motyw",
@@ -43,6 +48,7 @@
     "publicHeroTitle": "Twoje finanse domowe w pełnym porządku",
     "publicHeroSubtitle": "Wygodne zarządzanie kontami, wydatkami i oszczędnościami w jednym przejrzystym miejscu.",
     "quickActions": { "viewTransactions": "Zobacz transakcje", "addTransaction": "Dodaj transakcję" },
+    "charts": { "cashFlow": "Przepływ gotówki", "income": "Wpływy", "spending": "Wydatki", "net": "Bilans", "spendingBreakdown": "Struktura wydatków", "empty": "Brak wystarczających danych do wykresu.", "incomeDescription": "Zarejestrowane wpływy", "spendingDescription": "Zarejestrowane kategorie wydatków", "uncategorized": "Bez kategorii" },
     "summaryLabel": "Podsumowanie finansowe",
     "noData": "Brak danych dla wybranego okresu.",
     "cards": {
