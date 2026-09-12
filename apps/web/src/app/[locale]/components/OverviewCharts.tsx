@@ -6,7 +6,7 @@ import { getCurrencyFractionDigits } from "@/lib/transactions/money-entry";
 type CurrencyFlow = { currency: string; incomeMinor: string; spendingMinor: string; netCashFlowMinor: string; transactionCount: number };
 type Category = { categoryName: string | null; categoryId: string | null; amountMinor: string; currency: string; percentage: number; transactionCount: number };
 
-type Props = { flows: CurrencyFlow[]; categories: Category[]; locale: string; labels: { cashFlow: string; income: string; spending: string; net: string; spendingBreakdown: string; empty: string; incomeDescription: string; spendingDescription: string; uncategorized: string } };
+type Props = { flows: CurrencyFlow[]; categories: Category[]; locale: string; labels: { cashFlow: string; income: string; spending: string; net: string; spendingBreakdown: string; empty: string; spendingDescription: string; uncategorized: string } };
 
 function boundedMinor(value: string) {
   try {

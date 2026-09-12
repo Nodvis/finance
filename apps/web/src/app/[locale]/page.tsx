@@ -198,7 +198,7 @@ export default async function HomePage({
         }}
       />
 
-      {serializedOverview ? <OverviewCharts flows={serializedOverview.cashFlow.byCurrency} categories={serializedOverview.categorySpending} locale={locale} labels={{ cashFlow: t("charts.cashFlow"), income: t("charts.income"), spending: t("charts.spending"), net: t("charts.net"), spendingBreakdown: t("charts.spendingBreakdown"), empty: t("charts.empty"), incomeDescription: t("charts.incomeDescription"), spendingDescription: t("charts.spendingDescription"), uncategorized: t("charts.uncategorized") }} /> : null}
+      {serializedOverview ? <OverviewCharts flows={serializedOverview.cashFlow.byCurrency} categories={serializedOverview.categorySpending} locale={locale} labels={{ cashFlow: t("charts.cashFlow"), income: t("charts.income"), spending: t("charts.spending"), net: t("charts.net"), spendingBreakdown: t("charts.spendingBreakdown"), empty: t("charts.empty"), spendingDescription: t("charts.spendingDescription"), uncategorized: t("charts.uncategorized") }} /> : null}
 
       {/* Authenticated Finance Workspace */}
       {serializedOverview && (
