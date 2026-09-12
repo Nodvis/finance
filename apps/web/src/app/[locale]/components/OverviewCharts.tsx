@@ -24,8 +24,12 @@ function formatMinor(value: string, currency: string, locale: string, fallback: 
     const sign = minor < 0n ? "−" : "";
     const absolute = minor < 0n ? -minor : minor;
     const fractionDigits = getCurrencyFractionDigits(currency);
-    const formatted = new Intl.NumberFormat(locale, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(absolute);
-    return `${sign}${formatted} ${currency}`;
+    const base = 10n ** BigInt(fractionDigits);
+    const whole = absolute / base;
+    const fraction = (absolute % base).toString().padStart(fractionDigits, "0");
+    const formattedWhole = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(whole);
+    const decimal = fractionDigits ? new Intl.NumberFormat(locale).formatToParts(1.1).find((part) => part.type === "decimal")?.value ?? "." : "";
+    return `${sign}${formattedWhole}${decimal}${fractionDigits ? fraction : ""} ${currency}`;
   } catch {
     return fallback;
   }
