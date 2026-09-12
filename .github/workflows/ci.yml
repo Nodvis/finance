@@ -76,6 +76,7 @@ jobs:
 
       - name: End-to-end smoke tests
         env:
+          NODVIS_CI_E2E: "true"
           DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
           BETTER_AUTH_SECRET: ci-only-e2e-secret-not-for-runtime
           BETTER_AUTH_URL: http://127.0.0.1:3000

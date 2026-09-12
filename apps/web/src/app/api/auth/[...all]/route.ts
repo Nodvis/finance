@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   if (new URL(request.url).pathname.endsWith("/sign-up/email")) {
-    if (process.env.CI !== "true" && await isInstanceInitialized()) {
+    if (process.env.NODVIS_CI_E2E !== "true" && await isInstanceInitialized()) {
       return NextResponse.json(
         { code: "SIGN_UP_CLOSED", message: "Public sign-up is closed for this instance" },
         { status: 403 },
