@@ -15,6 +15,7 @@
     "transfers": "Przelewy",
     "liabilities": "Zobowiązania",
     "upcoming": "Do zapłaty",
+    "goals": "Cele",
     "rules": "Reguły",
     "recurring": "Powtarzalne",
     "analytics": "Analiza",
@@ -86,6 +87,27 @@
       "emptyTitle": "Brak zarejestrowanych sald",
       "emptyDescription": "Zarejestruj obserwacje sald dla swoich kont i zobowiązań, aby śledzić majątek netto w czasie.",
       "recordObservation": "Zarejestruj saldo"
+    },
+    "goals": {
+      "eyebrow": "Cele",
+      "title": "Cele oszczędnościowe",
+      "viewAll": "Wszystkie cele",
+      "emptyTitle": "Brak aktywnych celów oszczędnościowych",
+      "emptyDescription": "Wyznaczaj cele i planuj oszczędności dzięki dokładnej arytmetyce sufitowej BigInt.",
+      "createGoal": "Nowy cel",
+      "progress": "Postęp",
+      "target": "Cel",
+      "saved": "Zgromadzono",
+      "remaining": "Pozostało",
+      "suggestedMonthly": "Miesięcznie",
+      "suggestedWeekly": "Tygodniowo",
+      "explainThisNumber": "Wyjaśnij tę liczbę",
+      "completed": "Zrealizowany",
+      "active": "Aktywny",
+      "archived": "Zarchiwizowany",
+      "overdue": "Termin docelowy minął",
+      "noTargetDate": "Brak terminu",
+      "explanation": "Deterministyczna arytmetyka sufitowa gwarantuje pełną realizację celu bez strat na zaokrągleniach."
     }
   },
   "Setup": {
@@ -622,7 +644,13 @@
     "transfersTabs": "Kategorie przeglądu przelewów",
     "accountIdentifiersModal": "Okno dialogowe zarządzania identyfikatorami rachunku",
     "netWorthSection": "Podsumowanie i historia majątku netto gospodarstwa domowego",
-    "netWorthChart": "Wykres trendu majątku netto w czasie"
+    "netWorthChart": "Wykres trendu majątku netto w czasie",
+    "savingsGoals": "Cele oszczędnościowe",
+    "savingsGoalsSlot": "Przegląd celów oszczędnościowych",
+    "savingsGoalDetails": "Szczegóły celu oszczędnościowego",
+    "createSavingsGoalForm": "Formularz nowego celu oszczędnościowego",
+    "editSavingsGoalForm": "Formularz edycji celu oszczędnościowego",
+    "contributeSavingsGoalForm": "Formularz wpłaty na cel"
   },
   "Imports": {
     "title": "Importuj wyciąg CSV",
@@ -1092,5 +1120,19 @@
       "subjectLiability": "Zobowiązania",
       "success": "Obserwacja salda została pomyślnie zarejestrowana"
     }
+  },
+  "Goals": {
+    "eyebrow": "Planowanie",
+    "title": "Cele oszczędnościowe",
+    "description": "Ustalaj cele, śledź postęp i obliczaj dokładne wpłaty bez zaokrąglania niedoborów.",
+    "addGoal": "Nowy cel",
+    "tabs": {"all": "Wszystkie", "active": "Aktywne", "completed": "Ukończone", "archived": "Zarchiwizowane"},
+    "filters": {"status": "Status", "allStatuses": "Wszystkie statusy", "account": "Konto", "allAccounts": "Wszystkie konta", "sortBy": "Sortuj według", "sortCreated": "Daty utworzenia", "sortTargetDate": "Daty celu", "sortName": "Nazwy celu", "sortAsc": "Rosnąco", "sortDesc": "Malejąco"},
+    "summary": {"totalGoals": "Wszystkie cele", "activeGoals": "Aktywne cele", "completedGoals": "Ukończone", "totalTarget": "Łączny cel", "totalSaved": "Łącznie odłożono", "totalRemaining": "Pozostało łącznie", "monthlyNeeded": "Potrzeba miesięcznie"},
+    "card": {"target": "Cel", "saved": "Odłożono", "remaining": "Pozostało", "targetDate": "Data celu", "noTargetDate": "Bez daty celu", "linkedAccount": "Powiązane konto", "notes": "Notatki", "monthly": "Miesięcznie", "weekly": "Tygodniowo", "explainNumber": "Wyjaśnij tę liczbę", "daysLeft": "Pozostało dni: {days}", "overdue": "Po terminie o {days} dni", "completedOn": "Ukończono {date}"},
+    "actions": {"contribute": "Dodaj wpłatę", "edit": "Edytuj", "complete": "Oznacz jako ukończony", "uncomplete": "Otwórz ponownie", "archive": "Archiwizuj", "unarchive": "Przywróć", "cancel": "Anuluj", "save": "Zapisz zmiany", "delete": "Archiwizuj"},
+    "form": {"createTitle": "Utwórz cel oszczędnościowy", "editTitle": "Edytuj cel oszczędnościowy", "contributeTitle": "Dodaj wpłatę na cel", "name": "Nazwa celu", "namePlaceholder": "np. Poduszka finansowa, wakacje, nowy samochód", "targetAmount": "Kwota celu", "targetAmountPlaceholder": "np. 5000,00", "initialAmount": "Odłożona kwota (opcjonalnie)", "initialAmountPlaceholder": "0,00", "contributionAmount": "Kwota wpłaty", "contributionAmountPlaceholder": "np. 250,00", "currency": "Waluta", "targetDate": "Data celu (opcjonalnie)", "linkedAccount": "Powiązane konto (opcjonalnie)", "noneAccount": "Brak / niepowiązane", "notes": "Notatki (opcjonalnie)", "notesPlaceholder": "Opcjonalne notatki lub rozbicie celu", "submitCreate": "Utwórz cel", "submitEdit": "Zapisz zmiany", "submitContribute": "Zapisz wpłatę", "submitting": "Zapisywanie...", "invalid": "Sprawdź dane celu i spróbuj ponownie.", "successCreate": "Cel oszczędnościowy utworzony", "successEdit": "Cel oszczędnościowy zaktualizowany", "successContribute": "Wpłata zapisana", "successComplete": "Cel oznaczony jako ukończony", "successUncomplete": "Cel otwarty ponownie", "successArchive": "Cel zarchiwizowany", "successUnarchive": "Cel przywrócony"},
+    "empty": {"title": "Brak celów oszczędnościowych", "description": "Utwórz pierwszy cel, aby obliczać miesięczne i tygodniowe wpłaty z dokładnością arytmetyki BigInt.", "action": "Utwórz cel oszczędnościowy"},
+    "explain": {"title": "Deterministyczne obliczenie dokładnej wpłaty", "subtitle": "Dokładne dzielenie całkowitoliczbowe z zaokrągleniem w górę zapobiega niedoborom.", "formula": "Wzór obliczenia", "formulaCeiling": "Dzielenie okresowe z zaokrągleniem w górę: ceil(pozostało / okresy)", "formulaNoTarget": "Nie określono daty celu", "formulaCompleted": "Cel jest już ukończony", "formulaPassed": "Data celu minęła", "targetAmount": "Kwota celu", "currentAmount": "Odłożono", "remainingAmount": "Pozostała kwota", "targetDate": "Data celu", "asOfDate": "Obliczono na dzień", "timeRemaining": "Pozostały czas", "months": "Pozostało miesięcy", "weeks": "Pozostało tygodni", "days": "Pozostało dni", "monthlyContribution": "Sugerowana wpłata miesięczna", "weeklyContribution": "Sugerowana wpłata tygodniowa", "monthlySurplus": "Miesięczna nadwyżka zaokrąglenia", "weeklySurplus": "Tygodniowa nadwyżka zaokrąglenia", "ceilingProof": "Gwarancja nadwyżki", "surplusExplanation": "Zwykłe dzielenie zmiennoprzecinkowe może zaniżyć wynik lub utracić części najmniejszych jednostek. Algorytm wykonuje dokładne dzielenie całkowitoliczbowe z zaokrągleniem w górę: (pozostało + okresy - 1) / okresy. Przez {periods} okresów po {periodicAmount} wpłacisz {totalContributions}, zapewniając nadwyżkę {surplus} i osiągając cel {target}.", "close": "Zamknij"}
   }
 }
