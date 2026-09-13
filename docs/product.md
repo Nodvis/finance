@@ -161,7 +161,13 @@ The product should not impose one universal budgeting philosophy. Planned strate
 - staged emergency/safety buffer,
 - custom scenarios.
 
+Finance v0.2.0 provides the deterministic read-only Planning V1 guidance for stabilization, 50/30/20, Pay Yourself First, Debt Snowball, conservative Debt Avalanche and sinking funds. It uses current forecast, income, budgets, savings goals and observed liabilities; it does not persist envelope assignments or rollover state.
+
 Recommendations should adapt to real cash flow rather than prescribing impossible percentages.
+
+## Split Transactions
+
+An expense may be allocated across multiple household categories while remaining one canonical cash movement. The allocation amounts must equal the parent amount exactly in the same currency. Budgets and Analytics consume allocations once rather than counting the parent and children separately.
 
 ## Forecast philosophy
 

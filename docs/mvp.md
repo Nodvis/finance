@@ -74,7 +74,7 @@ The default summary should prioritize:
 
 ### Basic planning
 
-The MVP planning experience should eventually support enough forecasting to answer whether the current month is likely to work and show realistic next-step scenarios.
+The v0.2.0 planning experience combines the existing forecast, real monthly income, budgets, savings goals and observed liabilities into deterministic read-only guidance. It supports stabilization, 50/30/20, Pay Yourself First, Debt Snowball, conservative Debt Avalanche and sinking funds, while preserving explicit incomplete/unknown states. Persistent envelope assignments and rollover ledgers remain future work.
 
 ## Foundation requirements
 
