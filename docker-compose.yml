@@ -8,8 +8,8 @@ services:
       DB_PORT: "5432"
       DB_NAME: nodvis_finance
       DB_USER: nodvis_finance
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
+      DB_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}"
 
     depends_on:
       postgres:
@@ -27,7 +27,7 @@ services:
     environment:
       POSTGRES_DB: nodvis_finance
       POSTGRES_USER: nodvis_finance
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
     volumes:
       - nodvis-finance-data:/var/lib/postgresql
     healthcheck:

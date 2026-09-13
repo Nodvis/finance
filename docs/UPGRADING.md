@@ -3,10 +3,11 @@
 ## v0.2.1 → v0.2.2
 
 1. Back up the existing database and keep the existing `nodvis-finance-data` volume.
-2. Update the Finance image to `ghcr.io/nodvis/finance:0.2.2`.
-3. Keep the existing PostgreSQL credentials and `BETTER_AUTH_SECRET`.
-4. Run `docker compose pull` and `docker compose up -d`.
-5. Open Finance on port 3990 and verify login and a known household.
+2. Copy `.env.example` to `.env`.
+3. Copy the existing PostgreSQL password and `BETTER_AUTH_SECRET` from the v0.2.1 Compose configuration into `.env` as `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET`; do not generate a new PostgreSQL password for the existing volume.
+4. Update the Finance image to `ghcr.io/nodvis/finance:0.2.2`.
+5. Run `docker compose pull` and `docker compose up -d`.
+6. Open Finance on port 3990 and verify login and a known household.
 
 This release contains the already-merged Overview/dashboard polish and Debt & Liabilities KPI correction. No new database migration is included.
 
