@@ -1,0 +1,2 @@
+ALTER TABLE "finance"."budgets" DROP CONSTRAINT "budgets_household_category_month_currency_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "budgets_household_category_month_currency_active_unique" ON "finance"."budgets" USING btree ("household_id","category_id","month","currency") WHERE "finance"."budgets"."archived_at" is null;

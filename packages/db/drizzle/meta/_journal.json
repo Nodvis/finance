@@ -232,6 +232,13 @@
       "when": 1789286568157,
       "tag": "0032_chief_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789288320322,
+      "tag": "0033_wise_whirlwind",
+      "breakpoints": true
     }
   ]
 }
