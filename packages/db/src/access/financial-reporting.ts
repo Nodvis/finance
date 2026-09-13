@@ -1,6 +1,10 @@
 import { sql } from "drizzle-orm";
 import { transactions } from "../schema/transactions";
+import { transactionSplitAllocations } from "../schema/transaction-splits";
 import { liabilityRepayments } from "../schema/liabilities";
+
+// Split expenses are one cash event, but their category actuals are child allocations.
+const splitAllocation = sql`coalesce((select sum(${transactionSplitAllocations.amountMinor}) from ${transactionSplitAllocations} where ${transactionSplitAllocations.householdId} = ${transactions.householdId} and ${transactionSplitAllocations.transactionId} = ${transactions.id} and ${transactionSplitAllocations.currency} = ${transactions.currency}), ${transactions.amountMinor})`;
 
 // A repayment describes allocation of an existing cash event, not another
 // expense. Only explicitly known interest and fees are economic spending.
@@ -28,7 +32,7 @@ export const economicAmountMinor = sql`
   case
     when ${hasRepayment} then ${allocation}
     when ${transactions.kind} = 'transfer' then 0
-    else ${transactions.amountMinor}
+    else ${splitAllocation}
   end
 `;
 export const economicKind = sql<"expense" | "income">`case when ${transactions.kind} = 'income' then 'income' else 'expense' end`;

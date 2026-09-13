@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  unique,
   uniqueIndex,
   uuid,
   varchar,
@@ -99,6 +100,7 @@ export const transactions = financeSchema.table(
     updatedAt: instant("updated_at").defaultNow().notNull(),
   },
   (table) => [
+    unique("transactions_household_id_id_unique").on(table.householdId, table.id),
     foreignKey({
       name: "transactions_household_account_fk",
       columns: [table.householdId, table.accountId],

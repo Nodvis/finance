@@ -443,6 +443,7 @@
     },
     "actions": {
       "details": "Szczegóły",
+      "split": "Podziel",
       "edit": "Edytuj",
       "void": "Anuluj",
       "close": "Zamknij",
@@ -452,6 +453,7 @@
       "confirmVoid": "Potwierdź anulowanie",
       "voiding": "Anulowanie..."
     },
+    "split": { "title": "Podziel wydatek", "description": "Rozdziel pełną kwotę wydatku ({amount}) między kategorie.", "category": "Kategoria", "amount": "Kwota alokacji", "placeholder": "0,00", "invalidAmount": "Wprowadź dodatnią kwotę i kategorię dla każdej alokacji.", "conflict": "Ta transakcja została zmieniona równocześnie. Odśwież ją i spróbuj ponownie.", "error": "Nie udało się zapisać podziału.", "cancel": "Anuluj", "save": "Zapisz podział", "saving": "Zapisywanie..." },
     "details": {
       "title": "Szczegóły transakcji",
       "transactionId": "ID transakcji",

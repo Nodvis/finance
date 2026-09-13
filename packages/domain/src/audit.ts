@@ -39,6 +39,17 @@ export type TransactionAuditSnapshot = Readonly<{
   version: number;
   voidedAt: string | null;
   voidReason: string | null;
+  splitAllocations?: ReadonlyArray<Readonly<{
+    categoryId: string;
+    amountMinor: string;
+    currency: string;
+  }>>;
+}>;
+
+export type TransactionAuditSplitAllocation = Readonly<{
+  categoryId: string;
+  amountMinor: string;
+  currency: string;
 }>;
 
 export type TransactionAuditFieldDiff = Readonly<{
@@ -62,6 +73,7 @@ export type TransactionAuditFieldDiff = Readonly<{
 
 export function createTransactionAuditSnapshot(
   tx: Transaction,
+  splitAllocations?: ReadonlyArray<TransactionAuditSplitAllocation>,
 ): TransactionAuditSnapshot {
   const base = {
     kind: tx.kind,
@@ -72,6 +84,7 @@ export function createTransactionAuditSnapshot(
     voidedAt: tx.voidedAt ? tx.voidedAt.toISOString() : null,
     voidReason: tx.voidReason ?? null,
   };
+  const splitState = splitAllocations === undefined ? {} : { splitAllocations };
 
   if (tx.kind === "expense") {
     return Object.freeze({
@@ -84,6 +97,7 @@ export function createTransactionAuditSnapshot(
       receivedByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
+      ...splitState,
     });
   }
 
@@ -98,6 +112,7 @@ export function createTransactionAuditSnapshot(
       paidByPersonId: null,
       fromAccountId: null,
       toAccountId: null,
+      ...splitState,
     });
   }
 
@@ -111,6 +126,7 @@ export function createTransactionAuditSnapshot(
     receivedByPersonId: null,
     fromAccountId: tx.fromAccountId,
     toAccountId: tx.toAccountId,
+    ...splitState,
   });
 }
 

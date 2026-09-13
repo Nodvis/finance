@@ -797,6 +797,7 @@ describe("audit and transaction mutations", () => {
             limit: () => ({
               then: (resolve: (v: any) => any) => resolve(fields ? [] : [existingRow]),
             }),
+            then: (resolve: (v: any) => any) => resolve(fields ? [] : [existingRow]),
           }),
         }),
       }),
@@ -810,6 +811,11 @@ describe("audit and transaction mutations", () => {
               then: (resolve: (v: any) => any) => resolve([updatedRow]),
             }),
           }),
+        }),
+      }),
+      delete: () => ({
+        where: () => ({
+          then: (resolve: (v: any) => any) => resolve([]),
         }),
       }),
       insert: () => ({
@@ -988,6 +994,7 @@ describe("audit and transaction mutations", () => {
             limit: () => ({
               then: (resolve: (v: any) => any) => resolve(fields ? [] : [existingRow]),
             }),
+            then: (resolve: (v: any) => any) => resolve(fields ? [] : [existingRow]),
           }),
         }),
       }),
@@ -1001,6 +1008,11 @@ describe("audit and transaction mutations", () => {
               then: (resolve: (v: any) => any) => resolve([voidedRow]),
             }),
           }),
+        }),
+      }),
+      delete: () => ({
+        where: () => ({
+          then: (resolve: (v: any) => any) => resolve([]),
         }),
       }),
       insert: () => ({

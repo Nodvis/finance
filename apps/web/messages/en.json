@@ -466,6 +466,7 @@
     },
     "actions": {
       "details": "Details",
+      "split": "Split",
       "edit": "Edit",
       "void": "Void",
       "close": "Close",
@@ -475,6 +476,7 @@
       "confirmVoid": "Confirm void",
       "voiding": "Voiding..."
     },
+    "split": { "title": "Split expense", "description": "Allocate the full expense amount ({amount}) across categories.", "category": "Category", "amount": "Allocation amount", "placeholder": "0.00", "invalidAmount": "Enter a positive amount and category for every allocation.", "conflict": "This transaction was modified concurrently. Reload it and try again.", "error": "Could not save the split.", "cancel": "Cancel", "save": "Save split", "saving": "Saving..." },
     "details": {
       "title": "Transaction details",
       "transactionId": "Transaction ID",

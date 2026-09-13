@@ -14,8 +14,9 @@ import {
   formatAmountPresentation,
   minorUnitsToDecimalString,
 } from "@/lib/transactions/presentation";
-import type { SerializedTransaction } from "@/lib/transactions/schema";
+import type { SerializedTransaction, SerializedExpenseTransaction } from "@/lib/transactions/schema";
 import type { TransactionHistoryEntry } from "@/lib/transactions/history-types";
+import { SplitEditor } from "./SplitEditor";
 
 type TransactionListProps = {
   transactions: SerializedTransaction[];
@@ -90,6 +91,7 @@ export function TransactionList({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [editTx, setEditTx] = useState<SerializedTransaction | null>(null);
   const [voidTx, setVoidTx] = useState<SerializedTransaction | null>(null);
+  const [splitTx, setSplitTx] = useState<SerializedExpenseTransaction | null>(null);
 
   // Edit form state
   const [editAmount, setEditAmount] = useState("");
@@ -1241,6 +1243,11 @@ export function TransactionList({
                     </button>
                     {!isVoid && (
                       <>
+                        {tx.kind === "expense" && (
+                          <button type="button" onClick={() => setSplitTx(tx)} className="rounded-lg border border-slate-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-1.5 text-xs font-medium text-stone-300 hover:border-stone-700">
+                            {tActions("split")}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => openEditModal(tx)}
@@ -2164,6 +2171,9 @@ export function TransactionList({
             </form>
           </div>
         </div>
+      )}
+      {splitTx && householdId && (
+        <SplitEditor transaction={splitTx} categories={categories.filter((c) => c.applicability === "expense" || c.applicability === "both")} householdId={householdId} onClose={() => setSplitTx(null)} onSaved={() => { fetchFilteredTransactions(); router.refresh(); }} />
       )}
     </section>
   );

@@ -112,6 +112,8 @@ export type {
   TransactionKind,
   TransferTransaction,
 } from "./transaction";
+export { createSplitAllocations, isSplitExpense } from "./split-transaction";
+export type { SplitAllocation } from "./split-transaction";
 
 export { detectRecurringPatterns, normalizeRecurringCounterparty } from "./recurring";
 export type {

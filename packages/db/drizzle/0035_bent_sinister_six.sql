@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "split_transaction_category_unique" ON "finance"."transaction_split_allocations" USING btree ("household_id","transaction_id","category_id");
