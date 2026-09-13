@@ -1,10 +1,6 @@
-x-config:
-  postgres-password: &postgres-password "CHANGE_ME_TO_A_STRONG_RANDOM_PASSWORD"
-  auth-secret: &auth-secret "CHANGE_ME_TO_A_LONG_RANDOM_SECRET_32_CHARS_MIN"
-
 services:
   finance:
-    image: ghcr.io/nodvis/finance:0.2.1
+    image: ghcr.io/nodvis/finance:0.2.2
     ports:
       - "3990:3990"
     environment:
@@ -12,8 +8,8 @@ services:
       DB_PORT: "5432"
       DB_NAME: nodvis_finance
       DB_USER: nodvis_finance
-      DB_PASSWORD: *postgres-password
-      BETTER_AUTH_SECRET: *auth-secret
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
 
     depends_on:
       postgres:
@@ -31,7 +27,7 @@ services:
     environment:
       POSTGRES_DB: nodvis_finance
       POSTGRES_USER: nodvis_finance
-      POSTGRES_PASSWORD: *postgres-password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - nodvis-finance-data:/var/lib/postgresql
     healthcheck:

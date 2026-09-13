@@ -17,7 +17,7 @@ COPY tsconfig.base.json ./
 COPY packages/domain ./packages/domain
 COPY packages/db ./packages/db
 COPY apps/web ./apps/web
-ARG VERSION=0.2.1
+ARG VERSION=0.2.2
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_VERSION=$VERSION
 RUN mkdir -p /app/apps/web/public
@@ -26,7 +26,7 @@ RUN DATABASE_URL="postgresql://build@localhost:5432/build" \
     pnpm --filter @nodvis/finance-web build
 
 FROM node:24-alpine AS runner
-ARG VERSION=0.2.1
+ARG VERSION=0.2.2
 WORKDIR /app
 ENV NODE_ENV=production PORT=3990 HOSTNAME="0.0.0.0" NEXT_PUBLIC_APP_VERSION=$VERSION
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs

@@ -27,22 +27,23 @@ Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall is 
 
 ### Portainer / Dockge
 
-1. Copy the complete [`docker-compose.yml`](docker-compose.yml) into **Stacks → Add stack → Web editor** (Portainer), or into a new Compose project (Dockge).
-2. At the top of the file, replace only `postgres-password` and `auth-secret` with different strong random values. The auth secret must contain at least 32 characters; the database password is used for both containers automatically.
-3. Click **Deploy**.
+1. Copy [`docker-compose.yml`](docker-compose.yml) and [`.env.example`](.env.example) into a new Compose project.
+2. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` to strong random values. The auth secret must contain at least 32 characters.
+3. Run `docker compose pull` and `docker compose up -d`.
 4. Open `http://<docker-host>:3990`.
 
 Use a different random value for each secret; `openssl rand -hex 32` generates suitable values. PostgreSQL is the internal database used by Finance. Your data is stored in the named Docker volume `nodvis-finance-data`; do not delete it unless you intentionally want to delete your Finance data.
 
 ### Docker Compose
 
-Save the complete `docker-compose.yml`, edit the two values at its top, and run:
+Save `docker-compose.yml` and `.env` in the same directory, then run:
 
 ```bash
+docker compose pull
 docker compose up -d
 ```
 
-That is the only normal startup command. PostgreSQL has no host port. Direct access derives the application origin from the request, so the Docker host IP or hostname does not need to be copied into Compose. For a domain or reverse proxy, set the optional canonical `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` values to the same HTTPS URL in the deployment environment.
+PostgreSQL has no host port. Direct access derives the application origin from the request, so the Docker host IP or hostname does not need to be copied into Compose. For a domain or reverse proxy, set the optional canonical `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` values to the same HTTPS URL in the deployment environment.
 
 The Finance image waits for PostgreSQL, runs migrations automatically, and starts the application only after migrations succeed. You do not run a migration command.
 
@@ -79,8 +80,8 @@ For details and measurement methodology see [system requirements](docs/SYSTEM_RE
 If you installed only the Compose file, download the two helper scripts once. The normal direct deployment does not require copying the Docker host address into Compose; open `http://<docker-host>:3990` after startup.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.1/scripts/backup.sh
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.1/scripts/restore.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.2/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.2/scripts/restore.sh
 chmod +x backup.sh restore.sh
 ```
 
