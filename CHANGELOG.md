@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] — Premium dashboard patch
+
+- Includes the merged Overview/dashboard refinement with responsive desktop/mobile presentation, clearer navigation and first-use states, and improved light/dark hierarchy.
+- Corrects Debt & Liabilities KPI semantics and includes related regression and E2E compatibility coverage.
+- No new finance features or database model changes.
+
 ## [0.2.1] — Simpler self-hosting Compose setup
 
 - The official `docker-compose.yml` is self-contained and needs no `.env` file.

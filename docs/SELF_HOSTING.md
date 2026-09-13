@@ -4,12 +4,10 @@ Nodvis Finance is a two-container self-hosted deployment: the `finance` applicat
 
 ## Installation
 
-1. Copy the complete root [`docker-compose.yml`](../docker-compose.yml) into Dockge, Portainer or a new directory.
-2. At the top of `docker-compose.yml`, replace only `postgres-password` and `auth-secret` with different strong random values. `auth-secret` must contain at least 32 characters; the database password is used for both containers automatically.
-3. Deploy, or run `docker compose up -d`.
+1. Copy [`docker-compose.yml`](../docker-compose.yml) and [`.env.example`](../.env.example) into a new directory.
+2. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET`; the auth secret must contain at least 32 characters.
+3. Run `docker compose pull` and `docker compose up -d`.
 4. Open `http://<docker-host>:3990`.
-
-The file is self-contained: no `.env` file or additional configuration file is required. Only the two values at the top need to be edited for a normal installation.
 
 PostgreSQL is not exposed on a host port. The single named volume `nodvis-finance-data` contains your Finance database. Do not delete it unless you intentionally want to delete your Finance data.
 
@@ -30,7 +28,7 @@ Use HTTPS through a reverse proxy or a VPN. Do not expose PostgreSQL. The defaul
 ## Updates
 
 1. Run `./backup.sh backup.sql` from the directory containing `docker-compose.yml` and the downloaded helper scripts.
-2. Change `ghcr.io/nodvis/finance:0.2.1` to the target release in `docker-compose.yml`.
+2. Change the Finance image tag in `docker-compose.yml` to the target release.
 3. Run `docker compose up -d` again.
 4. Open Finance on port 3990 and verify a known account and transaction.
 
@@ -43,8 +41,8 @@ For the current `v0.1.2` to `v0.1.3` transition, see [UPGRADING.md](UPGRADING.md
 If you copied only the Compose file, download the helpers next to it:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.1/scripts/backup.sh
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.1/scripts/restore.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.2/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.2/scripts/restore.sh
 chmod +x backup.sh restore.sh
 ```
 
