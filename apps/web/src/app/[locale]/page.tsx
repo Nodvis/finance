@@ -9,6 +9,7 @@ import { overviewQuerySchema } from "@/lib/overview/schema";
 import { getHouseholdOverview } from "@/lib/overview/service";
 
 import { getHouseholdNetWorthSummary } from "@/lib/net-worth/service";
+import { getHouseholdCashForecast } from "@/lib/forecast/service";
 import { serializeNetWorthSummary } from "@/lib/net-worth/serialization";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
@@ -27,6 +28,8 @@ import { TransactionForms } from "./components/TransactionForms";
 import { OverviewCharts } from "./components/OverviewCharts";
 import { DashboardSupportCards } from "./components/DashboardSupportCards";
 import { DashboardAddTransactionButton } from "./components/DashboardAddTransactionButton";
+import { ForecastSection } from "./components/ForecastSection";
+import { TransactionList } from "./components/TransactionList";
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;
@@ -63,6 +66,7 @@ export default async function HomePage({
   const t = await getTranslations("HomePage");
 
   const tNetWorth = await getTranslations("HomePage.netWorth");
+  const tForecast = await getTranslations("HomePage.forecast");
   const tAccess = await getTranslations("Accessibility");
 
   const session = await getCurrentSession();
@@ -130,7 +134,7 @@ export default async function HomePage({
   // 5. User with active household context: load truthful overview and financial data
   const householdContext = householdStatus.activeContext;
 
-  const [accounts, categories, rawTransactions, overview, rawNetWorth, budgets, goalsOverview] = await Promise.all([
+  const [accounts, categories, rawTransactions, overview, forecast, rawNetWorth, budgets, goalsOverview] = await Promise.all([
     listAccountsByHousehold(householdContext.householdId, {
       includeArchived: false,
     }),
@@ -146,6 +150,10 @@ export default async function HomePage({
       month: overviewQuery.month,
       from: overviewQuery.from,
       to: overviewQuery.to,
+    }),
+    getHouseholdCashForecast(householdContext, {
+      asOf: new Date().toISOString().slice(0, 10),
+      horizonDays: 7,
     }),
     getHouseholdNetWorthSummary(householdContext),
     listHouseholdBudgets(householdContext, {
@@ -179,7 +187,11 @@ export default async function HomePage({
 
       {serializedOverview ? <DashboardSupportCards overview={serializedOverview} accounts={accounts} budgets={budgets} goals={goalsOverview.goals} transactions={serializedTransactions} locale={locale} labels={{ attention: t("dashboard.attention"), calm: t("dashboard.calm"), account: t("dashboard.setup.account"), balance: t("dashboard.setup.balance"), transaction: t("dashboard.setup.transaction"), budget: t("dashboard.setup.budget"), goal: t("dashboard.setup.goal"), add: t("quickActions.addTransaction"), create: t("dashboard.create"), view: t("dashboard.view"), upcoming: t("dashboard.upcoming"), overdue: t("dashboard.overdue"), missingBalance: t("dashboard.missingBalance"), setupTitle: t("dashboard.setup.title"), setupDescription: t("dashboard.setup.description"), done: t("dashboard.setup.done"), budgets: t("dashboard.budgets"), budgetsEmpty: t("dashboard.budgetsEmpty"), goals: t("dashboard.goals"), goalsEmpty: t("dashboard.goalsEmpty"), recent: t("dashboard.recent"), recentEmpty: t("dashboard.recentEmpty"), allTransactions: t("dashboard.allTransactions"), spent: t("dashboard.spent"), saved: t("dashboard.saved"), target: t("dashboard.target"), income: t("charts.income"), expense: t("charts.spending"), transfer: t("dashboard.transfer") }} /> : null}
 
+      {forecast ? <ForecastSection forecast={forecast} locale={locale} labels={{ title: tForecast("title"), subtitle: tForecast("subtitle"), horizon: tForecast("horizon"), days: tForecast("days"), available: tForecast("available"), obligations: tForecast("obligations"), projected: tForecast("projected"), incomplete: tForecast("incomplete"), included: tForecast("included") }} /> : null}
+
       {serializedNetWorth ? <div className="dashboard-secondary-detail"><NetWorthSection summary={serializedNetWorth} locale={locale} labels={{ title: tNetWorth("title"), eyebrow: tNetWorth("eyebrow"), viewDetails: tNetWorth("viewDetails"), assets: tNetWorth("assets"), liabilities: tNetWorth("liabilities"), netWorth: tNetWorth("netWorth"), complete: tNetWorth("complete"), incomplete: tNetWorth("incomplete"), missing: tNetWorth("missing"), explanation: tNetWorth("explanation"), emptyTitle: tNetWorth("emptyTitle"), emptyDescription: tNetWorth("emptyDescription"), recordObservation: tNetWorth("recordObservation") }} /></div> : null}
+
+      {serializedOverview ? <TransactionList compact transactions={serializedTransactions.slice(0, 8)} accounts={accounts} categories={categories} locale={locale} householdId={householdContext.householdId} initialTotalCount={serializedTransactions.length} /> : null}
 
       {serializedOverview && <section aria-label={tAccess("householdTransactions")} className="flex flex-col gap-5">
         <div className="dashboard-detail-controls">

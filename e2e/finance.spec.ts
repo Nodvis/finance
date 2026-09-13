@@ -228,6 +228,7 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
     expect(response.ok()).toBeTruthy();
   }
 
+  await page.goto(`/${locale}/transactions`);
   await page.reload();
   await page.locator("#tx-filter-search").fill(`E2E pagination ${locale}`);
   await expect(page.getByText(/Showing|Wyświetlanie/)).toBeVisible();
