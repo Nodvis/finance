@@ -17,7 +17,11 @@ export const budgets = financeSchema.table("budgets", {
   updatedAt: instant("updated_at").defaultNow().notNull(),
 }, (table) => [
   unique("budgets_household_id_id_unique").on(table.householdId, table.id),
+<<<<<<< HEAD
   uniqueIndex("budgets_household_category_month_currency_active_unique").on(table.householdId, table.categoryId, table.month, table.currency).where(sql`${table.archivedAt} is null`),
+=======
+  unique("budgets_household_category_month_currency_unique").on(table.householdId, table.categoryId, table.month, table.currency),
+>>>>>>> origin/main
   foreignKey({ name: "budgets_household_category_fk", columns: [table.householdId, table.categoryId], foreignColumns: [categories.householdId, categories.id] }).onDelete("restrict"),
   check("budgets_limit_positive", sql`${table.limitAmountMinor} > 0`),
   check("budgets_month_format", sql`${table.month} = date_trunc('month', ${table.month})::date`),
