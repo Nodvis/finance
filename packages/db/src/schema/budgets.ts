@@ -1,5 +1,5 @@
 import { and, sql } from "drizzle-orm";
-import { bigint, check, date, foreignKey, index, integer, unique, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, check, date, foreignKey, index, integer, unique, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { categories } from "./categories";
 import { currencyCheck, households, instant } from "./foundation";
 import { financeSchema } from "./namespace";
@@ -17,7 +17,7 @@ export const budgets = financeSchema.table("budgets", {
   updatedAt: instant("updated_at").defaultNow().notNull(),
 }, (table) => [
   unique("budgets_household_id_id_unique").on(table.householdId, table.id),
-  unique("budgets_household_category_month_currency_unique").on(table.householdId, table.categoryId, table.month, table.currency),
+  uniqueIndex("budgets_household_category_month_currency_active_unique").on(table.householdId, table.categoryId, table.month, table.currency).where(sql`${table.archivedAt} is null`),
   foreignKey({ name: "budgets_household_category_fk", columns: [table.householdId, table.categoryId], foreignColumns: [categories.householdId, categories.id] }).onDelete("restrict"),
   check("budgets_limit_positive", sql`${table.limitAmountMinor} > 0`),
   check("budgets_month_format", sql`${table.month} = date_trunc('month', ${table.month})::date`),
