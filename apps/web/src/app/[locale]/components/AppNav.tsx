@@ -6,7 +6,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { FinanceBrand } from "./FinanceBrand";
 
 const ITEMS = [
-  ["/", "home", LayoutDashboard], ["/accounts", "accounts", WalletCards], ["/transactions", "transactions", ReceiptText], ["/categories", "categories", Tags], ["/net-worth", "netWorth", Scale], ["/imports", "imports", Upload], ["/transfers", "transfers", ArrowLeftRight], ["/liabilities", "liabilities", CreditCard], ["/upcoming", "upcoming", CalendarDays], ["/rules", "rules", ListFilter], ["/recurring", "recurring", Repeat2], ["/analytics", "analytics", BarChart3], ["/forecast", "forecast", BarChart3],
+  ["/", "home", LayoutDashboard], ["/accounts", "accounts", WalletCards], ["/transactions", "transactions", ReceiptText], ["/categories", "categories", Tags], ["/net-worth", "netWorth", Scale], ["/imports", "imports", Upload], ["/transfers", "transfers", ArrowLeftRight], ["/liabilities", "liabilities", CreditCard], ["/upcoming", "upcoming", CalendarDays], ["/rules", "rules", ListFilter], ["/recurring", "recurring", Repeat2], ["/analytics", "analytics", BarChart3], ["/forecast", "forecast", BarChart3], ["/plan", "plan", BarChart3],
 ] as const;
 type Key = (typeof ITEMS)[number][1];
 type Props = { labels: Record<Key, string> & { more: string; closeMore: string; primary: string; planning: string; settings: string }; ariaLabel: string };

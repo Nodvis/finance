@@ -20,6 +20,7 @@
     "recurring": "Powtarzalne",
     "analytics": "Analiza",
     "forecast": "Prognoza",
+    "plan": "Plan",
     "skipToContent": "Przejdź do treści głównej",
     "privateBadge": "Prywatne",
     "more": "Więcej",
@@ -1077,6 +1078,7 @@
     "deficit": "Prognozowany deficyt",
     "zero": "Prognozowana gotówka spada do zera"
   },
+  "Planning": {"eyebrow":"Plan gospodarstwa","title":"Plan","description":"Wybierz podejście i zobacz deterministyczne sugestie oparte na prognozie, budżetach, celach i zapisanym zadłużeniu.","strategyLabel":"Strategia planowania","strategies":{"stabilization":"Stabilizacja","50-30-20":"Wzorzec 50/30/20","pay-yourself-first":"Najpierw zapłać sobie","debt-avalanche":"Lawina długu","debt-snowball":"Kula śnieżna długu","sinking-fund":"Fundusze celowe"},"status":{"positive":"Prognozowana nadwyżka","zero":"Prognozowane zero","deficit":"Prognozowany niedobór","incomplete":"Niepełne dane gotówki"},"projected":"Prognoza po znanych płatnościach: {amount}","suggestions":{"protect-buffer":"Zabezpiecz pozostałą gotówkę przed nowymi zobowiązaniami.","verify-cash":"Zweryfikuj salda kont przed działaniem; prognoza jest niepełna.","needs-benchmark":"Wzorzec na potrzeby (50%).","wants-benchmark":"Wzorzec na zachcianki (30%).","savings-benchmark":"Wzorzec na oszczędności lub dług (20%).","missing-income":"Nie zapisano miesięcznego dochodu, więc nie można obliczyć wzorca.","fund-goals-first":"Nadaj aktywnym celom oszczędnościowym priorytet przed wydatkami uznaniowymi.","set-savings-goal":"Utwórz cel oszczędnościowy, aby ta strategia była wykonalna.","prioritize-high-cost-debt":"Najpierw spłacaj najdroższy dług; oprocentowanie nie jest tu zapisane, więc potwierdź kolejność.","missing-rate-data":"Brak zapisanego oprocentowania, więc nie można uczciwie ustalić kolejności lawiny.","prioritize-smallest-debt":"Najpierw spłacaj najmniejszy zapisany dług.","fund-goals-after-debt":"Po spłacie długu kieruj pozostałą możliwość do aktywnych celów.","fund-sinking-goals":"Kieruj możliwości do aktywnych funduszy celowych.","set-sinking-goal":"Utwórz cel na poduszkę bezpieczeństwa lub znany przyszły koszt.","no-debt-data":"Brak zapisanego zadłużenia wspierającego tę strategię.","review-over-budget":"Sprawdź kategorie, w których przekroczono już miesięczny limit."},"empty":{"title":"Brak danych do planowania","description":"Zapisz saldo konta lub nadchodzącą płatność, aby zobaczyć plan osobno dla każdej waluty."},"disclaimer":"Sugestie są szacunkami, nie gwarancjami. Waluty są wyświetlane osobno."},
   "NetWorth": {
     "title": "Majątek netto i historia sald",
     "subtitle": "Śledź majątek netto gospodarstwa domowego w poszczególnych walutach na podstawie zweryfikowanych obserwacji sald i jednoznacznego statusu kompletności.",

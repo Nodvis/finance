@@ -5,7 +5,7 @@ import { aggregateAvailableCash, accountId as toAccountId, calculateCashForecast
 import type { AuthorizedHouseholdContext } from "@/lib/overview/service";
 
 export async function getHouseholdCashForecast(
-  context: AuthorizedHouseholdContext,
+  context: Pick<AuthorizedHouseholdContext, "householdId" | "personId">,
   options: { asOf: string; horizonDays: 7 | 30 },
 ): Promise<CashForecast> {
   if (!(await isPersonInHousehold(context.householdId, context.personId))) {
@@ -40,7 +40,7 @@ export async function getHouseholdCashForecast(
 }
 
 export async function getHouseholdForecastObligations(
-  context: AuthorizedHouseholdContext,
+  context: Pick<AuthorizedHouseholdContext, "householdId" | "personId">,
   options: { asOf: string; horizonDays: 7 | 30 },
 ) {
   if (!(await isPersonInHousehold(context.householdId, context.personId))) {

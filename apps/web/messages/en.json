@@ -20,6 +20,7 @@
     "recurring": "Recurring",
     "analytics": "Analytics",
     "forecast": "Forecast",
+    "plan": "Plan",
     "skipToContent": "Skip to main content",
     "privateBadge": "Private",
     "more": "More",
@@ -1100,6 +1101,7 @@
     "deficit": "Projected deficit",
     "zero": "Projected cash reaches zero"
   },
+  "Planning": {"eyebrow":"Household plan","title":"Plan","description":"Choose a planning approach and see deterministic suggestions grounded in your forecast, budgets, goals and recorded debt.","strategyLabel":"Planning strategy","strategies":{"stabilization":"Stabilization","50-30-20":"50/30/20 benchmark","pay-yourself-first":"Pay Yourself First","debt-avalanche":"Debt Avalanche","debt-snowball":"Debt Snowball","sinking-fund":"Sinking funds"},"status":{"positive":"Projected positive","zero":"Projected zero","deficit":"Projected deficit","incomplete":"Incomplete cash data"},"projected":"Projected after known payments: {amount}","suggestions":{"protect-buffer":"Protect this remaining cash before committing to new plans.","verify-cash":"Verify account balances before acting; the forecast is incomplete.","needs-benchmark":"Benchmark for needs (50%).","wants-benchmark":"Benchmark for wants (30%).","savings-benchmark":"Benchmark for savings or debt (20%).","missing-income":"Monthly income is not recorded, so the benchmark cannot be calculated.","fund-goals-first":"Prioritize active savings goals before discretionary spending.","set-savings-goal":"Create a savings goal to make this strategy actionable.","prioritize-high-cost-debt":"Prioritize the highest-cost debt first; rates are not recorded here, so confirm the order.","missing-rate-data":"Interest-rate data is not recorded, so avalanche ordering cannot be determined honestly.","prioritize-smallest-debt":"Prioritize the smallest recorded debt first.","fund-goals-after-debt":"After debt payments, direct remaining capacity to active goals.","fund-sinking-goals":"Direct capacity toward active sinking-fund goals.","set-sinking-goal":"Create a goal for an emergency buffer or known future cost.","no-debt-data":"No recorded debt supports this strategy yet.","review-over-budget":"Review categories that are already over their monthly limit."},"empty":{"title":"Nothing to plan yet","description":"Record an account balance or upcoming payment to see a currency-specific plan."},"disclaimer":"Suggestions are estimates, not guarantees. Currencies are shown separately."},
   "NetWorth": {
     "title": "Net Worth & Balance History",
     "subtitle": "Track your household net worth across currencies with verified balance observations and explicit historical confidence.",
