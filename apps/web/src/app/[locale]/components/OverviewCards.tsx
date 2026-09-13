@@ -21,6 +21,13 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
   const hasFresh = availableCash.freshAccountsCount > 0;
   const isComplete = availableCash.isFullyKnown;
   const debtAmounts = getDebtAmounts(netWorth);
+  const hasObservedLiabilities = debtAmounts.some((amount) => {
+    try {
+      return BigInt(amount.amountMinor) > 0n;
+    } catch {
+      return false;
+    }
+  });
 
   return (
     <section
@@ -34,7 +41,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
               {t("availableCash.title")}
             </p>
-            <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 dark:text-stone-400 dark:bg-stone-800">
+            <span className="dashboard-kpi-badge rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 dark:text-stone-400 dark:bg-stone-800">
               {t("availableCash.creditCardsExcluded")}
             </span>
           </div>
@@ -44,7 +51,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
               availableCash.byCurrency.map((curr) => (
                 <p
                   key={curr.currency}
-                  className="font-mono text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-3xl"
+                  className="tabular-nums text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 sm:text-3xl"
                 >
                   {formatAmountPresentation(
                     curr.amountMinor,
@@ -54,7 +61,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
                 </p>
               ))
             ) : (
-              <p className="font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+              <p className="tabular-nums text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
                 —
               </p>
             )}
@@ -100,7 +107,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
               {t("upcoming.title")}
             </p>
             {overview.upcoming && overview.upcoming.overdueCount > 0 ? (
-              <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/60">
+              <span className="dashboard-kpi-badge rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/60">
                 {t("upcoming.overdueCount", { count: overview.upcoming.overdueCount })}
               </span>
             ) : null}
@@ -111,7 +118,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
               overview.upcoming.upcomingByCurrency.map((curr) => (
                 <p
                   key={curr.currency}
-                  className="font-mono text-2xl font-semibold tracking-tight text-slate-900 dark:text-stone-100 sm:text-3xl"
+                  className="tabular-nums text-2xl font-semibold tracking-tight text-slate-900 dark:text-stone-100 sm:text-3xl"
                 >
                   {formatAmountPresentation(
                     curr.totalMinor,
@@ -121,7 +128,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
                 </p>
               ))
             ) : (
-              <p className="font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+              <p className="tabular-nums text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
                 —
               </p>
             )}
@@ -163,11 +170,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">
               {t("debt.title")}
             </p>
-            {netWorth && netWorth.byCurrency.some((c) => c.currentConfidence !== "no_data") ? (
-              <span className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-600 bg-slate-100 dark:text-stone-400 dark:bg-stone-800">
-                {netWorth.byCurrency[0]?.currentIsComplete ? t("availableCash.allFresh", { count: 1 }) : t("availableCash.partialWarning", { count: 1 })}
-              </span>
-            ) : null}
+
           </div>
 
           <div className="mt-3 space-y-1">
@@ -175,7 +178,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
               debtAmounts.map((curr) => (
                 <p
                   key={curr.currency}
-                  className="font-mono text-2xl font-semibold tracking-tight text-slate-900 dark:text-stone-100 sm:text-3xl"
+                  className="tabular-nums text-2xl font-semibold tracking-tight text-slate-900 dark:text-stone-100 sm:text-3xl"
                 >
                   {formatAmountPresentation(
                     curr.amountMinor,
@@ -185,7 +188,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
                 </p>
               ))
             ) : (
-              <p className="font-mono text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
+              <p className="tabular-nums text-3xl font-semibold tracking-tight text-slate-900 dark:text-stone-100">
                 —
               </p>
             )}
@@ -194,7 +197,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
         <div className="dashboard-kpi-context mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-stone-800/80 dark:text-stone-400">
           <div className="flex flex-col gap-1">
             <p className="font-medium text-slate-700 dark:text-stone-300">
-              {debtAmounts.length > 0 ? t("debt.modeled") : t("debt.notModeled")}
+              {hasObservedLiabilities ? t("debt.modeled") : t("debt.noObserved")}
             </p>
             <Link
               href={`/${locale}/net-worth`}

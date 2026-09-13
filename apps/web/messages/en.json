@@ -138,7 +138,7 @@
       "transfer": "Transfer",
       "emptyVisual": {
         "nextTitle": "What comes next",
-        "nextDescription": "After you add your first account, this space will show real cash flow, budgets, and goal progress — no estimates or invented data."
+        "nextDescription": "As you add accounts, balances and transactions, this dashboard will build a real picture of your finances — without placeholder data."
       },
       "setup": {
         "title": "Set up your finances",
@@ -670,7 +670,7 @@
   },
   "Footer": {
     "tagline": "Nodvis Finance — simple and secure personal finance.",
-    "privacyNote": "All your financial data remains confidential and fully protected."
+    "privacyNote": "Your financial data stays in your instance."
   },
   "Accessibility": {
     "mainContent": "Main content",
@@ -839,7 +839,7 @@
     "monthInputLabel": "Change month",
     "addTransactionAction": "Add transaction",
     "availableCash": {
-      "title": "Observed available cash",
+      "title": "Available cash",
       "creditCardsExcluded": "Credit cards & debt excluded",
       "allFresh": "Observed from all {count} active asset accounts",
       "singleFresh": "Observed from 1 active asset account",
@@ -850,7 +850,7 @@
       "updateAccountsPrompt": "Update balances in Accounts"
     },
     "upcoming": {
-      "title": "Upcoming obligations",
+      "title": "Upcoming",
       "notModeled": "Upcoming obligations are not yet modeled",
       "note": "Scheduled bills and future commitments will appear here when modeled.",
       "viewAll": "View upcoming obligations",
@@ -861,7 +861,8 @@
     "debt": {
       "title": "Debt & liabilities",
       "notModeled": "Debt obligations are not yet modeled",
-      "modeled": "Tracked across accounts & liabilities",
+      "modeled": "Observed liabilities",
+      "noObserved": "No observed liabilities",
       "viewDetails": "View Net Worth & History",
       "note": "Loans and liability schedules are kept strictly separate from available cash."
     },

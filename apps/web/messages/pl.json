@@ -138,7 +138,7 @@
       "transfer": "Przelew",
       "emptyVisual": {
         "nextTitle": "Co pojawi się tutaj",
-        "nextDescription": "Po dodaniu pierwszego konta zobaczysz prawdziwe przepływy, budżety i postęp celów — bez szacunków i sztucznych danych."
+        "nextDescription": "W miarę dodawania kont, sald i transakcji zobaczysz tutaj rzeczywisty obraz swoich finansów — bez sztucznych danych."
       },
       "setup": {
         "title": "Skonfiguruj swoje finanse",
@@ -647,7 +647,7 @@
   },
   "Footer": {
     "tagline": "Nodvis Finance — proste i bezpieczne finanse domowe.",
-    "privacyNote": "Wszystkie Twoje dane finansowe są poufne i w pełni chronione."
+    "privacyNote": "Twoje dane finansowe pozostają w Twojej instancji."
   },
   "Accessibility": {
     "mainContent": "Treść główna",
@@ -816,7 +816,7 @@
     "monthInputLabel": "Zmień miesiąc",
     "addTransactionAction": "Dodaj transakcję",
     "availableCash": {
-      "title": "Zaobserwowane dostępne środki",
+      "title": "Dostępne środki",
       "creditCardsExcluded": "Karty kredytowe i zadłużenie wykluczone",
       "allFresh": "Zaobserwowano ze wszystkich {count} aktywnych kont majątkowych",
       "singleFresh": "Zaobserwowano z 1 aktywnego konta majątkowego",
@@ -827,7 +827,7 @@
       "updateAccountsPrompt": "Zaktualizuj salda w zakładce Konta"
     },
     "upcoming": {
-      "title": "Nadchodzące zobowiązania",
+      "title": "Do zapłaty",
       "notModeled": "Nadchodzące zobowiązania nie są jeszcze modelowane",
       "note": "Zaplanowane rachunki i przyszłe zobowiązania pojawią się tutaj po ich zamodelowaniu.",
       "viewAll": "Zobacz nadchodzące zobowiązania",
@@ -836,9 +836,10 @@
       "overdueCount": "{count} przeterminowanych"
     },
     "debt": {
-      "title": "Zadłużenie i zobowiązania",
+      "title": "Zadłużenie",
       "notModeled": "Zobowiązania dłużne nie są jeszcze modelowane",
-      "modeled": "Śledzone w ramach kont i zobowiązań",
+      "modeled": "Zaobserwowane zobowiązania",
+      "noObserved": "Brak zaobserwowanych zobowiązań",
       "viewDetails": "Zobacz majątek netto i historię",
       "note": "Kredyty i harmonogramy spłat są ściśle oddzielone od dostępnych środków."
     },

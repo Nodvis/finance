@@ -190,9 +190,8 @@ export default async function HomePage({
         </div>
       </header>
 
-      <details id="transaction-forms" className="group dashboard-form-disclosure w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-xs transition-all">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold"><span className="flex items-center gap-2"><span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--finance-signal-dark)] text-xs font-bold text-[var(--foreground)] dark:bg-[var(--finance-signal)]">+</span>{t("quickActions.addTransaction")}</span><span className="text-xs text-[var(--muted-foreground)] transition-transform group-open:rotate-180">▼</span></summary>
-        <div className="mt-4 border-t border-[var(--border)] pt-4"><TransactionForms householdId={householdContext.householdId} accounts={accounts} categories={categories} defaultCurrency={householdContext.defaultCurrency} locale={locale} /></div>
+      <details id="transaction-forms" className="dashboard-form-disclosure">
+        <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xs sm:p-5"><TransactionForms householdId={householdContext.householdId} accounts={accounts} categories={categories} defaultCurrency={householdContext.defaultCurrency} locale={locale} /></div>
       </details>
 
       {serializedOverview ? <OverviewCards overview={serializedOverview} netWorth={serializedNetWorth} locale={locale} /> : null}
