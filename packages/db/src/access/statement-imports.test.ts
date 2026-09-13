@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeFallbackIdentifier,
   computeRowDedupeHash,
+  encodeImportIdentityParts,
   money,
 } from "@nodvis/finance-domain";
 
@@ -38,6 +39,9 @@ import { eq } from "drizzle-orm";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(testDir, "../../../../.env") });
+
+const scopedImportKey = (sourceNamespace: string, sourceAccountId: string | null, identifier: string) =>
+  encodeImportIdentityParts([sourceNamespace, sourceAccountId ?? "", identifier]);
 
 describe("PostgreSQL statement import access integration tests", () => {
   const isPostgresAvailable = Boolean(process.env.DATABASE_URL);
@@ -364,6 +368,69 @@ describe("PostgreSQL statement import access integration tests", () => {
   );
 
   it.runIf(isPostgresAvailable)(
+    "finds authoritative transactions committed with the canonical empty source account id",
+    async () => {
+      const db = getDb();
+      const householdId = crypto.randomUUID();
+      const accountId = crypto.randomUUID();
+      await db.insert(households).values({ id: householdId, name: "Empty Source Household", defaultCurrency: "PLN" });
+      await db.insert(accounts).values({ id: accountId, householdId, name: "Empty Source Account", type: "checking", currency: "PLN" });
+      await db.insert(transactions).values({
+        householdId,
+        accountId,
+        kind: "expense",
+        amountMinor: 100n,
+        currency: "PLN",
+        occurredOn: new Date("2026-03-01T00:00:00.000Z"),
+        sourceNamespace: " generic_csv ",
+        sourceAccountId: "   ",
+        authoritativeId: "EMPTY-SOURCE-1",
+      });
+
+      const records = await findExistingAuthoritativeRecordsInDb({
+        householdId,
+        accountId,
+        sourceNamespace: "generic_csv",
+        sourceAccountIds: [],
+        authoritativeIds: ["EMPTY-SOURCE-1"],
+      });
+
+      expect(records.get(scopedImportKey("generic_csv", "", "EMPTY-SOURCE-1"))?.transaction.amountMinor).toBe(100n);
+    },
+  );
+
+  it.runIf(isPostgresAvailable)(
+    "matches legacy null and whitespace namespaces without merging scoped namespaces",
+    async () => {
+      const db = getDb();
+      const householdId = crypto.randomUUID();
+      const accountId = crypto.randomUUID();
+      await db.insert(households).values({ id: householdId, name: "Legacy Namespace Household", defaultCurrency: "PLN" });
+      await db.insert(accounts).values({ id: accountId, householdId, name: "Legacy Namespace Account", type: "checking", currency: "PLN" });
+      await db.insert(transactions).values([
+        { householdId, accountId, kind: "expense", amountMinor: 100n, currency: "PLN", occurredOn: new Date("2026-03-01"), authoritativeId: "LEGACY-NULL" },
+        { householdId, accountId, kind: "expense", amountMinor: 200n, currency: "PLN", occurredOn: new Date("2026-03-02"), sourceNamespace: "   ", authoritativeId: "LEGACY-SPACE" },
+        { householdId, accountId, kind: "expense", amountMinor: 300n, currency: "PLN", occurredOn: new Date("2026-03-03"), sourceNamespace: "other-bank", authoritativeId: "OTHER-SCOPE" },
+      ]);
+      const legacyHash = computeRowDedupeHash({ accountId, sourceNamespace: "bank", authoritativeId: "LEGACY-HASH" });
+      await createStatementImportBatchInDb({
+        batch: { householdId, accountId, sourceFilename: "legacy.csv", fileHash: "legacy-file", fileSizeBytes: 1, parserVersion: "1", mappingConfig: {} as any, status: "committed", totalRowCount: 1, validRowCount: 1, invalidRowCount: 0 },
+        rows: [{ batchId: "" as any, householdId, accountId, rowIndex: 0, sourceNamespace: "   ", authoritativeId: "LEGACY-HASH", identityType: "authoritative", dedupeHash: legacyHash, status: "imported", rawRowContent: "legacy" }],
+      });
+
+      const hashes = await findExistingImportDedupeHashes(accountId, [legacyHash], { sourceNamespace: "bank" });
+      expect(hashes.has(legacyHash)).toBe(true);
+      const records = await findExistingAuthoritativeRecordsInDb({
+        householdId, accountId, sourceNamespace: "bank", authoritativeIds: ["LEGACY-NULL", "LEGACY-SPACE", "OTHER-SCOPE"],
+      });
+
+      expect(records.get(scopedImportKey("", "", "LEGACY-NULL"))?.transaction.amountMinor).toBe(100n);
+      expect(records.get(scopedImportKey("", "", "LEGACY-SPACE"))?.transaction.amountMinor).toBe(200n);
+      expect(records.has(scopedImportKey("bank", "", "OTHER-SCOPE"))).toBe(false);
+    },
+  );
+
+  it.runIf(isPostgresAvailable)(
     "deduplicates authoritative transactions across reordered and overlapping files while linking every import observation",
     async () => {
       const db = getDb();
@@ -494,15 +561,15 @@ describe("PostgreSQL statement import access integration tests", () => {
         authoritativeIds: ["TX-002", "TX-003", "TX-001"],
       });
 
-      expect(existingAuthRecords.has("TX-001")).toBe(true);
-      expect(existingAuthRecords.get("TX-001")?.transaction.id).toBe(tx1Id);
-      expect(existingAuthRecords.get("TX-001")?.importRow?.id).toBe(batch1Rows[0]?.id);
+      expect(existingAuthRecords.has(scopedImportKey(namespace, sourceAcc, "TX-001"))).toBe(true);
+      expect(existingAuthRecords.get(scopedImportKey(namespace, sourceAcc, "TX-001"))?.transaction.id).toBe(tx1Id);
+      expect(existingAuthRecords.get(scopedImportKey(namespace, sourceAcc, "TX-001"))?.importRow?.id).toBe(batch1Rows[0]?.id);
 
-      expect(existingAuthRecords.has("TX-002")).toBe(true);
-      expect(existingAuthRecords.get("TX-002")?.transaction.id).toBe(tx2Id);
-      expect(existingAuthRecords.get("TX-002")?.importRow?.id).toBe(batch1Rows[1]?.id);
+      expect(existingAuthRecords.has(scopedImportKey(namespace, sourceAcc, "TX-002"))).toBe(true);
+      expect(existingAuthRecords.get(scopedImportKey(namespace, sourceAcc, "TX-002"))?.transaction.id).toBe(tx2Id);
+      expect(existingAuthRecords.get(scopedImportKey(namespace, sourceAcc, "TX-002"))?.importRow?.id).toBe(batch1Rows[1]?.id);
 
-      expect(existingAuthRecords.has("TX-003")).toBe(false);
+      expect(existingAuthRecords.has(scopedImportKey(namespace, sourceAcc, "TX-003"))).toBe(false);
 
       const dedupeHash3 = computeRowDedupeHash({
         accountId,
@@ -758,10 +825,60 @@ describe("PostgreSQL statement import access integration tests", () => {
         fallbackIdentifiers: [fallbackId],
       });
 
-      const occurrences = existingRecords.get(fallbackId);
+      const occurrences = existingRecords.get(scopedImportKey("generic_csv", null, fallbackId));
       expect(occurrences?.length).toBe(2);
       expect(occurrences?.[0]?.occurrenceIndex).toBe(0);
       expect(occurrences?.[1]?.occurrenceIndex).toBe(1);
+    },
+  );
+
+  it.runIf(isPostgresAvailable)(
+    "matches blank legacy namespace and account values while excluding another scoped source",
+    async () => {
+      const db = getDb();
+      const householdId = crypto.randomUUID();
+      const accountId = crypto.randomUUID();
+      await db.insert(households).values({ id: householdId, name: "Fallback Scope Household", defaultCurrency: "PLN" });
+      await db.insert(accounts).values({ id: accountId, householdId, name: "Fallback Scope Account", type: "checking", currency: "PLN" });
+      const fallbackIdentifier = "fallback-scope-regression";
+      const legacyValues = [
+        { sourceNamespace: null, sourceAccountId: null },
+        { sourceNamespace: "", sourceAccountId: "" },
+        { sourceNamespace: "  ", sourceAccountId: " \\t" },
+        { sourceNamespace: null, sourceAccountId: "legacy-account" },
+      ];
+      const rows = [
+        ...legacyValues,
+        { sourceNamespace: "bank", sourceAccountId: "other-account" },
+      ].map((scope, rowIndex) => ({
+        batchId: "" as any,
+        householdId,
+        accountId,
+        rowIndex,
+        ...(scope.sourceNamespace === null ? {} : { sourceNamespace: scope.sourceNamespace }),
+        sourceAccountId: scope.sourceAccountId,
+        fallbackIdentifier,
+        occurrenceIndex: rowIndex,
+        identityType: "fallback" as const,
+        dedupeHash: `fallback-scope-hash-${rowIndex}`,
+        status: "imported" as const,
+        rawRowContent: "legacy",
+      }));
+      await createStatementImportBatchInDb({
+        batch: { householdId, accountId, sourceFilename: "legacy.csv", fileHash: "fallback-scope-file", fileSizeBytes: 1, parserVersion: "1", mappingConfig: {} as any, status: "committed", totalRowCount: rows.length, validRowCount: rows.length, invalidRowCount: 0 },
+        rows,
+      });
+
+      const records = await findExistingFallbackRecordsInDb({
+        householdId,
+        accountId,
+        fallbackIdentifiers: [fallbackIdentifier],
+        sourceNamespace: "bank",
+        sourceAccountIds: ["incoming-account"],
+      });
+
+      expect(records.get(scopedImportKey("", "", fallbackIdentifier))?.map((record) => record.occurrenceIndex)).toEqual([0, 1, 2, 3]);
+      expect(records.has(scopedImportKey("bank", "other-account", fallbackIdentifier))).toBe(false);
     },
   );
 

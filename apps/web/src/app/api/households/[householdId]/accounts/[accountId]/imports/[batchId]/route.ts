@@ -13,11 +13,12 @@ type RouteContext = {
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
-    const { householdId, batchId } = await context.params;
+    const { householdId, accountId, batchId } = await context.params;
     const authContext = await requireHouseholdAccess(householdId);
 
     const result = await getStatementImportBatchDetails({
       context: authContext,
+      accountId,
       batchId,
     });
 

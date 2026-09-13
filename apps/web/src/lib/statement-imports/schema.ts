@@ -7,7 +7,8 @@ import {
 } from "@nodvis/finance-domain";
 
 export const statementImportMappingConfigSchema = z.object({
-  dateColumn: z.string().min(1),
+  dateColumn: z.string().default(""),
+  dateFallbackColumn: z.string().optional(),
   dateFormat: z.enum(SUPPORTED_DATE_FORMATS).default("auto"),
   timezone: z.string().default("UTC"),
   amountMode: z.enum(AMOUNT_MAPPING_MODES).default("signed"),
@@ -18,7 +19,7 @@ export const statementImportMappingConfigSchema = z.object({
   currencyMode: z.enum(CURRENCY_MAPPING_MODES).default("account"),
   currencyColumn: z.string().optional(),
   fixedCurrency: z.string().optional(),
-  descriptionColumn: z.string().min(1),
+  descriptionColumn: z.string().default(""),
   sourceRowIdentityColumn: z.string().optional(),
   authoritativeIdColumn: z.string().optional(),
   sourceNamespace: z.string().optional(),
@@ -28,6 +29,8 @@ export const statementImportMappingConfigSchema = z.object({
   hasHeader: z.boolean().default(true),
   headerRowIndex: z.number().int().min(0).default(0),
   skipLeadingRows: z.number().int().min(0).default(0),
+  encoding: z.enum(["utf-8", "windows-1250", "iso-8859-2", "ascii"]).optional(),
+  headerSignature: z.string().regex(/^[a-f0-9]{64}$/).optional(),
 });
 
 export type StatementImportMappingConfigInput = z.infer<

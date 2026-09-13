@@ -3,7 +3,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import type { SerializedHouseholdAccount } from "@/lib/accounts/serialization";
 import type { StatementImportProfileDto } from "@/lib/statement-imports/service";
-import { ImportView } from "./ImportView";
+import {
+  getImportRowStatusKey,
+  isImportRowSelectable,
+  markAutoCommittedRows,
+  ImportView,
+  buildImportMappingConfig,
+} from "./ImportView";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -22,6 +28,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("next-intl", () => ({
+  useLocale: () => "pl",
   useTranslations:
     (ns: string) =>
     (key: string, params?: Record<string, unknown>) => {
@@ -33,6 +40,140 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("ImportView Component", () => {
+  it.each([
+    ["authoritative", "AMBIGUOUS_AUTHORITATIVE_MATCH"],
+    ["fallback", "AMBIGUOUS_FALLBACK_MATCH"],
+    ["voided", "MATCHES_VOIDED_TRANSACTION"],
+  ])("keeps %s ambiguous rows out of selection and Pending UI", (_kind, errorCode) => {
+    const row = {
+      valid: true,
+      status: "pending",
+      possibleMatch: null,
+      ambiguityState: "ambiguous",
+      errorCode,
+    } as any;
+
+    expect(isImportRowSelectable(row)).toBe(false);
+    expect(getImportRowStatusKey(row)).toBe("review");
+  });
+
+  it("keeps unambiguous pending rows selectable", () => {
+    const row = {
+      valid: true,
+      status: "pending",
+      possibleMatch: null,
+      ambiguityState: "unambiguous",
+    } as any;
+
+    expect(isImportRowSelectable(row)).toBe(true);
+    expect(getImportRowStatusKey(row)).toBe("pending");
+  });
+
+  it("builds a separate debit/credit mapping and preserves its columns", () => {
+    expect(buildImportMappingConfig({
+      dateColumn: "Date",
+      descriptionColumn: "Description",
+      amountMode: "separate",
+      amountColumn: "",
+      debitColumn: "Debit",
+      creditColumn: "Credit",
+      inspect: {
+        suggestedMapping: { dateFallbackColumn: "Booking date" },
+        detectedDelimiter: ",",
+        detectedEncoding: "utf-8",
+        headerRowIndex: 0,
+        headerSignature: "a".repeat(64),
+      } as any,
+    })).toMatchObject({
+      amountMode: "separate",
+      debitColumn: "Debit",
+      creditColumn: "Credit",
+    });
+  });
+
+  it("preserves saved profile mapping semantics when building the request config", () => {
+    expect(buildImportMappingConfig({
+      dateColumn: "Booked",
+      dateFallbackColumn: "Value Date",
+      descriptionColumn: "Memo",
+      amountMode: "separate",
+      amountColumn: "",
+      debitColumn: "Out",
+      creditColumn: "In",
+      mappingConfig: {
+        dateFormat: "DD.MM.YYYY",
+        timezone: "Europe/Warsaw",
+        invertAmount: true,
+        currencyMode: "fixed",
+        fixedCurrency: "PLN",
+        currencyColumn: "Currency",
+        authoritativeIdColumn: "Bank ID",
+        sourceNamespace: "bank",
+        sourceAccountId: "acct",
+        sourceAccountIdColumn: "Account",
+        sourceRowIdentityColumn: "Row ID",
+      },
+      inspect: {
+        suggestedMapping: {},
+        detectedDelimiter: ",",
+        detectedEncoding: "utf-8",
+        headerRowIndex: 0,
+        headerSignature: "a".repeat(64),
+      } as any,
+    })).toMatchObject({
+      dateFormat: "DD.MM.YYYY",
+      timezone: "Europe/Warsaw",
+      invertAmount: true,
+      currencyMode: "fixed",
+      fixedCurrency: "PLN",
+      currencyColumn: "Currency",
+      authoritativeIdColumn: "Bank ID",
+      sourceNamespace: "bank",
+      sourceAccountId: "acct",
+      sourceAccountIdColumn: "Account",
+      sourceRowIdentityColumn: "Row ID",
+    });
+  });
+
+  it("preserves the discovered source account column in custom mapping payloads", () => {
+    expect(buildImportMappingConfig({
+      dateColumn: "Date",
+      descriptionColumn: "Description",
+      amountMode: "signed",
+      amountColumn: "Amount",
+      debitColumn: "",
+      creditColumn: "",
+      inspect: {
+        suggestedMapping: { sourceAccountIdColumn: "Account" },
+        detectedDelimiter: ",",
+        detectedEncoding: "utf-8",
+        headerRowIndex: 0,
+        headerSignature: "a".repeat(64),
+      } as any,
+    })).toMatchObject({ sourceAccountIdColumn: "Account" });
+  });
+
+  it("does not allow auto-committed rows to be selected again", () => {
+    const result = markAutoCommittedRows({
+      batchId: "batch-1",
+      totalRowCount: 2,
+      validRowCount: 2,
+      invalidRowCount: 0,
+      duplicateRowCount: 0,
+      safeToCommitCount: 1,
+      attentionRowCount: 1,
+      autoCommitted: { batchId: "batch-1", importedCount: 1, skippedCount: 0, committedTransactionIds: ["tx-1"] },
+      rows: [
+        { rowIndex: 0, valid: true, status: "pending", selected: true, ambiguityState: "unambiguous" },
+        { rowIndex: 1, valid: true, status: "pending", selected: false, ambiguityState: "ambiguous" },
+      ],
+    });
+
+    expect(result.rows[0]).toMatchObject({ status: "imported", selected: false });
+    expect(result.rows[1]).toMatchObject({ status: "pending", selected: false });
+    expect(isImportRowSelectable(result.rows[0]!)).toBe(false);
+  });
+
   const mockAccounts: SerializedHouseholdAccount[] = [
     {
       id: "acc-1",

@@ -4,6 +4,7 @@ import {
   AmbiguousImportRowCommitError,
   DuplicateImportRowError,
   DuplicateStatementImportProfileNameError,
+  StatementImportProfileScopeConflictError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
   StatementImportProfileNotFoundError,
@@ -34,9 +35,16 @@ import {
   decodeCsvBuffer,
   detectCsvDelimiter,
   detectCsvEncoding,
+  discoverCsvHeader,
+  computeCsvHeaderSignature,
+  encodeImportIdentityParts,
+  ensureUniqueCsvHeaders,
   getCurrencyFractionDigits,
   normalizeImportRow,
   parseCsvText,
+  parseImportAmount,
+  parseImportDate,
+  validateStatementImportProfileInput,
   type CsvDelimiter,
   type CsvEncoding,
   type PossibleManualMatch,
@@ -52,6 +60,7 @@ export {
   AmbiguousImportRowCommitError,
   DuplicateImportRowError,
   DuplicateStatementImportProfileNameError,
+  StatementImportProfileScopeConflictError,
   ImportBatchAlreadyCommittedError,
   ImportBatchNotFoundError,
   StatementImportProfileNotFoundError,
@@ -71,6 +80,14 @@ export class EmptyCsvError extends Error {
   }
 }
 
+export class ImportMappingValidationError extends Error {
+  readonly code = "IMPORT_MAPPING_INVALID";
+  constructor(message = "CSV mapping is incomplete or does not match sample values") {
+    super(message);
+    this.name = "ImportMappingValidationError";
+  }
+}
+
 export type CsvInspectionResult = Readonly<{
   headers: string[];
   sampleRows: string[][];
@@ -78,6 +95,10 @@ export type CsvInspectionResult = Readonly<{
   detectedEncoding: CsvEncoding;
   totalRowCount: number;
   fileHash: string;
+  headerRowIndex: number;
+  headerSignature: string;
+  suggestedMapping: Record<string, unknown>;
+  mappingConfidence: "high" | "medium" | "low";
 }>;
 
 export type StatementImportPreviewResult = Readonly<{
@@ -104,7 +125,27 @@ export type CommitStatementImportResult = Readonly<{
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB bounded upload limit
 const MAX_ROWS = 5000;
 
-function formatImportAmount(amountMinor: bigint, currency: string): string {
+function normalizeSourceAccountId(sourceAccountId: string | null | undefined): string | null {
+  return sourceAccountId?.trim() || null;
+}
+
+function normalizeSourceNamespace(sourceNamespace: string | null | undefined): string {
+  return sourceNamespace?.trim() || "";
+}
+
+function dedupScopeKey(sourceNamespace: string | null | undefined, sourceAccountId: string | null | undefined, identity: string): string {
+  return encodeImportIdentityParts([
+    normalizeSourceNamespace(sourceNamespace),
+    normalizeSourceAccountId(sourceAccountId) ?? "",
+    identity,
+  ]);
+}
+
+function isLegacyCompatibleScope(sourceNamespace: string, sourceAccountId: string | null): boolean {
+  return sourceNamespace === "generic_csv" && sourceAccountId === null;
+}
+
+export function formatImportAmount(amountMinor: bigint, currency: string, locale = "en-US"): string {
   const fractionDigits = getCurrencyFractionDigits(currency);
   const negative = amountMinor < 0n;
   const absolute = negative ? -amountMinor : amountMinor;
@@ -113,7 +154,21 @@ function formatImportAmount(amountMinor: bigint, currency: string): string {
   const fraction = fractionDigits > 0
     ? (absolute % divisor).toString().padStart(fractionDigits, "0")
     : "";
-  return `${negative ? "-" : ""}${whole.toString()}${fractionDigits > 0 ? `.${fraction}` : ""} ${currency}`;
+  const formatter = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+  const subUnitNegative = negative && whole === 0n;
+  const parts = formatter.formatToParts(subUnitNegative ? -1n : negative ? -whole : whole);
+  return parts
+    .map((part) => {
+      if (part.type === "fraction") return fraction;
+      if (subUnitNegative && part.type === "integer") return "0";
+      return part.value;
+    })
+    .join("");
 }
 
 export async function inspectCsvFile(params: {
@@ -150,16 +205,21 @@ export async function inspectCsvFile(params: {
   }
 
   const fileHash = computeFileSha256(fileBytes);
-  const headers = parsed[0] ?? [];
-  const sampleRows = parsed.slice(1, 4);
+  const discovery = discoverCsvHeader(text, detectedDelimiter);
+  const headers = discovery.headers;
+  const sampleRows = parsed.slice(discovery.headerRowIndex + 1, discovery.headerRowIndex + 4);
 
   return {
     headers,
     sampleRows,
     detectedDelimiter,
     detectedEncoding,
-    totalRowCount: parsed.length - 1,
+    totalRowCount: Math.max(0, parsed.length - discovery.headerRowIndex - 1),
     fileHash,
+    headerRowIndex: discovery.headerRowIndex,
+    headerSignature: discovery.headerSignature,
+    suggestedMapping: discovery.suggestedMapping,
+    mappingConfidence: discovery.confidence,
   };
 }
 
@@ -170,8 +230,9 @@ export async function parseAndPreviewStatementImport(params: {
   fileBytes: Uint8Array;
   mapping: StatementImportMappingConfig;
   autoCommitSafe?: boolean;
+  locale?: string;
 }): Promise<StatementImportPreviewResult> {
-  const { context, accountId, sourceFilename, fileBytes, mapping, autoCommitSafe } = params;
+  const { context, accountId, sourceFilename, fileBytes, mapping, autoCommitSafe, locale = "en-US" } = params;
 
   if (fileBytes.length === 0) {
     throw new EmptyCsvError();
@@ -189,7 +250,7 @@ export async function parseAndPreviewStatementImport(params: {
   }
 
   const fileHash = computeFileSha256(fileBytes);
-  const decodedText = decodeCsvBuffer(fileBytes);
+  const decodedText = decodeCsvBuffer(fileBytes, mapping.encoding);
   const rawRows = parseCsvText(decodedText, {
     delimiter: mapping.delimiter,
     maxRows: MAX_ROWS,
@@ -200,10 +261,31 @@ export async function parseAndPreviewStatementImport(params: {
   }
 
   const headerIdx = mapping.hasHeader ? mapping.headerRowIndex : -1;
-  const headers: string[] =
+  const headers: string[] = ensureUniqueCsvHeaders(
     headerIdx >= 0 && headerIdx < rawRows.length
       ? rawRows[headerIdx]!
-      : (rawRows[0]?.map((_, i) => `Col ${i + 1}`) ?? []);
+      : (rawRows[0]?.map((_, i) => `Col ${i + 1}`) ?? []),
+  );
+
+  if (!mapping.dateColumn || !mapping.descriptionColumn || (mapping.amountMode === "signed" ? !mapping.amountColumn : !mapping.debitColumn && !mapping.creditColumn)) {
+    throw new ImportMappingValidationError("Required date, amount, and description mappings are missing");
+  }
+  if (mapping.headerSignature && mapping.headerSignature !== computeCsvHeaderSignature(headers, mapping.delimiter)) {
+    throw new ImportMappingValidationError("Saved mapping does not match this CSV layout");
+  }
+  const columnIndex = (column: string | undefined) => column ? headers.indexOf(column) : -1;
+  const samples = rawRows.slice(Math.max(headerIdx + 1, mapping.skipLeadingRows), Math.max(headerIdx + 1, mapping.skipLeadingRows) + 3);
+  const dateSamples = samples
+    .map((row) => {
+      const primary = mapping.dateColumn ? row[columnIndex(mapping.dateColumn)] ?? "" : "";
+      return primary || (mapping.dateFallbackColumn ? row[columnIndex(mapping.dateFallbackColumn)] ?? "" : "");
+    })
+    .filter(Boolean);
+  const amountColumns = mapping.amountMode === "signed" ? [mapping.amountColumn] : [mapping.debitColumn, mapping.creditColumn];
+  const amountSamples = samples.flatMap((row) => amountColumns.map((column) => row[columnIndex(column)] ?? "")).filter(Boolean);
+  if (!dateSamples.length || !dateSamples.some((value) => parseImportDate(value, mapping.dateFormat).success) || !amountSamples.length || !amountSamples.some((value) => parseImportAmount(value, account.currency).success)) {
+    throw new ImportMappingValidationError("Mapped date or amount columns do not match sample values");
+  }
 
   const dataStartIndex = Math.max(
     mapping.hasHeader ? headerIdx + 1 : 0,
@@ -231,6 +313,7 @@ export async function parseAndPreviewStatementImport(params: {
 
   const sourceNamespace = mapping.sourceNamespace?.trim() || "generic_csv";
   const sourceAccountId = mapping.sourceAccountId?.trim() || null;
+  const sourceAccountIds = [...new Set([sourceAccountId, ...parsedRows.map((row) => row.normalized?.sourceAccountId)].filter((value): value is string => Boolean(value)))];
 
   // 1. Authoritative IDs lookup
   const authIds = parsedRows
@@ -244,6 +327,7 @@ export async function parseAndPreviewStatementImport(params: {
           accountId,
           sourceNamespace,
           sourceAccountId,
+          sourceAccountIds,
           authoritativeIds: authIds,
         })
       : new Map();
@@ -259,6 +343,8 @@ export async function parseAndPreviewStatementImport(params: {
           householdId: context.householdId,
           accountId,
           fallbackIdentifiers: fallbackIds,
+          sourceNamespace,
+          sourceAccountIds,
         })
       : new Map();
 
@@ -270,6 +356,7 @@ export async function parseAndPreviewStatementImport(params: {
   const existingHashes = await findExistingImportDedupeHashes(
     accountId,
     validDedupeHashes,
+    { sourceNamespace, sourceAccountIds },
   );
 
   // 4. Query possible manual matches
@@ -312,33 +399,69 @@ export async function parseAndPreviewStatementImport(params: {
 
     if (pr.valid && norm) {
       if (norm.identityType === "authoritative" && norm.authoritativeId) {
-        const existingAuth = authoritativeRecords.get(norm.authoritativeId);
-        if (existingAuth) {
-          canonicalTransactionId = existingAuth.transaction.id;
-          matchedImportRowId = existingAuth.importRow?.id ?? null;
+        const normalizedSourceAccountId = normalizeSourceAccountId(norm.sourceAccountId);
+        const authoritativeKey = dedupScopeKey(norm.sourceNamespace, norm.sourceAccountId, norm.authoritativeId);
+        const scopedAuth = authoritativeRecords.get(authoritativeKey);
+        const legacyAuth = authoritativeRecords.get(dedupScopeKey("", null, norm.authoritativeId));
+        const legacyIsCrossScope = Boolean(legacyAuth && !isLegacyCompatibleScope(norm.sourceNamespace, normalizedSourceAccountId));
+        const existingAuth = legacyIsCrossScope ? undefined : (scopedAuth ?? legacyAuth);
+        const authoritativeMatchIsAmbiguous = Boolean(
+          scopedAuth?.ambiguityState === "ambiguous"
+          || legacyAuth?.ambiguityState === "ambiguous"
+          || (scopedAuth && legacyAuth)
+          || legacyIsCrossScope,
+        );
+        if (authoritativeMatchIsAmbiguous) {
+          ambiguityState = "ambiguous";
+          errorCode = "AMBIGUOUS_AUTHORITATIVE_MATCH";
+          errorMessage = "Multiple existing transactions match this authoritative ID; review required";
+        } else if (existingAuth) {
           if (existingAuth.transaction.voidedAt !== null) {
+            canonicalTransactionId = existingAuth.transaction.id;
+            matchedImportRowId = existingAuth.importRow?.id ?? null;
             ambiguityState = "ambiguous";
             errorCode = "MATCHES_VOIDED_TRANSACTION";
             errorMessage = "Matches a voided transaction in this account";
           } else {
+            canonicalTransactionId = existingAuth.transaction.id;
+            matchedImportRowId = existingAuth.importRow?.id ?? null;
             status = "duplicate";
             errorCode = "AUTHORITATIVE_DUPLICATE";
             errorMessage = "Authoritative transaction already imported for this account";
           }
-        } else if (seenAuthoritativeInFile.has(norm.authoritativeId)) {
+        } else if (seenAuthoritativeInFile.has(authoritativeKey)) {
           status = "duplicate";
           errorCode = "DUPLICATE_AUTHORITATIVE_ID_IN_FILE";
           errorMessage = "Duplicate authoritative transaction ID within this file";
         } else {
-          seenAuthoritativeInFile.add(norm.authoritativeId);
+          seenAuthoritativeInFile.add(authoritativeKey);
         }
       } else {
-        const existingFallbackList = fallbackRecords.get(norm.fallbackIdentifier) ?? [];
+        const scopeKey = dedupScopeKey(norm.sourceNamespace, norm.sourceAccountId, norm.fallbackIdentifier);
+        const legacyFallbackList = fallbackRecords.get(dedupScopeKey("", null, norm.fallbackIdentifier)) ?? [];
+        const crossScopeLegacyFallbackList = !isLegacyCompatibleScope(norm.sourceNamespace, normalizeSourceAccountId(norm.sourceAccountId))
+          ? legacyFallbackList
+          : [];
+        const existingFallbackList = [
+          ...(fallbackRecords.get(scopeKey) ?? []),
+          ...(isLegacyCompatibleScope(norm.sourceNamespace, normalizeSourceAccountId(norm.sourceAccountId)) ? legacyFallbackList : []),
+        ].filter((record, index, records) =>
+          records.findIndex((candidate) => candidate.importRowId === record.importRowId) === index,
+        );
         const activeDbOccurrences = existingFallbackList.filter((r) => !r.voidedAt);
         const voidedDbOccurrences = existingFallbackList.filter((r) => r.voidedAt !== null);
+        const matchingActiveOccurrences = activeDbOccurrences.filter((r) => r.occurrenceIndex === norm.occurrenceIndex);
+        const matched = matchingActiveOccurrences[0];
 
-        if (norm.occurrenceIndex < activeDbOccurrences.length) {
-          const matched = activeDbOccurrences[norm.occurrenceIndex]!;
+        if (crossScopeLegacyFallbackList.length > 0) {
+          ambiguityState = "ambiguous";
+          errorCode = "AMBIGUOUS_FALLBACK_MATCH";
+          errorMessage = "An existing legacy import cannot be safely scoped; review required";
+        } else if (matchingActiveOccurrences.length > 1) {
+          ambiguityState = "ambiguous";
+          errorCode = "AMBIGUOUS_FALLBACK_MATCH";
+          errorMessage = "Multiple existing transactions match this fallback row; review required";
+        } else if (matched) {
           status = "duplicate";
           errorCode = "FALLBACK_DUPLICATE";
           errorMessage = "Already imported for this account (fallback match)";
@@ -413,13 +536,13 @@ export async function parseAndPreviewStatementImport(params: {
       valid: pr.valid && !isDuplicate,
       status,
       errorCode,
-      errorMessage,
+      errorMessage: undefined,
       date: norm ? norm.occurredOn.toISOString() : null,
       kind: norm ? norm.kind : null,
       amountMinor: norm ? norm.amountMinor.toString() : null,
       currency: norm ? norm.currency : null,
       formattedAmount: norm
-        ? formatImportAmount(norm.amountMinor, norm.currency)
+        ? formatImportAmount(norm.amountMinor, norm.currency, locale)
         : null,
       description: norm ? norm.description : null,
       rawRowContent: pr.rawRowContent,
@@ -519,6 +642,7 @@ export async function commitStatementImport(params: {
 export async function getStatementImportBatchDetails(params: {
   context: AuthorizedHouseholdContext;
   batchId: string;
+  accountId: string;
 }): Promise<{
   batch: StatementImportBatchRow;
   rows: StatementImportRowRecord[];
@@ -526,6 +650,7 @@ export async function getStatementImportBatchDetails(params: {
   const batch = await findStatementImportBatchById(
     params.context.householdId,
     params.batchId,
+    params.accountId,
   );
   if (!batch) {
     throw new ImportBatchNotFoundError(
@@ -536,6 +661,7 @@ export async function getStatementImportBatchDetails(params: {
   const rows = await listStatementImportRowsByBatch(
     params.context.householdId,
     params.batchId,
+    params.accountId,
   );
 
   return { batch, rows };
@@ -600,6 +726,11 @@ export async function createImportProfile(params: {
   const { context, name, mappingConfig, autoProcessSafe, isDefault, accountId } =
     params;
 
+  const profileValidation = validateStatementImportProfileInput({ name, mappingConfig });
+  if (!profileValidation.valid) {
+    throw new ImportMappingValidationError(profileValidation.errors.join("; "));
+  }
+
   if (accountId) {
     const account = await findAccountInHousehold(context.householdId, accountId);
     if (!account) {
@@ -647,10 +778,12 @@ export async function listImportProfiles(params: {
 export async function getImportProfile(params: {
   context: AuthorizedHouseholdContext;
   profileId: string;
+  accountId?: string;
 }): Promise<StatementImportProfileDto> {
   const row = await findStatementImportProfileById(
     params.context.householdId,
     params.profileId,
+    params.accountId,
   );
   if (!row) {
     throw new StatementImportProfileNotFoundError();
@@ -661,6 +794,7 @@ export async function getImportProfile(params: {
 export async function updateImportProfile(params: {
   context: AuthorizedHouseholdContext;
   profileId: string;
+  routeAccountId?: string;
   name?: string | undefined;
   mappingConfig?: StatementImportMappingConfig | undefined;
   autoProcessSafe?: boolean | undefined;
@@ -670,12 +804,23 @@ export async function updateImportProfile(params: {
   const {
     context,
     profileId,
+    routeAccountId,
     name,
     mappingConfig,
     autoProcessSafe,
     isDefault,
     accountId,
   } = params;
+
+  if (mappingConfig) {
+    const profileValidation = validateStatementImportProfileInput({
+      name: name ?? "Existing profile",
+      mappingConfig,
+    });
+    if (!profileValidation.valid) {
+      throw new ImportMappingValidationError(profileValidation.errors.join("; "));
+    }
+  }
 
   if (accountId) {
     const account = await findAccountInHousehold(context.householdId, accountId);
@@ -689,6 +834,7 @@ export async function updateImportProfile(params: {
   const row = await updateStatementImportProfileInDb({
     householdId: context.householdId,
     profileId,
+    ...(routeAccountId ? { routeAccountId } : {}),
     name,
     mappingConfig,
     autoProcessSafe,
@@ -702,10 +848,12 @@ export async function updateImportProfile(params: {
 export async function deleteImportProfile(params: {
   context: AuthorizedHouseholdContext;
   profileId: string;
+  accountId?: string;
 }): Promise<boolean> {
   const deleted = await deleteStatementImportProfileInDb(
     params.context.householdId,
     params.profileId,
+    params.accountId,
   );
   if (!deleted) {
     throw new StatementImportProfileNotFoundError();

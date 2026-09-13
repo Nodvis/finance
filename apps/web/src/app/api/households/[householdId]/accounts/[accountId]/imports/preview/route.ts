@@ -2,11 +2,18 @@ import { NextResponse } from "next/server";
 import { requireHouseholdAccess } from "@/lib/authorization/household";
 import { handleImportRouteError } from "@/lib/statement-imports/error-handler";
 import { statementImportMappingConfigSchema } from "@/lib/statement-imports/schema";
-import { parseAndPreviewStatementImport } from "@/lib/statement-imports/service";
+import {
+  ImportMappingValidationError,
+  parseAndPreviewStatementImport,
+} from "@/lib/statement-imports/service";
 
 type RouteContext = {
   params: Promise<{ householdId: string; accountId: string }>;
 };
+
+function validationError(code: "IMPORT_FILE_INVALID" | "IMPORT_MAPPING_INVALID") {
+  return NextResponse.json({ error: code, code }, { status: 400 });
+}
 
 export async function POST(request: Request, context: RouteContext) {
   try {
@@ -19,12 +26,21 @@ export async function POST(request: Request, context: RouteContext) {
     let fileBytes: Uint8Array;
     let mappingRaw: unknown;
     let autoCommitSafe = false;
+    let requestedLocale: string | null = null;
 
     if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
+      let formData: FormData;
+      try {
+        formData = await request.formData();
+      } catch {
+        return NextResponse.json(
+          { error: "MULTIPART_PARSE_INVALID", code: "MULTIPART_PARSE_INVALID" },
+          { status: 400 },
+        );
+      }
       const file = formData.get("file") as File | null;
       if (!file) {
-        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        return validationError("IMPORT_FILE_INVALID");
       }
       filename = file.name || "statement.csv";
       const arrayBuffer = await file.arrayBuffer();
@@ -32,20 +48,31 @@ export async function POST(request: Request, context: RouteContext) {
 
       const mappingStr = formData.get("mappingConfig");
       if (!mappingStr || typeof mappingStr !== "string") {
+        return validationError("IMPORT_MAPPING_INVALID");
+      }
+      try {
+        mappingRaw = JSON.parse(mappingStr);
+      } catch {
         return NextResponse.json(
-          { error: "mappingConfig is required" },
+          { error: "IMPORT_MAPPING_INVALID", code: "IMPORT_MAPPING_INVALID" },
           { status: 400 },
         );
       }
-      mappingRaw = JSON.parse(mappingStr);
       const autoVal = formData.get("autoCommitSafe") ?? formData.get("autoProcessSafe");
       if (autoVal === "true" || autoVal === "1") {
         autoCommitSafe = true;
       }
+      const localeValue = formData.get("locale");
+      if (typeof localeValue === "string") requestedLocale = localeValue;
     } else {
-      const body = await request.json();
-      if (!body) {
-        return NextResponse.json({ error: "Empty request body" }, { status: 400 });
+      let body: any;
+      try {
+        body = await request.json();
+      } catch {
+        throw new ImportMappingValidationError("Invalid JSON request body");
+      }
+      if (!body || typeof body !== "object") {
+        return validationError("IMPORT_FILE_INVALID");
       }
       filename = body.filename || "statement.csv";
       if (body.fileBase64) {
@@ -53,15 +80,13 @@ export async function POST(request: Request, context: RouteContext) {
       } else if (body.fileText) {
         fileBytes = new TextEncoder().encode(body.fileText);
       } else {
-        return NextResponse.json(
-          { error: "fileBase64 or fileText is required" },
-          { status: 400 },
-        );
+        return validationError("IMPORT_FILE_INVALID");
       }
       mappingRaw = body.mappingConfig;
       if (body.autoCommitSafe === true || body.autoProcessSafe === true) {
         autoCommitSafe = true;
       }
+      if (typeof body.locale === "string") requestedLocale = body.locale;
     }
 
     const mapping = statementImportMappingConfigSchema.parse(mappingRaw);
@@ -73,6 +98,9 @@ export async function POST(request: Request, context: RouteContext) {
       fileBytes,
       mapping,
       autoCommitSafe,
+      locale: requestedLocale?.toLowerCase().startsWith("pl")
+        ? "pl-PL"
+        : "en-US",
     });
 
     return NextResponse.json({ data: result });
