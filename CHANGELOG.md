@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] — Planning and invariant-safe financial allocations
+
+- Net Worth and Balance History preserve exact multi-currency observations and historical debt/account state.
+- Savings Goals and monthly Budgets support household-scoped progress and archived-budget replacement.
+- Split Transactions allocate one expense across categories while preserving one cash movement; Budgets and Analytics count allocations once.
+- Planning V1 provides deterministic stabilization, 50/30/20, Pay Yourself First, Debt Snowball, conservative Debt Avalanche and sinking-fund guidance from current household data.
+- Planning remains read-only guidance; persistent envelopes, rollover and available-to-assign ledgers are intentionally deferred.
+- PostgreSQL migrations remain additive and run before the application starts.
+
 ## [0.1.3] — Release polish and application identity
 
 - Official Nodvis Finance branding is integrated into the application shell and public authentication surfaces.

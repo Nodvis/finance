@@ -1,5 +1,18 @@
 # Upgrading
 
+## v0.1.3 → v0.2.0
+
+1. Back up the existing database with the v0.1.3 deployment.
+2. Keep the existing PostgreSQL volume; never use `down -v`.
+3. Set the Finance image to `ghcr.io/nodvis/finance:0.2.0`.
+4. Keep the existing PostgreSQL credentials, database name and user.
+5. Run `docker compose up -d`; startup applies additive migrations `0032`–`0036` before serving requests.
+6. Open Finance on port 3990 and verify login, a known household, account and transaction.
+7. Verify Net Worth/history, Goals, Budgets, Splits, Forecast and Planning.
+8. Open Settings and verify that the running version shows `v0.2.0`.
+
+Planning V1 is read-only deterministic guidance. Persistent envelope allocation, rollover and available-to-assign ledgers are not part of v0.2.0.
+
 ## v0.1.2 → v0.1.3
 
 1. Back up the existing database with the old deployment.

@@ -17,6 +17,10 @@ Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall is 
 - Upcoming payments and recurring bills
 - Debts and repayments
 - 7- and 30-day cash forecast
+- Net Worth and Balance History
+- Savings Goals and monthly Budgets
+- Split Transactions with split-aware category spending
+- Read-only deterministic Planning guidance
 - Polish and English interface
 
 ## Quick Start
@@ -45,7 +49,7 @@ That is the only normal startup command. PostgreSQL has no host port. Direct acc
 ```yaml
 services:
   finance:
-    image: ghcr.io/nodvis/finance:0.1.3
+    image: ghcr.io/nodvis/finance:0.2.0
     container_name: nodvis-finance
     ports:
       - "3990:3990"
@@ -117,8 +121,8 @@ For details and measurement methodology see [system requirements](docs/SYSTEM_RE
 If you installed only the Compose file, download the two helper scripts once. The normal direct deployment does not require copying the Docker host address into Compose; open `http://<docker-host>:3990` after startup.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.3/scripts/backup.sh
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.1.3/scripts/restore.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.0/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.0/scripts/restore.sh
 chmod +x backup.sh restore.sh
 ```
 
