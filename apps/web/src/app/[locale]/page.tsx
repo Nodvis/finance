@@ -12,6 +12,7 @@ import { getHouseholdNetWorthSummary } from "@/lib/net-worth/service";
 import { serializeNetWorthSummary } from "@/lib/net-worth/serialization";
 import { serializeTransaction } from "@/lib/transactions/serialization";
 import { listManualTransactions } from "@/lib/transactions/service";
+import { listHouseholdBudgets } from "@/lib/budgets/service";
 
 import { CashFlowSection } from "./components/CashFlowSection";
 import { ForecastSection } from "./components/ForecastSection";
@@ -27,6 +28,7 @@ import { SetupWizard } from "./components/SetupWizard";
 import { TransactionForms } from "./components/TransactionForms";
 import { TransactionList } from "./components/TransactionList";
 import { OverviewCharts } from "./components/OverviewCharts";
+import { MonthlyBudgetCard } from "./components/MonthlyBudgetCard";
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;
@@ -130,7 +132,7 @@ export default async function HomePage({
   // 5. User with active household context: load truthful overview and financial data
   const householdContext = householdStatus.activeContext;
 
-  const [accounts, categories, rawTransactions, overview, forecast, rawNetWorth] = await Promise.all([
+  const [accounts, categories, rawTransactions, overview, forecast, rawNetWorth, budgets] = await Promise.all([
     listAccountsByHousehold(householdContext.householdId, {
       includeArchived: false,
     }),
@@ -152,6 +154,10 @@ export default async function HomePage({
       horizonDays: 7,
     }),
     getHouseholdNetWorthSummary(householdContext),
+    listHouseholdBudgets(householdContext, {
+      month: overviewQuery.month ?? new Date().toISOString().slice(0, 7),
+      includeArchived: false,
+    }),
   ]);
 
   const serializedTransactions = rawTransactions.map(serializeTransaction);
@@ -191,6 +197,20 @@ export default async function HomePage({
           locale={locale}
         />
       ) : null}
+
+      <MonthlyBudgetCard
+        budgets={budgets}
+        locale={locale}
+        labels={{
+          title: t("monthlyBudget.title"),
+          month: t("monthlyBudget.month"),
+          empty: t("monthlyBudget.empty"),
+          viewAll: t("monthlyBudget.viewAll"),
+          spent: t("monthlyBudget.spent"),
+          limit: t("monthlyBudget.limit"),
+          over: t("monthlyBudget.over"),
+        }}
+      />
 
       <ForecastSection
         forecast={forecast}
