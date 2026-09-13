@@ -1,0 +1,17 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authorization/household", () => ({ requireHouseholdAccess: vi.fn() }));
+vi.mock("@/lib/budgets/service", () => ({ listHouseholdBudgets: vi.fn(), createHouseholdBudget: vi.fn(), updateHouseholdBudget: vi.fn(), archiveHouseholdBudget: vi.fn() }));
+import { requireHouseholdAccess } from "@/lib/authorization/household";
+import { archiveHouseholdBudget, createHouseholdBudget, listHouseholdBudgets, updateHouseholdBudget } from "@/lib/budgets/service";
+import { GET, POST } from "./route";
+import { DELETE, PUT } from "./[budgetId]/route";
+const householdId = "018f47a0-7762-7b9c-8d17-27f2f79e59a1";
+const budgetId = "018f47a0-7762-7b9c-8d17-27f2f79e59a2";
+const access = { authUserId: "user", householdId, personId: "person" };
+const budget = { id: budgetId, householdId, categoryId: "018f47a0-7762-7b9c-8d17-27f2f79e59a3", categoryName: "Food", month: "2026-09", limitAmountMinor: "9007199254740993", spentAmountMinor: "100", remainingAmountMinor: "9007199254740893", isOverBudget: false, currency: "PLN", archivedAt: null, version: 1 };
+describe("budget API routes", () => { beforeEach(() => { vi.clearAllMocks(); vi.mocked(requireHouseholdAccess).mockResolvedValue(access as never); });
+  it("scopes list and preserves exact bigint strings", async () => { vi.mocked(listHouseholdBudgets).mockResolvedValue([budget]); const response = await GET(new Request(`http://localhost/api/households/${householdId}/budgets?month=2026-09`), { params: Promise.resolve({ householdId }) }); expect(response.status).toBe(200); expect((await response.json()).data[0].limitAmountMinor).toBe("9007199254740993"); expect(listHouseholdBudgets).toHaveBeenCalledWith(access, { month: "2026-09", includeArchived: false }); });
+  it("creates and updates through the authorized household context", async () => { vi.mocked(createHouseholdBudget).mockResolvedValue(budget); vi.mocked(updateHouseholdBudget).mockResolvedValue({ ...budget, version: 2 }); const post = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ categoryId: budget.categoryId, month: "2026-09", limitAmountMinor: "9007199254740993", currency: "PLN" }) }), { params: Promise.resolve({ householdId }) }); expect(post.status).toBe(201); const put = await PUT(new Request("http://localhost", { method: "PUT", body: JSON.stringify({ version: 1, limitAmountMinor: "9007199254740993" }) }), { params: Promise.resolve({ householdId, budgetId }) }); expect(put.status).toBe(200); expect(updateHouseholdBudget).toHaveBeenCalledWith(access, budgetId, { version: 1, limitAmountMinor: "9007199254740993" }); });
+  it("archives with the optimistic version and leaves history to the database", async () => { const response = await DELETE(new Request("http://localhost", { method: "DELETE", body: JSON.stringify({ version: 1 }) }), { params: Promise.resolve({ householdId, budgetId }) }); expect(response.status).toBe(204); expect(archiveHouseholdBudget).toHaveBeenCalledWith(access, budgetId, 1); });
+});

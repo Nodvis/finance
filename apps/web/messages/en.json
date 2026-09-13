@@ -58,6 +58,7 @@
       "upcoming": "Upcoming",
       "debt": "Debt"
     },
+    "monthlyBudget": { "title": "Monthly budget", "month": "This month", "empty": "No monthly budgets recorded yet.", "viewAll": "Manage budgets", "spent": "Spent", "limit": "Limit", "over": "Over budget" },
     "next": {
       "title": "Next stage",
       "description": "Household, accounts, cash, balances, categories, manual transactions and transfers — without double-counting money movements or collapsing available cash into debt."
@@ -1144,6 +1145,7 @@
       "success": "Balance observation recorded successfully"
     }
   },
+  "Budgets": { "eyebrow": "Monthly plan", "title": "Budgets", "description": "Plan category limits and compare them with recorded spending.", "explain": "How is this calculated?", "explanation": "Spent is the exact sum of non-voided expense transactions in this category, currency and month. Remaining is the limit minus spent; a negative value means over budget.", "previous": "Previous month", "next": "Next month", "add": "Add budget", "category": "Category", "limit": "Monthly limit", "currency": "Currency", "save": "Save budget", "saveChanges": "Save changes", "cancel": "Cancel", "edit": "Edit", "archive": "Archive", "archiving": "Archiving…", "saving": "Saving…", "archiveConfirm": "Archive this budget? Its history will remain available.", "empty": "No budgets for this month yet.", "spent": "Spent", "remaining": "Remaining", "over": "Over budget", "invalid": "Please check the budget details." },
   "Goals": {
     "eyebrow": "Planning",
     "title": "Savings goals",

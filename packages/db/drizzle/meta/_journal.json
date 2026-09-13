@@ -225,6 +225,13 @@
       "when": 1789253831507,
       "tag": "0031_luxuriant_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789286568157,
+      "tag": "0032_chief_peter_parker",
+      "breakpoints": true
     }
   ]
 }

@@ -58,6 +58,7 @@
       "upcoming": "Do zapłaty",
       "debt": "Zadłużenie"
     },
+    "monthlyBudget": { "title": "Budżet miesięczny", "month": "Bieżący miesiąc", "empty": "Brak zapisanych budżetów miesięcznych.", "viewAll": "Zarządzaj budżetami", "spent": "Wydano", "limit": "Limit", "over": "Przekroczono budżet" },
     "next": {
       "title": "Następny etap",
       "description": "Gospodarstwo domowe, konta, gotówka, salda, kategorie, ręczne transakcje i transfery — bez sztucznego dublowania przepływów i bez mieszania dostępnej gotówki z zadłużeniem."
@@ -1121,6 +1122,7 @@
       "success": "Obserwacja salda została pomyślnie zarejestrowana"
     }
   },
+  "Budgets": { "eyebrow": "Plan miesięczny", "title": "Budżety", "description": "Ustal limity kategorii i porównuj je z zapisanymi wydatkami.", "explain": "Jak to obliczamy?", "explanation": "Wydatki to dokładna suma nieunieważnionych transakcji wydatkowych w tej kategorii, walucie i miesiącu. Pozostało to limit pomniejszony o wydatki; wartość ujemna oznacza przekroczenie budżetu.", "previous": "Poprzedni miesiąc", "next": "Następny miesiąc", "add": "Dodaj budżet", "category": "Kategoria", "limit": "Limit miesięczny", "currency": "Waluta", "save": "Zapisz budżet", "saveChanges": "Zapisz zmiany", "cancel": "Anuluj", "edit": "Edytuj", "archive": "Archiwizuj", "archiving": "Archiwizowanie…", "saving": "Zapisywanie…", "archiveConfirm": "Zarchiwizować ten budżet? Historia pozostanie dostępna.", "empty": "Brak budżetów na ten miesiąc.", "spent": "Wydano", "remaining": "Pozostało", "over": "Przekroczono budżet", "invalid": "Sprawdź dane budżetu." },
   "Goals": {
     "eyebrow": "Planowanie",
     "title": "Cele oszczędnościowe",

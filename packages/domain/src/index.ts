@@ -37,6 +37,7 @@ export {
   obligationId,
   personId,
   savingsGoalId,
+  budgetId,
   statementImportProfileId,
   transactionId,
 } from "./identity";
@@ -52,6 +53,7 @@ export type {
   ObligationId,
   PersonId,
   SavingsGoalId,
+  BudgetId,
   StatementImportProfileId,
   TransactionId,
 } from "./identity";
@@ -375,3 +377,5 @@ export type {
   SavingsGoalStatus,
   UpdateSavingsGoalInput,
 } from "./savings-goal";
+export { archiveBudget, calculateBudget, createBudget, updateBudget, validateBudgetMonth } from "./budget";
+export type { Budget, BudgetCalculation } from "./budget";

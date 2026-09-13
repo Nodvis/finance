@@ -13,6 +13,11 @@ vi.mock("next-intl/server", () => ({
   }),
 }));
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: () => null,
+  redirect: vi.fn(),
+}));
+
 vi.mock("@nodvis/finance-db", () => ({
   isInstanceInitialized: vi.fn().mockResolvedValue(true),
   listAccountsByHousehold: vi.fn(),
@@ -52,6 +57,10 @@ vi.mock("@/lib/net-worth/service", () => ({
 
 vi.mock("@/lib/net-worth/serialization", () => ({
   serializeNetWorthSummary: vi.fn((s) => s),
+}));
+
+vi.mock("@/lib/budgets/service", () => ({
+  listHouseholdBudgets: vi.fn().mockResolvedValue([]),
 }));
 
 import { isInstanceInitialized, listAccountsByHousehold } from "@nodvis/finance-db";

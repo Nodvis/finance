@@ -221,6 +221,7 @@ export {
 export * from "./access/categorization-rules";
 export * from "./access/obligations";
 export * from "./access/savings-goals";
+export * from "./access/budgets";
 export {
   RECURRING_MATERIALIZATION_DAYS,
   RecurringObligationNotFoundError,
