@@ -52,7 +52,7 @@ export async function AppHeader() {
           ) : null}
       </div>
     </header>
-    {session ? <AppNav labels={{ home: tNav("home"), accounts: tNav("accounts"), transactions: tNav("transactions"), categories: tNav("categories"), netWorth: tNav("netWorth"), imports: tNav("imports"), transfers: tNav("transfers"), liabilities: tNav("liabilities"), upcoming: tNav("upcoming"), rules: tNav("rules"), recurring: tNav("recurring"), analytics: tNav("analytics"), forecast: tNav("forecast"), plan: tNav("plan"), more: tNav("more"), closeMore: tNav("closeMore"), primary: tNav("primary"), planning: tNav("planning"), settings: tNav("settings") }} ariaLabel={tAccess("mainNavigation")} /> : null}
+    {session ? <AppNav labels={{ home: tNav("home"), accounts: tNav("accounts"), transactions: tNav("transactions"), categories: tNav("categories"), netWorth: tNav("netWorth"), imports: tNav("imports"), transfers: tNav("transfers"), liabilities: tNav("liabilities"), upcoming: tNav("upcoming"), budgets: tNav("budgets"), goals: tNav("goals"), rules: tNav("rules"), recurring: tNav("recurring"), analytics: tNav("analytics"), forecast: tNav("forecast"), plan: tNav("plan"), more: tNav("more"), closeMore: tNav("closeMore"), primary: tNav("primary"), planning: tNav("planning"), wealth: tNav("wealth"), organization: tNav("organization"), analysis: tNav("analysis") }} ariaLabel={tAccess("mainNavigation")} /> : null}
     </>
   );
 }

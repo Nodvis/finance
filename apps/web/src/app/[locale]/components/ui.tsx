@@ -1,15 +1,15 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
-type DashboardCardProps = {
+type DashboardCardProps = Omit<HTMLAttributes<HTMLElement>, "className"> & {
   children: ReactNode;
   className?: string;
   as?: "article" | "section";
 };
 
-export function DashboardCard({ children, className = "", as = "article" }: DashboardCardProps) {
+export function DashboardCard({ children, className = "", as = "article", ...props }: DashboardCardProps) {
   const Card = as;
   return (
-    <Card className={`finance-card ${className}`}>
+    <Card className={`finance-card ${className}`} {...props}>
       {children}
     </Card>
   );

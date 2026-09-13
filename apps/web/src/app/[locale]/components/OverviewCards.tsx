@@ -13,6 +13,7 @@ type OverviewCardsProps = {
 
 export async function OverviewCards({ overview, netWorth, locale }: OverviewCardsProps) {
   const t = await getTranslations("Overview");
+  const tHome = await getTranslations("HomePage");
   const tAccess = await getTranslations("Accessibility");
 
   const { availableCash } = overview;
@@ -22,7 +23,7 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
   return (
     <section
       aria-label={tAccess("financialSummary")}
-      className="grid gap-4 sm:grid-cols-3"
+      className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
     >
       {/* 1. Observed Available Cash Card */}
       <article className="flex flex-col justify-between finance-card p-5 transition-colors hover:border-[var(--finance-signal-dark)] dark:hover:border-stone-700/80">
@@ -202,6 +203,24 @@ export async function OverviewCards({ overview, netWorth, locale }: OverviewCard
               {t("debt.viewDetails")} →
             </Link>
           </div>
+        </div>
+      </article>
+
+      {/* 4. Monthly cash flow card — only shown when a real period exists */}
+      <article className="finance-card dashboard-kpi dashboard-kpi-accent flex flex-col justify-between p-5 transition-colors hover:border-[var(--finance-signal-dark)] dark:hover:border-stone-700/80">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-stone-400">{tHome("cards.monthly")}</p>
+          <span className="finance-icon-box" aria-hidden="true">↗</span>
+        </div>
+        <div className="mt-5">
+          {overview.cashFlow.byCurrency.length > 0 ? (
+            overview.cashFlow.byCurrency.map((currency) => (
+              <p key={currency.currency} className={`finance-metric ${BigInt(currency.netCashFlowMinor) >= 0n ? "text-[var(--finance-signal-dark)] dark:text-[var(--finance-signal)]" : "text-amber-700 dark:text-amber-300"}`}>
+                {BigInt(currency.netCashFlowMinor) > 0n ? "+" : ""}{formatAmountPresentation(currency.netCashFlowMinor, currency.currency, locale)}
+              </p>
+            ))
+          ) : <p className="finance-metric">—</p>}
+          <p className="mt-2 text-xs text-[var(--muted-foreground)]">{overview.cashFlow.byCurrency.length > 0 ? tHome("charts.net") : tHome("cards.noMonthly")}</p>
         </div>
       </article>
     </section>

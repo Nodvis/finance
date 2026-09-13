@@ -10,6 +10,7 @@
     "accounts": "Konta",
     "transactions": "Transakcje",
     "categories": "Kategorie",
+    "budgets": "Budżety",
     "netWorth": "Majątek netto",
     "imports": "Importy",
     "transfers": "Przelewy",
@@ -27,7 +28,9 @@
     "closeMore": "Zamknij menu",
     "primary": "Główne",
     "planning": "Planowanie",
-    "settings": "Przestrzeń"
+    "wealth": "Majątek",
+    "organization": "Organizacja",
+    "analysis": "Analiza"
   },
   "Theme": {
     "toggle": "Przełącz motyw",
@@ -57,7 +60,9 @@
     "cards": {
       "available": "Dostępne teraz",
       "upcoming": "Do zapłaty",
-      "debt": "Zadłużenie"
+      "debt": "Zadłużenie",
+      "monthly": "Wynik miesiąca",
+      "noMonthly": "Brak przepływów w tym okresie"
     },
     "monthlyBudget": { "title": "Budżet miesięczny", "month": "Bieżący miesiąc", "empty": "Brak zapisanych budżetów miesięcznych.", "viewAll": "Zarządzaj budżetami", "spent": "Wydano", "limit": "Limit", "over": "Przekroczono budżet" },
     "next": {
@@ -110,6 +115,37 @@
       "overdue": "Termin docelowy minął",
       "noTargetDate": "Brak terminu",
       "explanation": "Deterministyczna arytmetyka sufitowa gwarantuje pełną realizację celu bez strat na zaokrągleniach."
+    },
+    "dashboard": {
+      "attention": "Wymaga uwagi",
+      "calm": "Finanse są spokojne. Nie ma teraz spraw wymagających działania.",
+      "missingBalance": "Uzupełnij brakujące saldo konta",
+      "upcoming": "Nadchodzące płatności",
+      "overdue": "Zaległe zobowiązania",
+      "create": "Utwórz",
+      "view": "Zobacz więcej",
+      "detailPrompt": "Szczegółowe filtrowanie i pełna historia są dostępne na stronie Transakcje.",
+      "allTransactions": "Zobacz wszystkie transakcje",
+      "budgets": "Budżety",
+      "budgetsEmpty": "Skonfiguruj pierwszy budżet",
+      "goals": "Cele oszczędnościowe",
+      "goalsEmpty": "Utwórz pierwszy cel",
+      "recent": "Ostatnia aktywność",
+      "recentEmpty": "Dodaj pierwszą transakcję, aby rozpocząć historię.",
+      "spent": "Wydano",
+      "saved": "Zgromadzono",
+      "target": "Cel",
+      "transfer": "Przelew",
+      "setup": {
+        "title": "Skonfiguruj swoje finanse",
+        "description": "Zacznij od kilku prostych kroków. Każdy prowadzi do istniejącej funkcji.",
+        "account": "Dodaj konto",
+        "balance": "Zarejestruj saldo",
+        "transaction": "Dodaj pierwszą transakcję",
+        "budget": "Ustaw budżet",
+        "goal": "Utwórz cel oszczędnościowy",
+        "done": "Gotowe"
+      }
     }
   },
   "Setup": {

@@ -10,6 +10,7 @@
     "accounts": "Accounts",
     "transactions": "Transactions",
     "categories": "Categories",
+    "budgets": "Budgets",
     "netWorth": "Net Worth",
     "imports": "Imports",
     "transfers": "Transfers",
@@ -27,7 +28,9 @@
     "closeMore": "Close menu",
     "primary": "Main",
     "planning": "Planning",
-    "settings": "Workspace"
+    "wealth": "Wealth",
+    "organization": "Organization",
+    "analysis": "Analysis"
   },
   "Theme": {
     "toggle": "Toggle theme",
@@ -57,7 +60,9 @@
     "cards": {
       "available": "Available now",
       "upcoming": "Upcoming",
-      "debt": "Debt"
+      "debt": "Debt",
+      "monthly": "Monthly result",
+      "noMonthly": "No flows in this period"
     },
     "monthlyBudget": { "title": "Monthly budget", "month": "This month", "empty": "No monthly budgets recorded yet.", "viewAll": "Manage budgets", "spent": "Spent", "limit": "Limit", "over": "Over budget" },
     "next": {
@@ -110,6 +115,37 @@
       "overdue": "Target date passed",
       "noTargetDate": "No target date",
       "explanation": "Deterministic exact ceiling arithmetic guarantees target achievement without rounding shortfalls."
+    },
+    "dashboard": {
+      "attention": "Needs attention",
+      "calm": "Your finances are calm. Nothing needs action right now.",
+      "missingBalance": "Complete a missing account balance",
+      "upcoming": "Upcoming payments",
+      "overdue": "Overdue obligations",
+      "create": "Create",
+      "view": "View more",
+      "detailPrompt": "Advanced filters and the full history are available on Transactions.",
+      "allTransactions": "View all transactions",
+      "budgets": "Budgets",
+      "budgetsEmpty": "Set up your first budget",
+      "goals": "Savings goals",
+      "goalsEmpty": "Create your first goal",
+      "recent": "Recent activity",
+      "recentEmpty": "Add your first transaction to start your history.",
+      "spent": "Spent",
+      "saved": "Saved",
+      "target": "Target",
+      "transfer": "Transfer",
+      "setup": {
+        "title": "Set up your finances",
+        "description": "Start with a few simple steps. Each one leads to an existing feature.",
+        "account": "Add an account",
+        "balance": "Record a balance",
+        "transaction": "Add your first transaction",
+        "budget": "Set up a budget",
+        "goal": "Create a savings goal",
+        "done": "Done"
+      }
     }
   },
   "Setup": {
