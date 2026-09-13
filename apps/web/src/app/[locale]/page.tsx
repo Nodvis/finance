@@ -21,15 +21,16 @@ import { HouseholdSelectionCard } from "./components/HouseholdSelectionCard";
 import { NoHouseholdCard } from "./components/NoHouseholdCard";
 import { ObservationWarnings } from "./components/ObservationWarnings";
 import { OverviewCards } from "./components/OverviewCards";
-import { PeriodHeader } from "./components/PeriodHeader";
+
 import { SignInCard } from "./components/SignInCard";
 import { SetupWizard } from "./components/SetupWizard";
 import { TransactionForms } from "./components/TransactionForms";
 import { OverviewCharts } from "./components/OverviewCharts";
 import { DashboardSupportCards } from "./components/DashboardSupportCards";
 import { DashboardAddTransactionButton } from "./components/DashboardAddTransactionButton";
+import { DashboardEmptyState } from "./components/DashboardEmptyState";
 import { ForecastSection } from "./components/ForecastSection";
-import { TransactionList } from "./components/TransactionList";
+
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;
@@ -166,6 +167,14 @@ export default async function HomePage({
   const serializedTransactions = rawTransactions.map(serializeTransaction);
   const serializedOverview = overview ? serializeOverview(overview) : null;
   const serializedNetWorth = rawNetWorth ? serializeNetWorthSummary(rawNetWorth) : null;
+  const hasCashFlow = (serializedOverview?.cashFlow.totalTransactionsCount ?? 0) > 0;
+  const setupSteps = [
+    { label: t("dashboard.setup.account"), complete: accounts.length > 0, href: `/${locale}/accounts` },
+    { label: t("dashboard.setup.balance"), complete: (serializedOverview?.availableCash.freshAccountsCount ?? 0) > 0, href: `/${locale}/accounts` },
+    { label: t("dashboard.setup.transaction"), complete: serializedTransactions.length > 0, href: `/${locale}/transactions` },
+    { label: t("dashboard.setup.budget"), complete: budgets.length > 0, href: `/${locale}/budgets` },
+    { label: t("dashboard.setup.goal"), complete: goalsOverview.goals.length > 0, href: `/${locale}/goals` },
+  ];
 
   return (
     <main className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 py-7 sm:px-6 lg:px-10 lg:py-9">
@@ -181,29 +190,24 @@ export default async function HomePage({
         </div>
       </header>
 
+      <details id="transaction-forms" className="group dashboard-form-disclosure w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-xs transition-all">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold"><span className="flex items-center gap-2"><span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--finance-signal-dark)] text-xs font-bold text-[var(--foreground)] dark:bg-[var(--finance-signal)]">+</span>{t("quickActions.addTransaction")}</span><span className="text-xs text-[var(--muted-foreground)] transition-transform group-open:rotate-180">▼</span></summary>
+        <div className="mt-4 border-t border-[var(--border)] pt-4"><TransactionForms householdId={householdContext.householdId} accounts={accounts} categories={categories} defaultCurrency={householdContext.defaultCurrency} locale={locale} /></div>
+      </details>
+
       {serializedOverview ? <OverviewCards overview={serializedOverview} netWorth={serializedNetWorth} locale={locale} /> : null}
 
-      {serializedOverview ? <OverviewCharts flows={serializedOverview.cashFlow.byCurrency} categories={serializedOverview.categorySpending} locale={locale} labels={{ cashFlow: t("charts.cashFlow"), income: t("charts.income"), spending: t("charts.spending"), net: t("charts.net"), spendingBreakdown: t("charts.spendingBreakdown"), empty: t("charts.empty"), spendingDescription: t("charts.spendingDescription"), uncategorized: t("charts.uncategorized") }} /> : null}
+      {serializedOverview && hasCashFlow ? <OverviewCharts flows={serializedOverview.cashFlow.byCurrency} categories={serializedOverview.categorySpending} locale={locale} labels={{ cashFlow: t("charts.cashFlow"), income: t("charts.income"), spending: t("charts.spending"), net: t("charts.net"), spendingBreakdown: t("charts.spendingBreakdown"), empty: t("charts.empty"), spendingDescription: t("charts.spendingDescription"), uncategorized: t("charts.uncategorized") }} /> : null}
 
-      {serializedOverview ? <DashboardSupportCards overview={serializedOverview} accounts={accounts} budgets={budgets} goals={goalsOverview.goals} transactions={serializedTransactions} locale={locale} labels={{ attention: t("dashboard.attention"), calm: t("dashboard.calm"), account: t("dashboard.setup.account"), balance: t("dashboard.setup.balance"), transaction: t("dashboard.setup.transaction"), budget: t("dashboard.setup.budget"), goal: t("dashboard.setup.goal"), add: t("quickActions.addTransaction"), create: t("dashboard.create"), view: t("dashboard.view"), upcoming: t("dashboard.upcoming"), overdue: t("dashboard.overdue"), missingBalance: t("dashboard.missingBalance"), setupTitle: t("dashboard.setup.title"), setupDescription: t("dashboard.setup.description"), done: t("dashboard.setup.done"), budgets: t("dashboard.budgets"), budgetsEmpty: t("dashboard.budgetsEmpty"), goals: t("dashboard.goals"), goalsEmpty: t("dashboard.goalsEmpty"), recent: t("dashboard.recent"), recentEmpty: t("dashboard.recentEmpty"), allTransactions: t("dashboard.allTransactions"), spent: t("dashboard.spent"), saved: t("dashboard.saved"), target: t("dashboard.target"), income: t("charts.income"), expense: t("charts.spending"), transfer: t("dashboard.transfer") }} /> : null}
+      {serializedOverview && !hasCashFlow ? <DashboardEmptyState steps={setupSteps} title={t("dashboard.setup.title")} description={t("dashboard.setup.description")} nextTitle={t("dashboard.emptyVisual.nextTitle")} nextDescription={t("dashboard.emptyVisual.nextDescription")} done={t("dashboard.setup.done")} locale={locale} /> : null}
 
-      {forecast ? <div className="dashboard-forecast-detail"><ForecastSection forecast={forecast} locale={locale} labels={{ title: tForecast("title"), subtitle: tForecast("subtitle"), horizon: tForecast("horizon"), days: tForecast("days"), available: tForecast("available"), obligations: tForecast("obligations"), projected: tForecast("projected"), incomplete: tForecast("incomplete"), included: tForecast("included") }} /></div> : null}
+      {serializedOverview && hasCashFlow ? <DashboardSupportCards overview={serializedOverview} accounts={accounts} budgets={budgets} goals={goalsOverview.goals} transactions={serializedTransactions} locale={locale} labels={{ attention: t("dashboard.attention"), calm: t("dashboard.calm"), account: t("dashboard.setup.account"), balance: t("dashboard.setup.balance"), transaction: t("dashboard.setup.transaction"), budget: t("dashboard.setup.budget"), goal: t("dashboard.setup.goal"), add: t("quickActions.addTransaction"), create: t("dashboard.create"), view: t("dashboard.view"), upcoming: t("dashboard.upcoming"), overdue: t("dashboard.overdue"), missingBalance: t("dashboard.missingBalance"), setupTitle: t("dashboard.setup.title"), setupDescription: t("dashboard.setup.description"), done: t("dashboard.setup.done"), budgets: t("dashboard.budgets"), budgetsEmpty: t("dashboard.budgetsEmpty"), goals: t("dashboard.goals"), goalsEmpty: t("dashboard.goalsEmpty"), recent: t("dashboard.recent"), recentEmpty: t("dashboard.recentEmpty"), allTransactions: t("dashboard.allTransactions"), spent: t("dashboard.spent"), saved: t("dashboard.saved"), target: t("dashboard.target"), income: t("charts.income"), expense: t("charts.spending"), transfer: t("dashboard.transfer") }} /> : null}
 
-      {serializedNetWorth ? <div className="dashboard-secondary-detail"><NetWorthSection summary={serializedNetWorth} locale={locale} labels={{ title: tNetWorth("title"), eyebrow: tNetWorth("eyebrow"), viewDetails: tNetWorth("viewDetails"), assets: tNetWorth("assets"), liabilities: tNetWorth("liabilities"), netWorth: tNetWorth("netWorth"), complete: tNetWorth("complete"), incomplete: tNetWorth("incomplete"), missing: tNetWorth("missing"), explanation: tNetWorth("explanation"), emptyTitle: tNetWorth("emptyTitle"), emptyDescription: tNetWorth("emptyDescription"), recordObservation: tNetWorth("recordObservation") }} /></div> : null}
+      {forecast && hasCashFlow ? <div className="dashboard-forecast-detail"><ForecastSection forecast={forecast} locale={locale} labels={{ title: tForecast("title"), subtitle: tForecast("subtitle"), horizon: tForecast("horizon"), days: tForecast("days"), available: tForecast("available"), obligations: tForecast("obligations"), projected: tForecast("projected"), incomplete: tForecast("incomplete"), included: tForecast("included") }} /></div> : null}
 
-      {serializedOverview ? <div className="dashboard-compact-transactions"><TransactionList compact transactions={serializedTransactions.slice(0, 8)} accounts={accounts} categories={categories} locale={locale} householdId={householdContext.householdId} initialTotalCount={serializedTransactions.length} /></div> : null}
+      {serializedNetWorth && hasCashFlow ? <div className="dashboard-secondary-detail"><NetWorthSection summary={serializedNetWorth} locale={locale} labels={{ title: tNetWorth("title"), eyebrow: tNetWorth("eyebrow"), viewDetails: tNetWorth("viewDetails"), assets: tNetWorth("assets"), liabilities: tNetWorth("liabilities"), netWorth: tNetWorth("netWorth"), complete: tNetWorth("complete"), incomplete: tNetWorth("incomplete"), missing: tNetWorth("missing"), explanation: tNetWorth("explanation"), emptyTitle: tNetWorth("emptyTitle"), emptyDescription: tNetWorth("emptyDescription"), recordObservation: tNetWorth("recordObservation") }} /></div> : null}
 
-      {serializedOverview && <section aria-label={tAccess("householdTransactions")} className="flex flex-col gap-5">
-        <div className="dashboard-detail-controls">
-          <PeriodHeader householdContext={householdContext} overview={serializedOverview} locale={locale} />
-          <ObservationWarnings overview={serializedOverview} locale={locale} />
-        </div>
-        <details id="transaction-forms" className="group dashboard-form-disclosure rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xs transition-all">
-          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold"><span className="flex items-center gap-2"><span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--finance-signal-dark)] text-xs font-bold text-[var(--foreground)] dark:bg-[var(--finance-signal)]">+</span>{t("quickActions.addTransaction")}</span><span className="text-xs text-[var(--muted-foreground)] transition-transform group-open:rotate-180">▼</span></summary>
-          <div className="mt-4 border-t border-[var(--border)] pt-4"><TransactionForms householdId={householdContext.householdId} accounts={accounts} categories={categories} defaultCurrency={householdContext.defaultCurrency} locale={locale} /></div>
-        </details>
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)]/40 p-4 text-sm text-[var(--muted-foreground)]">{t("dashboard.detailPrompt")} <a className="font-semibold text-[var(--foreground)] underline underline-offset-4" href={`/${locale}/transactions`}>{t("dashboard.allTransactions")}</a></div>
-      </section>}
+      {serializedOverview && hasCashFlow ? <ObservationWarnings overview={serializedOverview} locale={locale} /> : null}
     </main>
   );
 }

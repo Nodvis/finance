@@ -118,7 +118,7 @@
     },
     "dashboard": {
       "attention": "Wymaga uwagi",
-      "calm": "Finanse są spokojne. Nie ma teraz spraw wymagających działania.",
+      "calm": "Wszystko pod kontrolą. Brak pilnych spraw.",
       "missingBalance": "Uzupełnij brakujące saldo konta",
       "upcoming": "Nadchodzące płatności",
       "overdue": "Zaległe zobowiązania",
@@ -136,6 +136,10 @@
       "saved": "Zgromadzono",
       "target": "Cel",
       "transfer": "Przelew",
+      "emptyVisual": {
+        "nextTitle": "Co pojawi się tutaj",
+        "nextDescription": "Po dodaniu pierwszego konta zobaczysz prawdziwe przepływy, budżety i postęp celów — bez szacunków i sztucznych danych."
+      },
       "setup": {
         "title": "Skonfiguruj swoje finanse",
         "description": "Zacznij od kilku prostych kroków. Każdy prowadzi do istniejącej funkcji.",

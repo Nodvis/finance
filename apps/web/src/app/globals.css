@@ -144,10 +144,20 @@ body {
 .dark .finance-transaction-dot.expense { background: #482b25; color: #f2b18d; }
 .dark .finance-transaction-dot.transfer { background: #243443; color: #a8c7e8; }
 
+@media (max-width: 1023px) {
+  main { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
+}
+
 @media (max-width: 767px) {
+  .finance-topbar-inner > .min-w-0 { display: none; }
+  .dashboard-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-kpi-grid > * { min-width: 0; }
+  .dashboard-overview-kpi { min-height: 0; }
+  .dashboard-kpi-context { display: none; }
+  .dashboard-kpi-monthly-value { margin-top: .7rem; }
+  .dashboard-kpi-monthly-value .finance-metric { font-size: 1.15rem; letter-spacing: -.06em; white-space: nowrap; }
   .dashboard-secondary-detail,
-  .dashboard-forecast-detail,
-  .dashboard-compact-transactions { display: none; }
+  .dashboard-forecast-detail { display: none; }
   .dashboard-panel-primary { min-height: 0; }
 }
 

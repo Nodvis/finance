@@ -153,6 +153,7 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   expect(income).toBeTruthy();
   expect(transfer).toBeTruthy();
 
+  await page.goto(`/${locale}/transactions`);
   const editButton = page.getByRole("button", { name: new RegExp(`Edit.*E2E expense ${locale}|Edytuj.*E2E expense ${locale}`) });
   await editButton.click();
   await page.locator("#edit-payee").fill(`E2E corrected expense ${locale}`);
@@ -199,7 +200,7 @@ async function runLocaleFlow(page: Page, locale: "pl" | "en") {
   expect(history.map((entry) => entry.operation)).toEqual(["create", "correction", "void"]);
   expect((history[2]!.voidReason as string)).toBe("E2E correction test");
 
-  await page.goto(`/${locale}?status=all`);
+  await page.goto(`/${locale}/transactions?status=all`);
   await page.getByRole("button", {
     name: new RegExp(`Details.*E2E corrected expense ${locale}|Szczegóły.*E2E corrected expense ${locale}`),
   }).click();

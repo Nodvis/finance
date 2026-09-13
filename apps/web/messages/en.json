@@ -118,7 +118,7 @@
     },
     "dashboard": {
       "attention": "Needs attention",
-      "calm": "Your finances are calm. Nothing needs action right now.",
+      "calm": "All clear. Nothing needs your attention right now.",
       "missingBalance": "Complete a missing account balance",
       "upcoming": "Upcoming payments",
       "overdue": "Overdue obligations",
@@ -136,6 +136,10 @@
       "saved": "Saved",
       "target": "Target",
       "transfer": "Transfer",
+      "emptyVisual": {
+        "nextTitle": "What comes next",
+        "nextDescription": "After you add your first account, this space will show real cash flow, budgets, and goal progress — no estimates or invented data."
+      },
       "setup": {
         "title": "Set up your finances",
         "description": "Start with a few simple steps. Each one leads to an existing feature.",
