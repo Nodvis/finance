@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3] — Self-contained Compose patch
+
+- Restores the simple self-contained Docker Compose setup: edit the two secrets at the top of `docker-compose.yml` and deploy without a mandatory `.env` file.
+- Keeps the v0.2.2 dashboard and application behavior unchanged.
+- No database migration or product behavior change.
+
 ## [0.2.2] — Premium dashboard patch
 
 - Includes the merged Overview/dashboard refinement with responsive desktop/mobile presentation, clearer navigation and first-use states, and improved light/dark hierarchy.

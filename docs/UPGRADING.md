@@ -1,5 +1,15 @@
 # Upgrading
 
+## v0.2.2 → v0.2.3
+
+1. Back up the existing database and keep the existing `nodvis-finance-data` volume.
+2. Replace `docker-compose.yml` with the v0.2.3 file.
+3. Copy the current `POSTGRES_PASSWORD` value from `.env` into `x-config.postgres-password`, and the current `BETTER_AUTH_SECRET` value into `x-config.auth-secret`. Do not generate a new PostgreSQL password for the existing volume.
+4. After copying both values, `.env` is no longer required by the canonical Compose setup.
+5. Run `docker compose pull`, `docker compose up -d` and `docker compose ps`.
+
+The v0.2.2 application and database schema are unchanged; no new database migration is included.
+
 ## v0.2.1 → v0.2.2
 
 1. Back up the existing database and keep the existing `nodvis-finance-data` volume.
