@@ -28,63 +28,21 @@ Nodvis Finance is one product in the broader Nodvis ecosystem. Nodvis Recall is 
 ### Portainer / Dockge
 
 1. Copy the complete [`docker-compose.yml`](docker-compose.yml) into **Stacks → Add stack → Web editor** (Portainer), or into a new Compose project (Dockge).
-2. Set `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` as stack environment variables. Use different strong random values; the auth secret must contain at least 32 characters. The database password is used for both containers automatically.
+2. At the top of the file, replace only `postgres-password` and `auth-secret` with different strong random values. The auth secret must contain at least 32 characters; the database password is used for both containers automatically.
 3. Click **Deploy**.
 4. Open `http://<docker-host>:3990`.
 
-Use a different random value for each secret. For example, generate one with `openssl rand -hex 32`. PostgreSQL is the internal database used by Finance. Your data is stored in the named Docker volume `nodvis-finance-data`; do not delete it unless you intentionally want to delete your Finance data.
+Use a different random value for each secret; `openssl rand -hex 32` generates suitable values. PostgreSQL is the internal database used by Finance. Your data is stored in the named Docker volume `nodvis-finance-data`; do not delete it unless you intentionally want to delete your Finance data.
 
 ### Docker Compose
 
-Save the same file as `docker-compose.yml`, set the two values above in a `.env` file or the shell environment, and run:
+Save the complete `docker-compose.yml`, edit the two values at its top, and run:
 
 ```bash
-export POSTGRES_PASSWORD="$(openssl rand -hex 32)"
-export BETTER_AUTH_SECRET="$(openssl rand -hex 32)"
 docker compose up -d
 ```
 
 That is the only normal startup command. PostgreSQL has no host port. Direct access derives the application origin from the request, so the Docker host IP or hostname does not need to be copied into Compose. For a domain or reverse proxy, set the optional canonical `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` values to the same HTTPS URL in the deployment environment.
-
-```yaml
-services:
-  finance:
-    image: ghcr.io/nodvis/finance:0.2.0
-    container_name: nodvis-finance
-    ports:
-      - "3990:3990"
-    environment:
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_NAME: nodvis_finance
-      DB_USER: nodvis_finance
-      DB_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong random value}"
-      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET to a random value of at least 32 characters}"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:18.6-alpine
-    container_name: nodvis-finance-db
-    environment:
-      POSTGRES_DB: nodvis_finance
-      POSTGRES_USER: nodvis_finance
-      # The same operator-provided value is injected into Finance automatically.
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong random value}"
-    volumes:
-      - nodvis-finance-data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nodvis_finance -d nodvis_finance"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
-volumes:
-  nodvis-finance-data:
-```
 
 The Finance image waits for PostgreSQL, runs migrations automatically, and starts the application only after migrations succeed. You do not run a migration command.
 
@@ -121,8 +79,8 @@ For details and measurement methodology see [system requirements](docs/SYSTEM_RE
 If you installed only the Compose file, download the two helper scripts once. The normal direct deployment does not require copying the Docker host address into Compose; open `http://<docker-host>:3990` after startup.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.0/scripts/backup.sh
-curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.0/scripts/restore.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.1/scripts/backup.sh
+curl -fsSLO https://raw.githubusercontent.com/Nodvis/finance/v0.2.1/scripts/restore.sh
 chmod +x backup.sh restore.sh
 ```
 

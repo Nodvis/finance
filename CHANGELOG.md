@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] — Simpler self-hosting Compose setup
+
+- The official `docker-compose.yml` is self-contained and needs no `.env` file.
+- Operators edit only the top-level PostgreSQL password and auth secret; the password is reused safely for both services.
+- This packaging-only patch leaves the v0.2.0 application and data model unchanged.
+
 ## [0.2.0] — Planning and invariant-safe financial allocations
 
 - Net Worth and Balance History preserve exact multi-currency observations and historical debt/account state.

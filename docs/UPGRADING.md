@@ -1,5 +1,15 @@
 # Upgrading
 
+## v0.2.0 → v0.2.1
+
+1. Back up the existing database; keep the existing `nodvis-finance-data` volume.
+2. Replace the Compose file with the current root `docker-compose.yml`.
+3. At the top of the file, set `postgres-password` to the existing PostgreSQL password and `auth-secret` to the existing auth secret. Do not change either value for an existing installation.
+4. Run `docker compose up -d`.
+5. Open Finance on port 3990 and verify login and a known household.
+
+This is a packaging and self-hosting UX patch. No application feature or database migration is included.
+
 ## v0.1.3 → v0.2.0
 
 1. Back up the existing database with the v0.1.3 deployment.
