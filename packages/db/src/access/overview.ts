@@ -5,6 +5,7 @@ import { getDb } from "../client";
 import { accounts } from "../schema/foundation";
 import { categories } from "../schema/categories";
 import { transactions } from "../schema/transactions";
+import { transactionSplitAllocations } from "../schema/transaction-splits";
 import { economicAmountMinor, economicKind } from "./financial-reporting";
 
 export type DbPeriodCashFlowRow = {
@@ -91,17 +92,18 @@ export async function getHouseholdPeriodCategorySpending(params: {
 
   const rows = await db
     .select({
-      categoryId: transactions.categoryId,
+      categoryId: sql<string | null>`coalesce(${transactionSplitAllocations.categoryId}, ${transactions.categoryId})`,
       categoryName: categories.name,
       currency: transactions.currency,
-      totalMinor: sql<string>`coalesce(sum(${economicAmountMinor}), 0)`,
+      totalMinor: sql<string>`coalesce(sum(coalesce(${transactionSplitAllocations.amountMinor}, ${economicAmountMinor})), 0)`,
       transactionCount: sql<number>`count(*)::int`,
     })
     .from(transactions)
+    .leftJoin(transactionSplitAllocations, and(eq(transactionSplitAllocations.transactionId, transactions.id), eq(transactionSplitAllocations.householdId, params.householdId)))
     .leftJoin(
       categories,
       and(
-        eq(transactions.categoryId, categories.id),
+        eq(sql`coalesce(${transactionSplitAllocations.categoryId}, ${transactions.categoryId})`, categories.id),
         eq(categories.householdId, params.householdId),
       ),
     )
@@ -115,7 +117,7 @@ export async function getHouseholdPeriodCategorySpending(params: {
       ),
     )
     .groupBy(
-      transactions.categoryId,
+      sql`coalesce(${transactionSplitAllocations.categoryId}, ${transactions.categoryId})`,
       categories.name,
       transactions.currency,
     )

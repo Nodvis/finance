@@ -40,6 +40,7 @@ import {
   transactionAuditEntries,
   transactions,
 } from "../schema/transactions";
+import { transactionSplitAllocations } from "../schema/transaction-splits";
 
 export type TransactionRow = typeof transactions.$inferSelect;
 export type NewTransactionRow = typeof transactions.$inferInsert;
@@ -418,6 +419,27 @@ export async function updateTransactionInDb(params: {
       }
     }
 
+    const existingSplitRows = await dbTx
+      .select({
+        categoryId: transactionSplitAllocations.categoryId,
+        amountMinor: transactionSplitAllocations.amountMinor,
+        currency: transactionSplitAllocations.currency,
+      })
+      .from(transactionSplitAllocations)
+      .where(and(
+        eq(transactionSplitAllocations.householdId, params.householdId),
+        eq(transactionSplitAllocations.transactionId, params.id),
+      ));
+    const splitSnapshot = existingSplitRows.map((row) => ({
+      categoryId: row.categoryId,
+      amountMinor: row.amountMinor.toString(),
+      currency: row.currency,
+    }));
+
+    if (values.amountMinor !== existing.amountMinor || values.currency !== existing.currency || values.kind !== existing.kind) {
+      await dbTx.delete(transactionSplitAllocations).where(and(eq(transactionSplitAllocations.householdId, params.householdId), eq(transactionSplitAllocations.transactionId, params.id)));
+    }
+
     const [updated] = await dbTx
       .update(transactions)
       .set(values)
@@ -437,8 +459,13 @@ export async function updateTransactionInDb(params: {
       );
     }
 
-    const beforeSnapshot = createTransactionAuditSnapshot(mapRowToTransaction(existing));
-    const afterSnapshot = createTransactionAuditSnapshot(params.transaction);
+    const beforeSnapshot = createTransactionAuditSnapshot(mapRowToTransaction(existing), splitSnapshot);
+    const afterSnapshot = createTransactionAuditSnapshot(
+      params.transaction,
+      values.amountMinor !== existing.amountMinor || values.currency !== existing.currency || values.kind !== existing.kind
+        ? []
+        : splitSnapshot,
+    );
 
     await dbTx.insert(transactionAuditEntries).values({
       transactionId: updated.id,
@@ -547,6 +574,23 @@ export async function voidTransactionInDb(params: {
       );
     }
 
+    const existingSplitRows = await dbTx
+      .select({
+        categoryId: transactionSplitAllocations.categoryId,
+        amountMinor: transactionSplitAllocations.amountMinor,
+        currency: transactionSplitAllocations.currency,
+      })
+      .from(transactionSplitAllocations)
+      .where(and(
+        eq(transactionSplitAllocations.householdId, params.householdId),
+        eq(transactionSplitAllocations.transactionId, params.id),
+      ));
+    const splitSnapshot = existingSplitRows.map((row) => ({
+      categoryId: row.categoryId,
+      amountMinor: row.amountMinor.toString(),
+      currency: row.currency,
+    }));
+
     const [voided] = await dbTx
       .update(transactions)
       .set({
@@ -571,9 +615,9 @@ export async function voidTransactionInDb(params: {
       );
     }
 
-    const beforeSnapshot = createTransactionAuditSnapshot(mapRowToTransaction(existing));
+    const beforeSnapshot = createTransactionAuditSnapshot(mapRowToTransaction(existing), splitSnapshot);
     const voidedTx = mapRowToTransaction(voided);
-    const afterSnapshot = createTransactionAuditSnapshot(voidedTx);
+    const afterSnapshot = createTransactionAuditSnapshot(voidedTx, splitSnapshot);
 
     await dbTx.insert(transactionAuditEntries).values({
       transactionId: voided.id,

@@ -89,6 +89,14 @@ export {
   updateTransactionInDb,
   voidTransactionInDb,
 } from "./access/transactions";
+export {
+  SplitTransactionNotFoundError,
+  SplitValidationError,
+  SplitVersionConflictError,
+  listTransactionSplits,
+  replaceTransactionSplit,
+} from "./access/transaction-splits";
+export type { SplitAllocationInput } from "./access/transaction-splits";
 export type {
   ListTransactionsParams,
   NewTransactionAuditRow,

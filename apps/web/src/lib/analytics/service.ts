@@ -24,6 +24,7 @@ export async function getHouseholdAnalytics(context: AuthorizedHouseholdContext,
   }
   const rows = await listHouseholdAnalyticsTransactions(context.householdId, filters.from, filters.to);
   const summaries = new Map<string, CurrencySummary>();
+  const countedTransactions = new Set<string>();
   for (const row of rows) {
     let summary = summaries.get(row.currency);
     if (!summary) {
@@ -31,21 +32,16 @@ export async function getHouseholdAnalytics(context: AuthorizedHouseholdContext,
       summaries.set(row.currency, summary);
     }
     const amount = row.amountMinor;
+    const allocationAmount = row.allocationAmountMinor;
     const month = row.occurredOn.toISOString().slice(0, 7);
     const monthSummary = summary.months.get(month) ?? { incomeMinor: 0n, expenseMinor: 0n };
     const label = (row.payee ?? row.source ?? "Unknown").trim() || "Unknown";
     if (row.kind === "income") {
-      summary.incomeMinor += amount;
-      summary.netMinor += amount;
-      monthSummary.incomeMinor += amount;
+      if (!countedTransactions.has(row.id)) { summary.incomeMinor += amount; summary.netMinor += amount; monthSummary.incomeMinor += amount; countedTransactions.add(row.id); }
     } else {
-      summary.expenseMinor += amount;
-      summary.netMinor -= amount;
-      monthSummary.expenseMinor += amount;
-      summary.counterparties.set(label, (summary.counterparties.get(label) ?? 0n) + amount);
-      if (row.categoryName) summary.categories.set(row.categoryName, (summary.categories.get(row.categoryName) ?? 0n) + amount);
-      else summary.uncategorizedMinor += amount;
-      summary.largest.push({ id: row.id, amountMinor: amount, occurredOn: row.occurredOn, label });
+      if (!countedTransactions.has(row.id)) { summary.expenseMinor += amount; summary.netMinor -= amount; monthSummary.expenseMinor += amount; summary.counterparties.set(label, (summary.counterparties.get(label) ?? 0n) + amount); summary.largest.push({ id: row.id, amountMinor: amount, occurredOn: row.occurredOn, label }); countedTransactions.add(row.id); }
+      if (row.categoryName) summary.categories.set(row.categoryName, (summary.categories.get(row.categoryName) ?? 0n) + allocationAmount);
+      else if (!row.isSplit) summary.uncategorizedMinor += amount;
     }
     summary.months.set(month, monthSummary);
   }

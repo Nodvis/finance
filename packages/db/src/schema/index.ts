@@ -6,6 +6,7 @@ export { financeSchema } from "./namespace";
 export * from "./statement-import-profiles";
 export * from "./statement-imports";
 export * from "./transactions";
+export * from "./transaction-splits";
 export * from "./transfer-matches";
 export * from "./liabilities";
 export * from "./categorization-rules";
