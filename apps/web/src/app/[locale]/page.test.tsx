@@ -63,6 +63,10 @@ vi.mock("@/lib/budgets/service", () => ({
   listHouseholdBudgets: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@/lib/savings-goals/service", () => ({
+  getHouseholdSavingsGoalsOverview: vi.fn().mockResolvedValue({ goals: [], summary: null }),
+}));
+
 import { isInstanceInitialized, listAccountsByHousehold } from "@nodvis/finance-db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getCurrentUserHouseholdsStatus } from "@/lib/authorization/household";

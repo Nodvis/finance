@@ -10,6 +10,7 @@
     "accounts": "Konta",
     "transactions": "Transakcje",
     "categories": "Kategorie",
+    "budgets": "Budżety",
     "netWorth": "Majątek netto",
     "imports": "Importy",
     "transfers": "Przelewy",
@@ -27,7 +28,9 @@
     "closeMore": "Zamknij menu",
     "primary": "Główne",
     "planning": "Planowanie",
-    "settings": "Przestrzeń"
+    "wealth": "Majątek",
+    "organization": "Organizacja",
+    "analysis": "Analiza"
   },
   "Theme": {
     "toggle": "Przełącz motyw",
@@ -57,7 +60,9 @@
     "cards": {
       "available": "Dostępne teraz",
       "upcoming": "Do zapłaty",
-      "debt": "Zadłużenie"
+      "debt": "Zadłużenie",
+      "monthly": "Wynik miesiąca",
+      "noMonthly": "Brak przepływów w tym okresie"
     },
     "monthlyBudget": { "title": "Budżet miesięczny", "month": "Bieżący miesiąc", "empty": "Brak zapisanych budżetów miesięcznych.", "viewAll": "Zarządzaj budżetami", "spent": "Wydano", "limit": "Limit", "over": "Przekroczono budżet" },
     "next": {
@@ -110,6 +115,41 @@
       "overdue": "Termin docelowy minął",
       "noTargetDate": "Brak terminu",
       "explanation": "Deterministyczna arytmetyka sufitowa gwarantuje pełną realizację celu bez strat na zaokrągleniach."
+    },
+    "dashboard": {
+      "attention": "Wymaga uwagi",
+      "calm": "Wszystko pod kontrolą. Brak pilnych spraw.",
+      "missingBalance": "Uzupełnij brakujące saldo konta",
+      "upcoming": "Nadchodzące płatności",
+      "overdue": "Zaległe zobowiązania",
+      "create": "Utwórz",
+      "view": "Zobacz więcej",
+      "detailPrompt": "Szczegółowe filtrowanie i pełna historia są dostępne na stronie Transakcje.",
+      "allTransactions": "Zobacz wszystkie transakcje",
+      "budgets": "Budżety",
+      "budgetsEmpty": "Skonfiguruj pierwszy budżet",
+      "goals": "Cele oszczędnościowe",
+      "goalsEmpty": "Utwórz pierwszy cel",
+      "recent": "Ostatnia aktywność",
+      "recentEmpty": "Dodaj pierwszą transakcję, aby rozpocząć historię.",
+      "spent": "Wydano",
+      "saved": "Zgromadzono",
+      "target": "Cel",
+      "transfer": "Przelew",
+      "emptyVisual": {
+        "nextTitle": "Co pojawi się tutaj",
+        "nextDescription": "W miarę dodawania kont, sald i transakcji zobaczysz tutaj rzeczywisty obraz swoich finansów — bez sztucznych danych."
+      },
+      "setup": {
+        "title": "Skonfiguruj swoje finanse",
+        "description": "Zacznij od kilku prostych kroków. Każdy prowadzi do istniejącej funkcji.",
+        "account": "Dodaj konto",
+        "balance": "Zarejestruj saldo",
+        "transaction": "Dodaj pierwszą transakcję",
+        "budget": "Ustaw budżet",
+        "goal": "Utwórz cel oszczędnościowy",
+        "done": "Gotowe"
+      }
     }
   },
   "Setup": {
@@ -607,7 +647,7 @@
   },
   "Footer": {
     "tagline": "Nodvis Finance — proste i bezpieczne finanse domowe.",
-    "privacyNote": "Wszystkie Twoje dane finansowe są poufne i w pełni chronione."
+    "privacyNote": "Twoje dane finansowe pozostają w Twojej instancji."
   },
   "Accessibility": {
     "mainContent": "Treść główna",
@@ -776,7 +816,7 @@
     "monthInputLabel": "Zmień miesiąc",
     "addTransactionAction": "Dodaj transakcję",
     "availableCash": {
-      "title": "Zaobserwowane dostępne środki",
+      "title": "Dostępne środki",
       "creditCardsExcluded": "Karty kredytowe i zadłużenie wykluczone",
       "allFresh": "Zaobserwowano ze wszystkich {count} aktywnych kont majątkowych",
       "singleFresh": "Zaobserwowano z 1 aktywnego konta majątkowego",
@@ -787,7 +827,7 @@
       "updateAccountsPrompt": "Zaktualizuj salda w zakładce Konta"
     },
     "upcoming": {
-      "title": "Nadchodzące zobowiązania",
+      "title": "Do zapłaty",
       "notModeled": "Nadchodzące zobowiązania nie są jeszcze modelowane",
       "note": "Zaplanowane rachunki i przyszłe zobowiązania pojawią się tutaj po ich zamodelowaniu.",
       "viewAll": "Zobacz nadchodzące zobowiązania",
@@ -796,9 +836,10 @@
       "overdueCount": "{count} przeterminowanych"
     },
     "debt": {
-      "title": "Zadłużenie i zobowiązania",
+      "title": "Zadłużenie",
       "notModeled": "Zobowiązania dłużne nie są jeszcze modelowane",
-      "modeled": "Śledzone w ramach kont i zobowiązań",
+      "modeled": "Zaobserwowane zobowiązania",
+      "noObserved": "Brak zaobserwowanych zobowiązań",
       "viewDetails": "Zobacz majątek netto i historię",
       "note": "Kredyty i harmonogramy spłat są ściśle oddzielone od dostępnych środków."
     },

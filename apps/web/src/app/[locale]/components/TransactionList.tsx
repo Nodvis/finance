@@ -28,6 +28,7 @@ type TransactionListProps = {
   initialInspectTx?: SerializedTransaction | null | undefined;
   initialActiveInspectTab?: "details" | "history" | undefined;
   initialHistoryData?: TransactionHistoryEntry[] | null | undefined;
+  compact?: boolean;
 };
 
 type FilterOverrides = {
@@ -53,6 +54,7 @@ export function TransactionList({
   initialInspectTx = null,
   initialActiveInspectTab = "details",
   initialHistoryData = null,
+  compact = false,
 }: TransactionListProps) {
   const t = useTranslations("Transactions");
   const tFilters = useTranslations("Transactions.filters");
@@ -633,6 +635,7 @@ export function TransactionList({
       </header>
 
       {/* Filter toolbar */}
+      {!compact && (
       <div
         aria-label={tAccess("transactionFilters")}
         className="mb-6 rounded-xl border border-slate-200 dark:border-stone-800/80 bg-slate-50 dark:bg-stone-950/60 p-4"
@@ -929,6 +932,8 @@ export function TransactionList({
           </div>
         </div>
       </div>
+
+      )}
 
       {/* Transaction Content */}
       {displayedTransactions.length === 0 ? (
