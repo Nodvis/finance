@@ -273,9 +273,10 @@ export async function parseAndPreviewStatementImport(params: {
 
   const headerIdx = mapping.hasHeader ? mapping.headerRowIndex : -1;
   const headerlessStart = Math.min(Math.max(mapping.skipLeadingRows, 0), Math.max(rawRows.length - 1, 0));
+  const headerlessWidth = rawRows.slice(headerlessStart).reduce((max, row) => Math.max(max, trimTrailingEmptyCsvCells(row).length), 0);
   const rawHeaders = headerIdx >= 0 && headerIdx < rawRows.length
     ? trimTrailingEmptyCsvCells(rawRows[headerIdx]!)
-    : (trimTrailingEmptyCsvCells(rawRows[headerlessStart] ?? []).map((_, i) => `Col ${i + 1}`));
+    : Array.from({ length: headerlessWidth }, (_, i) => `Col ${i + 1}`);
   const rawDataRows = rawRows.slice(Math.max(headerIdx + 1, 0));
   const headers: string[] = ensureUniqueCsvHeaders(rawHeaders);
 
@@ -308,9 +309,13 @@ export async function parseAndPreviewStatementImport(params: {
     .map((row, rowOffset) => ({ row, rowOffset }))
     .filter(({ row }) => row.some((cell) => cell !== ""))
     .map(({ row, rowOffset }) => {
-      const trimmed = trimTrailingEmptyCsvCells(row);
-      if (trimmed.length !== headers.length) throw new SyntaxError("CSV_PARSE_INVALID: inconsistent column count");
-      return { rawCells: trimmed, rowOffset };
+      const normalized = [...row];
+      if (normalized.length > headers.length) {
+        if (normalized.slice(headers.length).some((cell) => cell !== "")) throw new SyntaxError("CSV_PARSE_INVALID: inconsistent column count");
+        normalized.length = headers.length;
+      }
+      while (normalized.length < headers.length) normalized.push("");
+      return { rawCells: normalized, rowOffset };
     });
   if (dataRows.length === 0) {
     throw new EmptyCsvError("No data rows found in CSV after header/skip rows");
