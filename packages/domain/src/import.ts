@@ -229,11 +229,13 @@ export function parseCsvText(
     delimiter?: CsvDelimiter;
     maxRows?: number;
     maxCharsPerCell?: number;
+    allowVariableColumnCount?: boolean;
   },
 ): string[][] {
   const delimiter = options?.delimiter ?? ",";
   const maxRows = options?.maxRows ?? 5000;
   const maxCharsPerCell = options?.maxCharsPerCell ?? 4000;
+  const allowVariableColumnCount = options?.allowVariableColumnCount ?? false;
 
   const rows: string[][] = [];
   let currentRow: string[] = [];
@@ -243,7 +245,7 @@ export function parseCsvText(
   let expectedColumnCount: number | undefined;
   const appendRow = (row: string[]) => {
     if (expectedColumnCount === undefined && row.length > 1) expectedColumnCount = row.length;
-    if (expectedColumnCount !== undefined && row.length !== expectedColumnCount) {
+    if (!allowVariableColumnCount && expectedColumnCount !== undefined && row.length !== expectedColumnCount) {
       throw new SyntaxError("CSV_PARSE_INVALID: inconsistent column count");
     }
     rows.push(row);
@@ -296,7 +298,7 @@ export function parseCsvText(
         }
         currentRow.push(currentCell.trim());
         currentCell = "";
-        if (currentRow.length > 1 || (currentRow.length === 1 && (currentRow[0] !== "" || expectedColumnCount !== undefined))) {
+        if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0] !== "")) {
           appendRow(currentRow);
         }
         currentRow = [];
@@ -307,7 +309,7 @@ export function parseCsvText(
       if (char === "\n") {
         currentRow.push(currentCell.trim());
         currentCell = "";
-        if (currentRow.length > 1 || (currentRow.length === 1 && (currentRow[0] !== "" || expectedColumnCount !== undefined))) {
+        if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0] !== "")) {
           appendRow(currentRow);
         }
         currentRow = [];
@@ -325,7 +327,7 @@ export function parseCsvText(
 
   if (currentCell !== "" || currentRow.length > 0) {
     currentRow.push(currentCell.trim());
-    if (currentRow.length > 1 || (currentRow.length === 1 && (currentRow[0] !== "" || expectedColumnCount !== undefined))) {
+    if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0] !== "")) {
       appendRow(currentRow);
     }
   }
@@ -366,19 +368,27 @@ export function ensureUniqueCsvHeaders(headers: readonly string[]): string[] {
   });
 }
 
+function trimTrailingEmptyCsvCells(row: readonly string[]): string[] {
+  const trimmed = [...row];
+  while (trimmed.length > 0 && trimmed[trimmed.length - 1] === "") trimmed.pop();
+  return trimmed;
+}
+
 /** Finds a semantic header row within a bounded preamble and validates its samples. */
 export function discoverCsvHeader(text: string, delimiter: CsvDelimiter, maxScanRows = 32): CsvHeaderDiscoveryResult {
-  const rows = parseCsvText(text, { delimiter, maxRows: 5000 });
+  const rows = parseCsvText(text, { delimiter, maxRows: 5000, allowVariableColumnCount: true });
   let best: { index: number; headers: string[]; score: number } | undefined;
   for (let index = 0; index < Math.min(rows.length, maxScanRows); index++) {
-    const headers = rows[index] ?? [];
+    const headers = trimTrailingEmptyCsvCells(rows[index] ?? []);
     if (headers.length < 2) continue;
     const score = headers.reduce((total, header) => total + (Object.values(CSV_HEADER_ALIASES).some((aliases) => headerMatches(header, aliases)) ? 1 : 0), 0);
     const required = (["date", "amount", "debit", "credit", "description"] as const).some((kind) => headers.some((header) => headerMatches(header, CSV_HEADER_ALIASES[kind] ?? [])));
-    if (required && (!best || score > best.score)) best = { index, headers, score };
+    if (required && (!best || score > best.score)) {
+      best = { index, headers, score };
+    }
   }
   const headerRowIndex = best?.index ?? 0;
-  const headers = ensureUniqueCsvHeaders(best?.headers ?? rows[0] ?? []);
+  const headers = ensureUniqueCsvHeaders(trimTrailingEmptyCsvCells(best?.headers ?? rows[0] ?? []));
   const samples = rows.slice(headerRowIndex + 1, headerRowIndex + 4);
   const mapping: Record<string, string> = {};
   const find = (kind: keyof typeof CSV_HEADER_ALIASES) => headers.find((header) => headerMatches(header, CSV_HEADER_ALIASES[kind] ?? []));

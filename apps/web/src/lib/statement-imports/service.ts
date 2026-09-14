@@ -88,6 +88,12 @@ export class ImportMappingValidationError extends Error {
   }
 }
 
+function trimTrailingEmptyCsvCells(row: readonly string[]): string[] {
+  const trimmed = [...row];
+  while (trimmed.length > 0 && trimmed[trimmed.length - 1] === "") trimmed.pop();
+  return trimmed;
+}
+
 export type CsvInspectionResult = Readonly<{
   headers: string[];
   sampleRows: string[][];
@@ -199,7 +205,11 @@ export async function inspectCsvFile(params: {
   const text = decodeCsvBuffer(fileBytes, detectedEncoding);
   const detectedDelimiter = delimiter ?? detectCsvDelimiter(text);
 
-  const parsed = parseCsvText(text, { delimiter: detectedDelimiter, maxRows: MAX_ROWS });
+  const parsed = parseCsvText(text, {
+    delimiter: detectedDelimiter,
+    maxRows: MAX_ROWS,
+    allowVariableColumnCount: true,
+  });
   if (parsed.length === 0) {
     throw new EmptyCsvError();
   }
@@ -254,6 +264,7 @@ export async function parseAndPreviewStatementImport(params: {
   const rawRows = parseCsvText(decodedText, {
     delimiter: mapping.delimiter,
     maxRows: MAX_ROWS,
+    allowVariableColumnCount: true,
   });
 
   if (rawRows.length === 0) {
@@ -261,11 +272,12 @@ export async function parseAndPreviewStatementImport(params: {
   }
 
   const headerIdx = mapping.hasHeader ? mapping.headerRowIndex : -1;
-  const headers: string[] = ensureUniqueCsvHeaders(
-    headerIdx >= 0 && headerIdx < rawRows.length
-      ? rawRows[headerIdx]!
-      : (rawRows[0]?.map((_, i) => `Col ${i + 1}`) ?? []),
-  );
+  const headerlessStart = Math.min(Math.max(mapping.skipLeadingRows, 0), Math.max(rawRows.length - 1, 0));
+  const rawHeaders = headerIdx >= 0 && headerIdx < rawRows.length
+    ? trimTrailingEmptyCsvCells(rawRows[headerIdx]!)
+    : (trimTrailingEmptyCsvCells(rawRows[headerlessStart] ?? []).map((_, i) => `Col ${i + 1}`));
+  const rawDataRows = rawRows.slice(Math.max(headerIdx + 1, 0));
+  const headers: string[] = ensureUniqueCsvHeaders(rawHeaders);
 
   if (!mapping.dateColumn || !mapping.descriptionColumn || (mapping.amountMode === "signed" ? !mapping.amountColumn : !mapping.debitColumn && !mapping.creditColumn)) {
     throw new ImportMappingValidationError("Required date, amount, and description mappings are missing");
@@ -292,15 +304,23 @@ export async function parseAndPreviewStatementImport(params: {
     mapping.skipLeadingRows,
   );
 
-  const dataRows = rawRows.slice(dataStartIndex);
+  const dataRows = rawDataRows.slice(Math.max(dataStartIndex - Math.max(headerIdx + 1, 0), 0))
+    .map((row, rowOffset) => ({ row, rowOffset }))
+    .filter(({ row }) => row.some((cell) => cell !== ""))
+    .map(({ row, rowOffset }) => {
+      const trimmed = trimTrailingEmptyCsvCells(row);
+      if (trimmed.length !== headers.length) throw new SyntaxError("CSV_PARSE_INVALID: inconsistent column count");
+      return { rawCells: trimmed, rowOffset };
+    });
   if (dataRows.length === 0) {
     throw new EmptyCsvError("No data rows found in CSV after header/skip rows");
   }
 
+
   const occurrenceCounter = new Map<string, number>();
-  const parsedRows = dataRows.map((rawCells, idx) =>
+  const parsedRows = dataRows.map(({ rawCells, rowOffset }) =>
     normalizeImportRow({
-      rowIndex: idx,
+      rowIndex: rowOffset,
       rawCells,
       headers,
       mapping,

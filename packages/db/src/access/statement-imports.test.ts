@@ -372,8 +372,11 @@ describe("PostgreSQL statement import access integration tests", () => {
     async () => {
       const db = getDb();
       const householdId = crypto.randomUUID();
+      const personId = crypto.randomUUID();
       const accountId = crypto.randomUUID();
       await db.insert(households).values({ id: householdId, name: "Empty Source Household", defaultCurrency: "PLN" });
+      await db.insert(persons).values({ id: personId, displayName: "Empty Source Person" });
+      await db.insert(householdMemberships).values({ householdId, personId });
       await db.insert(accounts).values({ id: accountId, householdId, name: "Empty Source Account", type: "checking", currency: "PLN" });
       await db.insert(transactions).values({
         householdId,
@@ -382,6 +385,8 @@ describe("PostgreSQL statement import access integration tests", () => {
         amountMinor: 100n,
         currency: "PLN",
         occurredOn: new Date("2026-03-01T00:00:00.000Z"),
+        payee: "Imported expense",
+        paidByPersonId: personId,
         sourceNamespace: " generic_csv ",
         sourceAccountId: "   ",
         authoritativeId: "EMPTY-SOURCE-1",
@@ -395,7 +400,7 @@ describe("PostgreSQL statement import access integration tests", () => {
         authoritativeIds: ["EMPTY-SOURCE-1"],
       });
 
-      expect(records.get(scopedImportKey("generic_csv", "", "EMPTY-SOURCE-1"))?.transaction.amountMinor).toBe(100n);
+      expect(records.get(scopedImportKey("", "", "EMPTY-SOURCE-1"))?.transaction.amountMinor).toBe(100n);
     },
   );
 
@@ -404,13 +409,16 @@ describe("PostgreSQL statement import access integration tests", () => {
     async () => {
       const db = getDb();
       const householdId = crypto.randomUUID();
+      const personId = crypto.randomUUID();
       const accountId = crypto.randomUUID();
       await db.insert(households).values({ id: householdId, name: "Legacy Namespace Household", defaultCurrency: "PLN" });
+      await db.insert(persons).values({ id: personId, displayName: "Legacy Namespace Person" });
+      await db.insert(householdMemberships).values({ householdId, personId });
       await db.insert(accounts).values({ id: accountId, householdId, name: "Legacy Namespace Account", type: "checking", currency: "PLN" });
       await db.insert(transactions).values([
-        { householdId, accountId, kind: "expense", amountMinor: 100n, currency: "PLN", occurredOn: new Date("2026-03-01"), authoritativeId: "LEGACY-NULL" },
-        { householdId, accountId, kind: "expense", amountMinor: 200n, currency: "PLN", occurredOn: new Date("2026-03-02"), sourceNamespace: "   ", authoritativeId: "LEGACY-SPACE" },
-        { householdId, accountId, kind: "expense", amountMinor: 300n, currency: "PLN", occurredOn: new Date("2026-03-03"), sourceNamespace: "other-bank", authoritativeId: "OTHER-SCOPE" },
+        { householdId, accountId, kind: "expense", amountMinor: 100n, currency: "PLN", occurredOn: new Date("2026-03-01"), payee: "Legacy null", paidByPersonId: personId, authoritativeId: "LEGACY-NULL" },
+        { householdId, accountId, kind: "expense", amountMinor: 200n, currency: "PLN", occurredOn: new Date("2026-03-02"), payee: "Legacy space", paidByPersonId: personId, sourceNamespace: "   ", authoritativeId: "LEGACY-SPACE" },
+        { householdId, accountId, kind: "expense", amountMinor: 300n, currency: "PLN", occurredOn: new Date("2026-03-03"), payee: "Other scope", paidByPersonId: personId, sourceNamespace: "other-bank", authoritativeId: "OTHER-SCOPE" },
       ]);
       const legacyHash = computeRowDedupeHash({ accountId, sourceNamespace: "bank", authoritativeId: "LEGACY-HASH" });
       await createStatementImportBatchInDb({
@@ -418,10 +426,10 @@ describe("PostgreSQL statement import access integration tests", () => {
         rows: [{ batchId: "" as any, householdId, accountId, rowIndex: 0, sourceNamespace: "   ", authoritativeId: "LEGACY-HASH", identityType: "authoritative", dedupeHash: legacyHash, status: "imported", rawRowContent: "legacy" }],
       });
 
-      const hashes = await findExistingImportDedupeHashes(accountId, [legacyHash], { sourceNamespace: "bank" });
+      const hashes = await findExistingImportDedupeHashes(accountId, [legacyHash], { sourceNamespace: "generic_csv" });
       expect(hashes.has(legacyHash)).toBe(true);
       const records = await findExistingAuthoritativeRecordsInDb({
-        householdId, accountId, sourceNamespace: "bank", authoritativeIds: ["LEGACY-NULL", "LEGACY-SPACE", "OTHER-SCOPE"],
+        householdId, accountId, sourceNamespace: "generic_csv", authoritativeIds: ["LEGACY-NULL", "LEGACY-SPACE", "OTHER-SCOPE"],
       });
 
       expect(records.get(scopedImportKey("", "", "LEGACY-NULL"))?.transaction.amountMinor).toBe(100n);
@@ -825,7 +833,7 @@ describe("PostgreSQL statement import access integration tests", () => {
         fallbackIdentifiers: [fallbackId],
       });
 
-      const occurrences = existingRecords.get(scopedImportKey("generic_csv", null, fallbackId));
+      const occurrences = existingRecords.get(scopedImportKey("", "", fallbackId));
       expect(occurrences?.length).toBe(2);
       expect(occurrences?.[0]?.occurrenceIndex).toBe(0);
       expect(occurrences?.[1]?.occurrenceIndex).toBe(1);
@@ -844,7 +852,7 @@ describe("PostgreSQL statement import access integration tests", () => {
       const legacyValues = [
         { sourceNamespace: null, sourceAccountId: null },
         { sourceNamespace: "", sourceAccountId: "" },
-        { sourceNamespace: "  ", sourceAccountId: " \\t" },
+        { sourceNamespace: "  ", sourceAccountId: " \t" },
         { sourceNamespace: null, sourceAccountId: "legacy-account" },
       ];
       const rows = [
@@ -873,11 +881,11 @@ describe("PostgreSQL statement import access integration tests", () => {
         householdId,
         accountId,
         fallbackIdentifiers: [fallbackIdentifier],
-        sourceNamespace: "bank",
-        sourceAccountIds: ["incoming-account"],
+        sourceNamespace: "generic_csv",
       });
 
-      expect(records.get(scopedImportKey("", "", fallbackIdentifier))?.map((record) => record.occurrenceIndex)).toEqual([0, 1, 2, 3]);
+      expect(records.get(scopedImportKey("", "", fallbackIdentifier))?.map((record) => record.occurrenceIndex)).toEqual([0, 1, 2]);
+      expect(records.has(scopedImportKey("", "legacy-account", fallbackIdentifier))).toBe(false);
       expect(records.has(scopedImportKey("bank", "other-account", fallbackIdentifier))).toBe(false);
     },
   );
@@ -1047,10 +1055,10 @@ describe("PostgreSQL statement import access integration tests", () => {
         authoritativeIds: [sharedExternalRef],
       });
 
-      expect(txA.has(sharedExternalRef)).toBe(true);
-      expect(txB.has(sharedExternalRef)).toBe(true);
-      expect(txA.get(sharedExternalRef)?.transaction.id).not.toBe(
-        txB.get(sharedExternalRef)?.transaction.id,
+      expect(txA.has(scopedImportKey(namespace, "acc-a-iban", sharedExternalRef))).toBe(true);
+      expect(txB.has(scopedImportKey(namespace, "acc-b-iban", sharedExternalRef))).toBe(true);
+      expect(txA.get(scopedImportKey(namespace, "acc-a-iban", sharedExternalRef))?.transaction.id).not.toBe(
+        txB.get(scopedImportKey(namespace, "acc-b-iban", sharedExternalRef))?.transaction.id,
       );
     },
   );

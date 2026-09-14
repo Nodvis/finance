@@ -65,6 +65,17 @@ describe("CSV parsing and delimiter detection", () => {
 
   it("rejects a short one-column data row after the header establishes the schema", () => {
     expect(() => parseCsvText("Date,Amount,Description\n2026-01-01", { delimiter: "," })).toThrow(/CSV_PARSE_INVALID/);
+
+    expect(parseCsvText("Export generated\nMetadata;value\nDate;Amount;Description\n2026-01-01;-10;Coffee", {
+      delimiter: ";",
+      allowVariableColumnCount: true,
+    })).toHaveLength(4);
+  });
+
+  it("allows variable-width preambles and ignores empty trailing data cells", () => {
+    const discovery = discoverCsvHeader("Export generated\nMetadata;info\nDate;Amount\n2026-01-01;-10;\n", ";");
+    expect(discovery.headerRowIndex).toBe(2);
+    expect(discovery.headers).toEqual(["Date", "Amount"]);
   });
 
   it("detects semicolon delimiter in European bank CSV exports", () => {
