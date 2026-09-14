@@ -768,6 +768,7 @@
       "AUTHORITATIVE_DUPLICATE": "Ta operacja została już zaimportowana.",
       "DUPLICATE_AUTHORITATIVE_ID_IN_FILE": "Identyfikator transakcji źródłowej występuje w tym pliku więcej niż raz.",
       "FALLBACK_DUPLICATE": "Ta operacja została już zaimportowana.",
+      "BANK_PENDING": "Ta operacja bankowa jest nadal oczekująca i nie może być jeszcze zaimportowana.",
       "GENERIC": "Ten wiersz wymaga weryfikacji."
     },
     "errors": { "generic": "Nie udało się ukończyć importu.", "IMPORT_ROW_AMBIGUOUS": "Ten wiersz importu jest niejednoznaczny i wymaga jawnej weryfikacji przed zapisaniem." }

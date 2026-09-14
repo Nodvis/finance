@@ -791,6 +791,7 @@
       "AUTHORITATIVE_DUPLICATE": "This operation was already imported.",
       "DUPLICATE_AUTHORITATIVE_ID_IN_FILE": "The source transaction ID appears more than once in this file.",
       "FALLBACK_DUPLICATE": "This operation was already imported.",
+      "BANK_PENDING": "This bank operation is still pending and cannot be imported yet.",
       "GENERIC": "This row needs review."
     },
     "errors": { "generic": "The import could not be completed.", "IMPORT_ROW_AMBIGUOUS": "This import row is ambiguous and needs explicit review before it can be committed." }

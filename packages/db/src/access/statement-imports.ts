@@ -657,6 +657,9 @@ export async function commitStatementImportBatchInDb(params: {
 
         if (shouldCommit) {
           if (!params.safeOnly) {
+            if (row.errorCode === "BANK_PENDING") {
+              throw new Error(`Cannot commit bank-pending import row ${row.rowIndex}`);
+            }
             if (
               row.status === "error" ||
               !row.normalizedOccurredOn ||

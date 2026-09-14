@@ -133,6 +133,25 @@ describe("statement-imports service", () => {
   });
 
   describe("parseAndPreviewStatementImport", () => {
+    it("previews PKO rows with continuation text and leaves bank-pending rows unselected", async () => {
+      vi.mocked(dbModule.findAccountInHousehold).mockResolvedValue({ id: "acc-1", householdId: "h-1", name: "Main", type: "checking", currency: "PLN" } as any);
+      vi.mocked(dbModule.findExistingImportDedupeHashes).mockResolvedValue(new Set());
+      vi.mocked(dbModule.findPossibleManualMatchesInDb).mockResolvedValue(new Map());
+      vi.mocked(dbModule.createStatementImportBatchInDb).mockResolvedValue({ batchId: "batch-pko" });
+      const csv = new TextEncoder().encode(
+        "Data operacji,Data waluty,Typ transakcji,Kwota,Waluta,Saldo po transakcji,Opis transakcji,,,,\n" +
+        "01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,Sklep,oddzial A,,,\n" +
+        "02.03.2026,02.03.2026,Blokada,-99.99,PLN,W rozliczeniu,Karta testowa,,,,",
+      );
+      const preview = await parseAndPreviewStatementImport({
+        context: mockContext, accountId: "acc-1", sourceFilename: "pko.csv", fileBytes: csv,
+        mapping: { dateColumn: "Data operacji", dateFallbackColumn: "Data waluty", dateFormat: "DD.MM.YYYY", timezone: "UTC", amountMode: "signed", amountColumn: "Kwota", currencyMode: "column", currencyColumn: "Waluta", descriptionColumn: "Opis transakcji", delimiter: ",", hasHeader: true, headerRowIndex: 0, skipLeadingRows: 0, encoding: "windows-1250" },
+      });
+      expect(preview.rows[0]).toMatchObject({ description: "Sklep oddzial A", selected: true, currency: "PLN", amountMinor: "1234" });
+      expect(preview.rows[1]).toMatchObject({ description: "Karta testowa", selected: false, bankPending: true, errorCode: "BANK_PENDING" });
+      expect(preview.safeToCommitCount).toBe(1);
+    });
+
     it("generates preview with valid, invalid, duplicate, and exact large amount rows", async () => {
       vi.mocked(dbModule.findAccountInHousehold).mockResolvedValue({
         id: "acc-1",
