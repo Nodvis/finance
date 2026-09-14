@@ -14,6 +14,7 @@ import {
 } from "../schema/index";
 import {
   DuplicateStatementImportProfileNameError,
+  StatementImportProfileScopeConflictError,
   StatementImportProfileNotFoundError,
   createStatementImportProfileInDb,
   deleteStatementImportProfileInDb,
@@ -133,6 +134,29 @@ describe("statement import profiles DB integration", () => {
       expect(forAccount).toHaveLength(2);
       expect(forAccount.map((p) => p.name)).toContain("mBank Account Profile");
       expect(forAccount.map((p) => p.name)).toContain("Generic Household CSV");
+
+      // Legacy household-wide profiles remain addressable through an account route.
+      const legacyFound = await findStatementImportProfileById(
+        householdId,
+        profile2.id,
+        accountId,
+      );
+      expect(legacyFound?.id).toBe(profile2.id);
+
+      await expect(updateStatementImportProfileInDb({
+        householdId,
+        profileId: profile2.id,
+        routeAccountId: accountId,
+        name: "Generic Household CSV Updated",
+      })).rejects.toThrow(StatementImportProfileScopeConflictError);
+      await expect(findStatementImportProfileById(householdId, profile2.id, accountId))
+        .resolves.toMatchObject({ name: "Generic Household CSV" });
+
+      await expect(deleteStatementImportProfileInDb(
+        householdId,
+        profile2.id,
+        accountId,
+      )).rejects.toThrow(StatementImportProfileScopeConflictError);
 
       // 4. Find by ID
       const found = await findStatementImportProfileById(

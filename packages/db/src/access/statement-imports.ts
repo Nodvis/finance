@@ -4,6 +4,7 @@ import {
   createExpense,
   createIncome,
   createTransactionAuditSnapshot,
+  encodeImportIdentityParts,
   householdId as toHouseholdId,
   isSafeToAutoCommitRow,
   money,
@@ -11,6 +12,7 @@ import {
   transactionId as toTransactionId,
   type PossibleManualMatch,
   type StatementImportBatchStatus,
+  type StatementImportAmbiguityState,
   type StatementImportMappingConfig,
   type StatementImportRowKind,
   type StatementImportRowStatus,
@@ -100,6 +102,7 @@ export async function createStatementImportBatchInDb(params: {
 export async function findStatementImportBatchById(
   householdId: string,
   batchId: string,
+  accountId?: string,
 ): Promise<StatementImportBatchRow | null> {
   const [found] = await getDb()
     .select()
@@ -108,6 +111,7 @@ export async function findStatementImportBatchById(
       and(
         eq(statementImportBatches.householdId, householdId),
         eq(statementImportBatches.id, batchId),
+        ...(accountId ? [eq(statementImportBatches.accountId, accountId)] : []),
       ),
     )
     .limit(1);
@@ -118,6 +122,7 @@ export async function findStatementImportBatchById(
 export async function listStatementImportRowsByBatch(
   householdId: string,
   batchId: string,
+  accountId?: string,
 ): Promise<StatementImportRowRecord[]> {
   return await getDb()
     .select()
@@ -126,6 +131,7 @@ export async function listStatementImportRowsByBatch(
       and(
         eq(statementImportRows.householdId, householdId),
         eq(statementImportRows.batchId, batchId),
+        ...(accountId ? [eq(statementImportRows.accountId, accountId)] : []),
       ),
     )
     .orderBy(asc(statementImportRows.rowIndex));
@@ -150,6 +156,7 @@ export async function listStatementImportBatchesByAccount(
 export async function findExistingImportDedupeHashes(
   accountId: string,
   dedupeHashes: string[],
+  scope?: { sourceNamespace?: string; sourceAccountIds?: string[] },
 ): Promise<Set<string>> {
   if (dedupeHashes.length === 0) {
     return new Set();
@@ -157,6 +164,20 @@ export async function findExistingImportDedupeHashes(
 
   const existing = new Set<string>();
   const chunkSize = 200;
+  const sourceNamespace = scope?.sourceNamespace === undefined ? undefined : scope.sourceNamespace === null ? "" : scope.sourceNamespace.trim();
+  const sourceAccountIds = scope?.sourceAccountIds?.map(normalizeSourceAccountId).filter(Boolean) ?? [];
+  const sourceScopeCondition = sourceNamespace === undefined
+    ? undefined
+    : or(
+      and(
+        sql`trim(${statementImportRows.sourceNamespace}) = ${sourceNamespace}`,
+        sourceAccountIds.length > 0 ? inArray(sql`trim(${statementImportRows.sourceAccountId})`, sourceAccountIds) : sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+      ),
+      ...(sourceAccountIds.length === 0 && (sourceNamespace === "" || sourceNamespace === "generic_csv") ? [and(
+        or(sql`regexp_replace(coalesce(${statementImportRows.sourceNamespace}, ''), '[[:space:]]', '', 'g') = ''`, sql`trim(${statementImportRows.sourceNamespace}) = 'generic_csv'`, isNull(statementImportRows.sourceNamespace)),
+        sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+      )] : []),
+    );
 
   for (let i = 0; i < dedupeHashes.length; i += chunkSize) {
     const chunk = dedupeHashes.slice(i, i + chunkSize);
@@ -167,6 +188,7 @@ export async function findExistingImportDedupeHashes(
         and(
           eq(statementImportRows.accountId, accountId),
           eq(statementImportRows.status, "imported"),
+          ...(sourceScopeCondition ? [sourceScopeCondition] : []),
           inArray(statementImportRows.dedupeHash, chunk),
         ),
       );
@@ -181,6 +203,7 @@ export async function findExistingImportDedupeHashes(
 
 export type ExistingAuthoritativeRecord = {
   authoritativeId: string;
+  ambiguityState?: StatementImportAmbiguityState;
   transaction: {
     id: string;
     voidedAt: Date | null;
@@ -196,23 +219,96 @@ export type ExistingAuthoritativeRecord = {
   } | undefined;
 };
 
+function normalizeSourceAccountId(sourceAccountId: string | null | undefined): string {
+  return sourceAccountId?.trim() || "";
+}
+
+function normalizeSourceNamespace(sourceNamespace: string | null | undefined): string {
+  return sourceNamespace?.trim() || "";
+}
+
+function isLegacySourceScope(
+  sourceNamespace: string | null | undefined,
+  sourceAccountId: string | null | undefined,
+): boolean {
+  const normalizedNamespace = normalizeSourceNamespace(sourceNamespace);
+  return (
+    (normalizedNamespace === "" || normalizedNamespace === "generic_csv") &&
+    normalizeSourceAccountId(sourceAccountId) === ""
+  );
+}
+
+function dedupScopeKey(sourceNamespace: string | null | undefined, sourceAccountId: string | null | undefined, identity: string): string {
+  return encodeImportIdentityParts([
+    normalizeSourceAccountId(sourceAccountId) === "" && normalizeSourceNamespace(sourceNamespace) === "generic_csv" ? "" : normalizeSourceNamespace(sourceNamespace),
+    normalizeSourceAccountId(sourceAccountId) ?? "",
+    identity,
+  ]);
+}
+
+function storedDedupScopeKey(
+  sourceNamespace: string | null | undefined,
+  sourceAccountId: string | null | undefined,
+  identity: string,
+): string {
+  return isLegacySourceScope(sourceNamespace, sourceAccountId)
+    ? dedupScopeKey("", "", identity)
+    : dedupScopeKey(sourceNamespace, sourceAccountId, identity);
+}
+
 export async function findExistingAuthoritativeRecordsInDb(params: {
   householdId: string;
   accountId: string;
   sourceNamespace: string;
   sourceAccountId?: string | null;
+  sourceAccountIds?: string[];
   authoritativeIds: string[];
 }): Promise<Map<string, ExistingAuthoritativeRecord>> {
   const result = new Map<string, ExistingAuthoritativeRecord>();
+  const recordsByKey = new Map<string, ExistingAuthoritativeRecord[]>();
   if (params.authoritativeIds.length === 0) return result;
 
   const db = getDb();
-  const sourceAccountId = params.sourceAccountId ?? "";
+  const sourceNamespace = normalizeSourceNamespace(params.sourceNamespace);
+  const sourceAccountIds = (params.sourceAccountIds ?? (params.sourceAccountId ? [params.sourceAccountId] : []))
+    .map(normalizeSourceAccountId)
+    .filter(Boolean);
+  const sourceAccountCondition = sourceAccountIds.length > 0
+    ? inArray(sql`trim(${transactions.sourceAccountId})`, sourceAccountIds)
+    : sql`regexp_replace(coalesce(${transactions.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`;
+  const sourceAccountConditionForRows = sourceAccountIds.length > 0
+    ? inArray(sql`trim(${statementImportRows.sourceAccountId})`, sourceAccountIds)
+    : sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`;
+  const includeLegacyScope = sourceAccountIds.length === 0 && (sourceNamespace === "" || sourceNamespace === "generic_csv");
+  const sourceScopeCondition = sourceNamespace === undefined ? undefined : includeLegacyScope ? or(
+    and(sql`trim(${transactions.sourceNamespace}) = ${sourceNamespace}`, sourceAccountCondition),
+    and(
+      or(
+        sql`regexp_replace(coalesce(${transactions.sourceNamespace}, ''), '[[:space:]]', '', 'g') = ''`,
+        sql`trim(${transactions.sourceNamespace}) = 'generic_csv'`,
+        isNull(transactions.sourceNamespace),
+      ),
+      sql`regexp_replace(coalesce(${transactions.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+    ),
+  ) : and(sql`trim(${transactions.sourceNamespace}) = ${sourceNamespace}`, sourceAccountCondition);
+  const sourceScopeConditionForRows = sourceNamespace === undefined ? undefined : includeLegacyScope ? or(
+    and(sql`trim(${statementImportRows.sourceNamespace}) = ${sourceNamespace}`, sourceAccountConditionForRows),
+    and(
+      or(
+        sql`regexp_replace(coalesce(${statementImportRows.sourceNamespace}, ''), '[[:space:]]', '', 'g') = ''`,
+        sql`trim(${statementImportRows.sourceNamespace}) = 'generic_csv'`,
+        isNull(statementImportRows.sourceNamespace),
+      ),
+      sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+    ),
+  ) : and(sql`trim(${statementImportRows.sourceNamespace}) = ${sourceNamespace}`, sourceAccountConditionForRows);
 
   // Query transactions matching authoritative ID within this household, account, namespace, sourceAccount
   const txRows = await db
     .select({
       id: transactions.id,
+      sourceNamespace: transactions.sourceNamespace,
+      sourceAccountId: transactions.sourceAccountId,
       authoritativeId: transactions.authoritativeId,
       voidedAt: transactions.voidedAt,
       payee: transactions.payee,
@@ -226,15 +322,15 @@ export async function findExistingAuthoritativeRecordsInDb(params: {
       and(
         eq(transactions.householdId, params.householdId),
         eq(transactions.accountId, params.accountId),
-        eq(transactions.sourceNamespace, params.sourceNamespace),
-        eq(transactions.sourceAccountId, sourceAccountId),
+        sourceScopeCondition,
         inArray(transactions.authoritativeId, params.authoritativeIds),
       ),
     );
 
   for (const tx of txRows) {
     if (tx.authoritativeId) {
-      result.set(tx.authoritativeId, {
+      const key = storedDedupScopeKey(tx.sourceNamespace, tx.sourceAccountId, tx.authoritativeId);
+      const record: ExistingAuthoritativeRecord = {
         authoritativeId: tx.authoritativeId,
         transaction: {
           id: tx.id,
@@ -245,6 +341,23 @@ export async function findExistingAuthoritativeRecordsInDb(params: {
           currency: tx.currency,
           version: tx.version,
         },
+      };
+      const records = recordsByKey.get(key) ?? [];
+      records.push(record);
+      recordsByKey.set(key, records);
+    }
+  }
+
+  for (const [key, records] of recordsByKey) {
+    if (records.length === 1) {
+      result.set(key, records[0]!);
+    } else if (records.length > 1) {
+      // Preserve the key and fail closed. Dropping it makes the caller treat
+      // an existing authoritative ID as a new transaction.
+      result.set(key, {
+        ...records[0]!,
+        ambiguityState: "ambiguous",
+        importRow: undefined,
       });
     }
   }
@@ -254,6 +367,8 @@ export async function findExistingAuthoritativeRecordsInDb(params: {
     .select({
       id: statementImportRows.id,
       batchId: statementImportRows.batchId,
+      sourceNamespace: statementImportRows.sourceNamespace,
+      sourceAccountId: statementImportRows.sourceAccountId,
       authoritativeId: statementImportRows.authoritativeId,
       canonicalTransactionId: statementImportRows.canonicalTransactionId,
       committedTransactionId: statementImportRows.committedTransactionId,
@@ -264,13 +379,14 @@ export async function findExistingAuthoritativeRecordsInDb(params: {
         eq(statementImportRows.householdId, params.householdId),
         eq(statementImportRows.accountId, params.accountId),
         eq(statementImportRows.status, "imported"),
+        sourceScopeConditionForRows,
         inArray(statementImportRows.authoritativeId, params.authoritativeIds),
       ),
     );
 
   for (const ir of importRows) {
     if (ir.authoritativeId) {
-      const existing = result.get(ir.authoritativeId);
+      const existing = result.get(storedDedupScopeKey(ir.sourceNamespace, ir.sourceAccountId, ir.authoritativeId));
       if (existing) {
         existing.importRow = { id: ir.id, batchId: ir.batchId };
       }
@@ -284,6 +400,8 @@ export type ExistingFallbackRecord = {
   importRowId: string;
   batchId: string;
   fallbackIdentifier: string;
+  sourceNamespace: string | null;
+  sourceAccountId: string | null;
   occurrenceIndex: number;
   canonicalTransactionId: string | null;
   voidedAt: Date | null;
@@ -293,16 +411,22 @@ export async function findExistingFallbackRecordsInDb(params: {
   householdId: string;
   accountId: string;
   fallbackIdentifiers: string[];
+  sourceNamespace?: string;
+  sourceAccountIds?: string[];
 }): Promise<Map<string, ExistingFallbackRecord[]>> {
   const result = new Map<string, ExistingFallbackRecord[]>();
   if (params.fallbackIdentifiers.length === 0) return result;
 
   const db = getDb();
+  const sourceNamespace = params.sourceNamespace === undefined ? undefined : params.sourceNamespace === null ? "" : params.sourceNamespace.trim();
+  const sourceAccountIds = params.sourceAccountIds?.map(normalizeSourceAccountId).filter(Boolean) ?? [];
   const rows = await db
     .select({
       id: statementImportRows.id,
       batchId: statementImportRows.batchId,
       fallbackIdentifier: statementImportRows.fallbackIdentifier,
+      sourceNamespace: statementImportRows.sourceNamespace,
+      sourceAccountId: statementImportRows.sourceAccountId,
       occurrenceIndex: statementImportRows.occurrenceIndex,
       canonicalTransactionId: statementImportRows.canonicalTransactionId,
       committedTransactionId: statementImportRows.committedTransactionId,
@@ -321,6 +445,23 @@ export async function findExistingFallbackRecordsInDb(params: {
         eq(statementImportRows.householdId, params.householdId),
         eq(statementImportRows.accountId, params.accountId),
         eq(statementImportRows.status, "imported"),
+        ...(sourceNamespace !== undefined ? [sourceAccountIds.length === 0 && (sourceNamespace === "" || sourceNamespace === "generic_csv") ? or(
+          and(
+            sql`trim(${statementImportRows.sourceNamespace}) = ${sourceNamespace}`,
+            sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+          ),
+          and(
+            or(
+              sql`regexp_replace(coalesce(${statementImportRows.sourceNamespace}, ''), '[[:space:]]', '', 'g') = ''`,
+              sql`trim(${statementImportRows.sourceNamespace}) = 'generic_csv'`,
+              isNull(statementImportRows.sourceNamespace),
+            ),
+            sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+          ),
+        ) : and(
+          sql`trim(${statementImportRows.sourceNamespace}) = ${sourceNamespace}`,
+          sourceAccountIds.length > 0 ? inArray(sql`trim(${statementImportRows.sourceAccountId})`, sourceAccountIds) : sql`regexp_replace(coalesce(${statementImportRows.sourceAccountId}, ''), '[[:space:]]', '', 'g') = ''`,
+        )] : []),
         inArray(statementImportRows.fallbackIdentifier, params.fallbackIdentifiers),
       ),
     )
@@ -328,17 +469,20 @@ export async function findExistingFallbackRecordsInDb(params: {
 
   for (const r of rows) {
     if (r.fallbackIdentifier) {
-      const list = result.get(r.fallbackIdentifier) ?? [];
+      const key = storedDedupScopeKey(r.sourceNamespace, r.sourceAccountId, r.fallbackIdentifier);
+      const list = result.get(key) ?? [];
       list.push({
         importRowId: r.id,
         batchId: r.batchId,
         fallbackIdentifier: r.fallbackIdentifier,
+        sourceNamespace: r.sourceNamespace,
+        sourceAccountId: r.sourceAccountId,
         occurrenceIndex: r.occurrenceIndex,
         canonicalTransactionId:
           r.canonicalTransactionId ?? r.committedTransactionId ?? null,
         voidedAt: r.txVoidedAt ?? null,
       });
-      result.set(r.fallbackIdentifier, list);
+      result.set(key, list);
     }
   }
 

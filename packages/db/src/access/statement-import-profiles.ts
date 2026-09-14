@@ -25,6 +25,13 @@ export class DuplicateStatementImportProfileNameError extends Error {
   }
 }
 
+export class StatementImportProfileScopeConflictError extends Error {
+  constructor(message: string = "Household-global import profiles require the global route") {
+    super(message);
+    this.name = "StatementImportProfileScopeConflictError";
+  }
+}
+
 export async function createStatementImportProfileInDb(params: {
   profile: NewStatementImportProfileRow;
 }): Promise<StatementImportProfileRow> {
@@ -74,6 +81,7 @@ export async function createStatementImportProfileInDb(params: {
 export async function findStatementImportProfileById(
   householdId: string,
   profileId: string,
+  accountId?: string,
 ): Promise<StatementImportProfileRow | null> {
   const [found] = await getDb()
     .select()
@@ -82,6 +90,9 @@ export async function findStatementImportProfileById(
       and(
         eq(statementImportProfiles.householdId, householdId),
         eq(statementImportProfiles.id, profileId),
+        ...(accountId
+          ? [or(eq(statementImportProfiles.accountId, accountId), isNull(statementImportProfiles.accountId))]
+          : []),
       ),
     )
     .limit(1);
@@ -118,6 +129,7 @@ export async function listStatementImportProfilesByHousehold(
 export async function updateStatementImportProfileInDb(params: {
   householdId: string;
   profileId: string;
+  routeAccountId?: string;
   name?: string | undefined;
   mappingConfig?: StatementImportMappingConfig | undefined;
   autoProcessSafe?: boolean | undefined;
@@ -130,9 +142,14 @@ export async function updateStatementImportProfileInDb(params: {
       const existing = await findStatementImportProfileById(
         params.householdId,
         params.profileId,
+        params.routeAccountId,
       );
       if (!existing) {
         throw new StatementImportProfileNotFoundError();
+      }
+
+      if (params.routeAccountId && existing.accountId === null) {
+        throw new StatementImportProfileScopeConflictError();
       }
 
       const targetAccountId =
@@ -170,6 +187,9 @@ export async function updateStatementImportProfileInDb(params: {
           and(
             eq(statementImportProfiles.householdId, params.householdId),
             eq(statementImportProfiles.id, params.profileId),
+            ...(params.routeAccountId
+              ? [eq(statementImportProfiles.accountId, params.routeAccountId)]
+              : []),
           ),
         )
         .returning();
@@ -198,13 +218,26 @@ export async function updateStatementImportProfileInDb(params: {
 export async function deleteStatementImportProfileInDb(
   householdId: string,
   profileId: string,
+  accountId?: string,
 ): Promise<boolean> {
+  if (accountId) {
+    const existing = await findStatementImportProfileById(
+      householdId,
+      profileId,
+      accountId,
+    );
+    if (existing?.accountId === null) {
+      throw new StatementImportProfileScopeConflictError();
+    }
+  }
+
   const result = await getDb()
     .delete(statementImportProfiles)
     .where(
       and(
         eq(statementImportProfiles.householdId, householdId),
         eq(statementImportProfiles.id, profileId),
+        ...(accountId ? [eq(statementImportProfiles.accountId, accountId)] : []),
       ),
     )
     .returning({ id: statementImportProfiles.id });

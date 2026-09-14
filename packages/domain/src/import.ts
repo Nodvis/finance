@@ -111,6 +111,7 @@ export type FallbackEvidence = Readonly<{
 
 export type StatementImportMappingConfig = Readonly<{
   dateColumn: string;
+  dateFallbackColumn?: string | undefined;
   dateFormat: SupportedDateFormat;
   timezone: string;
   amountMode: AmountMappingMode;
@@ -131,6 +132,20 @@ export type StatementImportMappingConfig = Readonly<{
   hasHeader: boolean;
   headerRowIndex: number;
   skipLeadingRows: number;
+  encoding?: CsvEncoding | undefined;
+  headerSignature?: string | undefined;
+}>;
+
+export type SuggestedImportMapping = Readonly<Partial<Pick<StatementImportMappingConfig,
+  "dateColumn" | "dateFallbackColumn" | "dateFormat" | "amountMode" | "amountColumn" | "debitColumn" | "creditColumn" |
+  "currencyMode" | "currencyColumn" | "descriptionColumn" | "sourceAccountIdColumn">>>;
+
+export type CsvHeaderDiscoveryResult = Readonly<{
+  headerRowIndex: number;
+  headers: string[];
+  suggestedMapping: SuggestedImportMapping;
+  confidence: "high" | "medium" | "low";
+  headerSignature: string;
 }>;
 
 export type NormalizedImportRow = Readonly<{
@@ -214,16 +229,28 @@ export function parseCsvText(
     delimiter?: CsvDelimiter;
     maxRows?: number;
     maxCharsPerCell?: number;
+    allowVariableColumnCount?: boolean;
   },
 ): string[][] {
   const delimiter = options?.delimiter ?? ",";
   const maxRows = options?.maxRows ?? 5000;
   const maxCharsPerCell = options?.maxCharsPerCell ?? 4000;
+  const allowVariableColumnCount = options?.allowVariableColumnCount ?? false;
 
   const rows: string[][] = [];
   let currentRow: string[] = [];
   let currentCell = "";
   let insideQuotes = false;
+  let justClosedQuote = false;
+  let expectedColumnCount: number | undefined;
+  const appendRow = (row: string[]) => {
+    if (expectedColumnCount === undefined && row.length > 1) expectedColumnCount = row.length;
+    if (!allowVariableColumnCount && expectedColumnCount !== undefined && row.length !== expectedColumnCount) {
+      throw new SyntaxError("CSV_PARSE_INVALID: inconsistent column count");
+    }
+    rows.push(row);
+    if (rows.length > maxRows) throw new SyntaxError("CSV_PARSE_INVALID: file exceeds maximum row count");
+  };
   let i = 0;
   const len = text.length;
 
@@ -238,18 +265,21 @@ export function parseCsvText(
           continue;
         } else {
           insideQuotes = false;
+          justClosedQuote = true;
           i += 1;
           continue;
         }
       } else {
-        if (currentCell.length < maxCharsPerCell) {
-          currentCell += char;
-        }
+        if (currentCell.length >= maxCharsPerCell) throw new SyntaxError("CSV_PARSE_INVALID: cell exceeds maximum length");
+        currentCell += char;
         i += 1;
         continue;
       }
     } else {
+      if (justClosedQuote && char !== delimiter && char !== "\r" && char !== "\n") throw new SyntaxError("CSV_PARSE_INVALID: unexpected characters after quoted cell");
+      justClosedQuote = false;
       if (char === '"') {
+        if (currentCell.length > 0) throw new SyntaxError("CSV_PARSE_INVALID: unexpected quote in unquoted cell");
         insideQuotes = true;
         i += 1;
         continue;
@@ -269,8 +299,7 @@ export function parseCsvText(
         currentRow.push(currentCell.trim());
         currentCell = "";
         if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0] !== "")) {
-          rows.push(currentRow);
-          if (rows.length >= maxRows) break;
+          appendRow(currentRow);
         }
         currentRow = [];
         i += 1;
@@ -281,29 +310,121 @@ export function parseCsvText(
         currentRow.push(currentCell.trim());
         currentCell = "";
         if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0] !== "")) {
-          rows.push(currentRow);
-          if (rows.length >= maxRows) break;
+          appendRow(currentRow);
         }
         currentRow = [];
         i += 1;
         continue;
       }
 
-      if (currentCell.length < maxCharsPerCell) {
-        currentCell += char;
-      }
+      if (currentCell.length >= maxCharsPerCell) throw new SyntaxError("CSV_PARSE_INVALID: cell exceeds maximum length");
+      currentCell += char;
       i += 1;
     }
   }
 
+  if (insideQuotes) throw new SyntaxError("CSV_PARSE_INVALID: unterminated quoted cell");
+
   if (currentCell !== "" || currentRow.length > 0) {
     currentRow.push(currentCell.trim());
     if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0] !== "")) {
-      rows.push(currentRow);
+      appendRow(currentRow);
     }
   }
 
   return rows;
+}
+
+const CSV_HEADER_ALIASES: Record<string, readonly string[]> = {
+  date: ["date", "transaction date", "booking date", "data", "data operacji", "data transakcji", "data księgowania", "dzień"],
+  amount: ["amount", "value", "kwota", "wartość", "suma"],
+  debit: ["debit", "withdrawal", "debits", "obciążenie", "wypłaty", "kwota obciążenia"],
+  credit: ["credit", "deposit", "credits", "uznanie", "wpłaty", "kwota uznania"],
+  description: ["description", "details", "memo", "title", "narrative", "opis", "tytuł", "szczegóły", "nazwa operacji"],
+  currency: ["currency", "ccy", "waluta"],
+  account: ["account", "account number", "account id", "rachunek", "numer rachunku", "konto"],
+};
+
+function normalizeCsvHeader(value: string): string {
+  return value.replace(/^\ufeff/, "").replace(/^#/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function headerMatches(value: string, aliases: readonly string[]): boolean {
+  const normalized = normalizeCsvHeader(value);
+  return aliases.some((alias) => normalized === normalizeCsvHeader(alias) || normalized.includes(normalizeCsvHeader(alias)));
+}
+
+export function computeCsvHeaderSignature(headers: readonly string[], delimiter: CsvDelimiter): string {
+  return createHash("sha256").update(`${delimiter}\\u0000${headers.map(normalizeCsvHeader).join("\\u0001")}`).digest("hex");
+}
+
+export function ensureUniqueCsvHeaders(headers: readonly string[]): string[] {
+  const counts = new Map<string, number>();
+  return headers.map((header) => {
+    const base = header.trim() || "Unnamed column";
+    const count = (counts.get(base) ?? 0) + 1;
+    counts.set(base, count);
+    return count === 1 ? base : `${base} (${count})`;
+  });
+}
+
+function trimTrailingEmptyCsvCells(row: readonly string[]): string[] {
+  const trimmed = [...row];
+  while (trimmed.length > 0 && trimmed[trimmed.length - 1] === "") trimmed.pop();
+  return trimmed;
+}
+
+/** Finds a semantic header row within a bounded preamble and validates its samples. */
+export function discoverCsvHeader(text: string, delimiter: CsvDelimiter, maxScanRows = 32): CsvHeaderDiscoveryResult {
+  const rows = parseCsvText(text, { delimiter, maxRows: 5000, allowVariableColumnCount: true });
+  let best: { index: number; headers: string[]; score: number } | undefined;
+  for (let index = 0; index < Math.min(rows.length, maxScanRows); index++) {
+    const headers = trimTrailingEmptyCsvCells(rows[index] ?? []);
+    if (headers.length < 2) continue;
+    const score = headers.reduce((total, header) => total + (Object.values(CSV_HEADER_ALIASES).some((aliases) => headerMatches(header, aliases)) ? 1 : 0), 0);
+    const required = (["date", "amount", "debit", "credit", "description"] as const).some((kind) => headers.some((header) => headerMatches(header, CSV_HEADER_ALIASES[kind] ?? [])));
+    if (required && (!best || score > best.score)) {
+      best = { index, headers, score };
+    }
+  }
+  const headerRowIndex = best?.index ?? 0;
+  const headers = ensureUniqueCsvHeaders(trimTrailingEmptyCsvCells(best?.headers ?? rows[0] ?? []));
+  const samples = rows.slice(headerRowIndex + 1, headerRowIndex + 4);
+  const mapping: Record<string, string> = {};
+  const find = (kind: keyof typeof CSV_HEADER_ALIASES) => headers.find((header) => headerMatches(header, CSV_HEADER_ALIASES[kind] ?? []));
+  const currencyColumn = find("currency");
+  const accountColumn = find("account");
+  const valuesFor = (column?: string) => column ? samples.map((row) => row[headers.indexOf(column)] ?? "").filter(Boolean) : [];
+  const dateCandidates = headers.filter((header) => headerMatches(header, CSV_HEADER_ALIASES.date ?? []));
+  const dateScore = (column: string) => { const values = valuesFor(column); return values.length === 0 ? 0 : values.filter((value) => parseImportDate(value, "auto").success).length / values.length; };
+  const preferredDate = dateCandidates.find((column) => ["data operacji", "transaction date", "operation date"].includes(normalizeCsvHeader(column)));
+  const dateColumn = preferredDate && dateScore(preferredDate) >= 0.5
+    ? preferredDate
+    : [...dateCandidates].sort((a, b) => dateScore(b) - dateScore(a))[0];
+  const dateOk = Boolean(dateColumn && dateScore(dateColumn) >= 0.5);
+  const fallbackDateColumn = dateCandidates.find((column) => column !== dateColumn && dateScore(column) >= 0.5);
+  const amountCandidates = headers.filter((header) => headerMatches(header, CSV_HEADER_ALIASES.amount ?? []));
+  const supportedCurrencies = Object.keys(CURRENCY_FRACTION_DIGITS);
+  const amountScore = (column: string) => { const values = valuesFor(column); return values.length === 0 ? 0 : values.filter((value) => supportedCurrencies.some((currency) => parseImportAmount(value, currency).success)).length / values.length; };
+  const amountColumn = [...amountCandidates].sort((a, b) => amountScore(b) - amountScore(a))[0];
+  const amountOk = Boolean(amountColumn && amountScore(amountColumn) >= 0.5);
+  const debitColumn = headers.find((header) => headerMatches(header, CSV_HEADER_ALIASES.debit ?? []));
+  const creditColumn = headers.find((header) => headerMatches(header, CSV_HEADER_ALIASES.credit ?? []));
+  const separateAmountValues = valuesFor(debitColumn).concat(valuesFor(creditColumn));
+  const separateAmountOk = separateAmountValues.length > 0
+    && separateAmountValues.every((value) => supportedCurrencies.some((currency) => parseImportAmount(value, currency).success));
+  const descriptionCandidates = headers.filter((header) => headerMatches(header, CSV_HEADER_ALIASES.description ?? []));
+  const descriptionColumn = [...descriptionCandidates].sort((a, b) => valuesFor(b).length - valuesFor(a).length)[0];
+  if (dateColumn && dateOk) { mapping.dateColumn = dateColumn; if (fallbackDateColumn) mapping.dateFallbackColumn = fallbackDateColumn; }
+  if (amountColumn && amountOk) { mapping.amountColumn = amountColumn; mapping.amountMode = "signed"; }
+  if (debitColumn && creditColumn && separateAmountOk) { mapping.debitColumn = debitColumn; mapping.creditColumn = creditColumn; mapping.amountMode = "separate"; }
+  if (descriptionColumn && valuesFor(descriptionColumn).some((value) => value.trim() && !parseImportDate(value, "auto").success && !parseImportAmount(value, "PLN").success)) mapping.descriptionColumn = descriptionColumn;
+  if (currencyColumn) { mapping.currencyColumn = currencyColumn; mapping.currencyMode = "column"; }
+  if (accountColumn) mapping.sourceAccountIdColumn = accountColumn;
+  const requiredCount = [mapping.dateColumn, mapping.amountColumn ?? mapping.debitColumn, mapping.descriptionColumn].filter(Boolean).length;
+  const amountMappingOk = amountOk || separateAmountOk;
+  const confidence = requiredCount === 3 && dateOk && amountMappingOk ? "high" : requiredCount >= 2 ? "medium" : "low";
+  return { headerRowIndex, headers, suggestedMapping: mapping, confidence, headerSignature: computeCsvHeaderSignature(headers, delimiter) };
 }
 
 /**
@@ -456,8 +577,12 @@ export function detectCsvEncoding(bytes: Uint8Array): CsvEncoding {
  */
 export function decodeCsvBuffer(bytes: Uint8Array, encoding?: CsvEncoding): string {
   const enc = encoding ?? detectCsvEncoding(bytes);
-  const decoder = new TextDecoder(enc, { fatal: false });
-  let decoded = decoder.decode(bytes);
+  let decoded: string;
+  try {
+    decoded = new TextDecoder(enc, { fatal: true }).decode(bytes);
+  } catch {
+    throw new SyntaxError(`CSV_PARSE_INVALID: invalid ${enc} byte sequence`);
+  }
 
   if (decoded.charCodeAt(0) === 0xfeff) {
     decoded = decoded.slice(1);
@@ -490,15 +615,25 @@ export function parseImportDate(
 
   let datePart = trimmed;
   let timePart = "00:00:00";
+  let explicitOffsetMinutes: number | null = null;
 
-  if (trimmed.includes("T")) {
-    const parts = trimmed.split("T");
-    datePart = parts[0] ?? trimmed;
-    timePart = (parts[1] ?? "00:00:00").replace(/Z|([+-]\d{2}:?\d{2})/, "");
-  } else if (trimmed.includes(" ")) {
-    const parts = trimmed.split(/\s+/);
-    datePart = parts[0] ?? trimmed;
-    timePart = parts[1] ?? "00:00:00";
+  if (trimmed.includes("T") || /\s/.test(trimmed)) {
+    const datetimeMatch = trimmed.match(/^(.+?)[T ](\d{1,2}:\d{2}(?::\d{2})?)(Z|[+-]\d{2}:?\d{2})?$/);
+    if (!datetimeMatch) return { success: false, error: `Invalid timestamp "${trimmed}"` };
+    datePart = datetimeMatch[1]!;
+    timePart = datetimeMatch[2]!;
+    const offset = datetimeMatch[3];
+    if (offset) {
+      if (offset === "Z") explicitOffsetMinutes = 0;
+      else {
+        const sign = offset[0] === "-" ? -1 : 1;
+        const digits = offset.slice(1).replace(":", "");
+        const hours = parseInt(digits.slice(0, 2), 10);
+        const minutes = parseInt(digits.slice(2), 10);
+        if (hours > 23 || minutes > 59) return { success: false, error: `Invalid timestamp offset "${offset}"` };
+        explicitOffsetMinutes = sign * (hours * 60 + minutes);
+      }
+    }
   }
 
   const timeMatch = timePart.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
@@ -516,16 +651,33 @@ export function parseImportDate(
   let day: number | null = null;
 
   const tryMatch = (fmt: string): boolean => {
+    const componentDigits = format === "auto" ? "{1,2}" : "{2}";
     if (fmt === "YYYY-MM-DD") {
-      const m = datePart.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+      const m = datePart.match(new RegExp(`^(\\d{4})-(\\d${componentDigits})-(\\d${componentDigits})$`));
       if (m) {
         year = parseInt(m[1]!, 10);
         month = parseInt(m[2]!, 10);
         day = parseInt(m[3]!, 10);
         return true;
       }
-    } else if (fmt === "DD.MM.YYYY" || fmt === "DD-MM-YYYY" || fmt === "DD/MM/YYYY") {
-      const m = datePart.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    } else if (fmt === "DD.MM.YYYY") {
+      const m = datePart.match(new RegExp(`^(\\d${componentDigits})\\.(\\d${componentDigits})\\.(\\d{4})$`));
+      if (m) {
+        day = parseInt(m[1]!, 10);
+        month = parseInt(m[2]!, 10);
+        year = parseInt(m[3]!, 10);
+        return true;
+      }
+    } else if (fmt === "DD-MM-YYYY") {
+      const m = datePart.match(new RegExp(`^(\\d${componentDigits})-(\\d${componentDigits})-(\\d{4})$`));
+      if (m) {
+        day = parseInt(m[1]!, 10);
+        month = parseInt(m[2]!, 10);
+        year = parseInt(m[3]!, 10);
+        return true;
+      }
+    } else if (fmt === "DD/MM/YYYY") {
+      const m = datePart.match(new RegExp(`^(\\d${componentDigits})\\/(\\d${componentDigits})\\/(\\d{4})$`));
       if (m) {
         day = parseInt(m[1]!, 10);
         month = parseInt(m[2]!, 10);
@@ -533,7 +685,7 @@ export function parseImportDate(
         return true;
       }
     } else if (fmt === "MM/DD/YYYY") {
-      const m = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      const m = datePart.match(new RegExp(`^(\\d${componentDigits})\\/(\\d${componentDigits})\\/(\\d{4})$`));
       if (m) {
         month = parseInt(m[1]!, 10);
         day = parseInt(m[2]!, 10);
@@ -541,7 +693,7 @@ export function parseImportDate(
         return true;
       }
     } else if (fmt === "YYYY/MM/DD") {
-      const m = datePart.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+      const m = datePart.match(new RegExp(`^(\\d{4})\\/(\\d${componentDigits})\\/(\\d${componentDigits})$`));
       if (m) {
         year = parseInt(m[1]!, 10);
         month = parseInt(m[2]!, 10);
@@ -560,6 +712,17 @@ export function parseImportDate(
       };
     }
   } else {
+    const ambiguousSlashMatch = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ambiguousSlashMatch) {
+      const first = parseInt(ambiguousSlashMatch[1]!, 10);
+      const second = parseInt(ambiguousSlashMatch[2]!, 10);
+      if (first >= 1 && first <= 12 && second >= 1 && second <= 12 && first !== second) {
+        return {
+          success: false,
+          error: `Date "${trimmed}" is ambiguous during auto-detection; specify an explicit date format`,
+        };
+      }
+    }
     const candidates = [
       "YYYY-MM-DD",
       "DD.MM.YYYY",
@@ -618,6 +781,12 @@ export function parseImportDate(
   try {
     const isoString = `${y.toString().padStart(4, "0")}-${m.toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}T${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:${second.toString().padStart(2, "0")}`;
 
+    if (explicitOffsetMinutes !== null) {
+      const adjustedDate = new Date(Date.UTC(y, m - 1, d, hour, minute, second) - explicitOffsetMinutes * 60_000);
+      return isNaN(adjustedDate.getTime())
+        ? { success: false, error: `Invalid date: ${trimmed}` }
+        : { success: true, date: adjustedDate };
+    }
     if (!timezone || timezone.toUpperCase() === "UTC") {
       const utcDate = new Date(`${isoString}Z`);
       if (isNaN(utcDate.getTime())) {
@@ -700,9 +869,22 @@ export function parseImportAmount(
     clean = clean.slice(1).trim();
   }
 
+  const explicitCurrencyCodes = [...clean.matchAll(/(?:^|\s)([A-Z]{3})(?=\s|$)/gi)].map((match) => match[1]!.toUpperCase());
+  if (explicitCurrencyCodes.some((code) => code !== currency.toUpperCase())) {
+    return { success: false, error: `Currency in amount does not match target currency ${currency}` };
+  }
+
+  const symbolCurrencies: Record<string, string> = { "$": "USD", "€": "EUR", "£": "GBP", "zł": "PLN" };
+  for (const [symbol, symbolCurrency] of Object.entries(symbolCurrencies)) {
+    if (clean.includes(symbol) && symbolCurrency !== currency.toUpperCase()) {
+      return { success: false, error: `Currency in amount does not match target currency ${currency}` };
+    }
+  }
+
   clean = clean
+    .replace(new RegExp(`(?:^|\\s)${currency}(?=$|\\s)`, "gi"), " ")
+    .replace(new RegExp(`${currency}$`, "i"), "")
     .replace(/[zł$€£\s\u00A0]/gi, "")
-    .replace(new RegExp(`\\b${currency}\\b`, "gi"), "")
     .trim();
 
   if (!clean) {
@@ -815,6 +997,14 @@ export function parseImportAmount(
 }
 
 /**
+ * Encodes composite identity parts without delimiter collisions.
+ * Length prefixes preserve exact values, including separators and control characters.
+ */
+export function encodeImportIdentityParts(parts: readonly string[]): string {
+  return parts.map((part) => `${part.length}:${part}`).join("");
+}
+
+/**
  * Computes deterministic fallback identity hash for an import row based on immutable facts.
  */
 export function computeFallbackIdentifier(params: {
@@ -829,9 +1019,13 @@ export function computeFallbackIdentifier(params: {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
-  hash.update(
-    `${params.occurredOnDate}:${params.amountMinor.toString()}:${params.currency}:${params.kind}:${normalizedDesc}`,
-  );
+  hash.update(encodeImportIdentityParts([
+    params.occurredOnDate,
+    params.amountMinor.toString(),
+    params.currency,
+    params.kind,
+    normalizedDesc,
+  ]));
   return hash.digest("hex");
 }
 
@@ -859,24 +1053,39 @@ export function computeRowDedupeHash(params: {
   if (params.authoritativeId && params.authoritativeId.trim().length > 0) {
     const ns = params.sourceNamespace?.trim() || "generic_csv";
     const srcAcc = params.sourceAccountId?.trim() || "";
-    hash.update(
-      `auth:${params.accountId}:${ns}:${srcAcc}:${params.authoritativeId.trim()}`,
-    );
+    hash.update(encodeImportIdentityParts([
+      "auth",
+      params.accountId,
+      ns,
+      srcAcc,
+      params.authoritativeId.trim(),
+    ]));
     return hash.digest("hex");
   }
 
   if (params.fallbackIdentifier && params.fallbackIdentifier.trim().length > 0) {
     const occ = params.occurrenceIndex ?? 0;
-    hash.update(
-      `fallback:${params.accountId}:${params.fallbackIdentifier.trim()}:${occ}`,
-    );
+    const ns = params.sourceNamespace?.trim() || "generic_csv";
+    const srcAcc = params.sourceAccountId?.trim() || "";
+    hash.update(encodeImportIdentityParts([
+      "fallback",
+      params.accountId,
+      ns,
+      srcAcc,
+      params.fallbackIdentifier.trim(),
+      occ.toString(),
+    ]));
     return hash.digest("hex");
   }
 
   if (params.sourceRowIdentity && params.sourceRowIdentity.trim().length > 0) {
-    hash.update(
-      `id:${params.accountId}:${params.sourceRowIdentity.trim()}:${params.amountMinor ?? 0n}:${params.currency ?? ""}`,
-    );
+    hash.update(encodeImportIdentityParts([
+      "id",
+      params.accountId,
+      params.sourceRowIdentity.trim(),
+      (params.amountMinor ?? 0n).toString(),
+      params.currency ?? "",
+    ]));
     return hash.digest("hex");
   }
 
@@ -884,9 +1093,16 @@ export function computeRowDedupeHash(params: {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
-  hash.update(
-    `row:${params.accountId}:${params.occurredOnDate ?? ""}:${params.amountMinor ?? 0n}:${params.currency ?? ""}:${params.kind ?? "expense"}:${normalizedDesc}:${params.occurrenceIndex ?? 0}`,
-  );
+  hash.update(encodeImportIdentityParts([
+    "row",
+    params.accountId,
+    params.occurredOnDate ?? "",
+    (params.amountMinor ?? 0n).toString(),
+    params.currency ?? "",
+    params.kind ?? "expense",
+    normalizedDesc,
+    (params.occurrenceIndex ?? 0).toString(),
+  ]));
   return hash.digest("hex");
 }
 
@@ -934,7 +1150,9 @@ export function normalizeImportRow(params: {
   };
 
   // 1. Date
-  const rawDate = getVal(mapping.dateColumn);
+  const primaryDate = getVal(mapping.dateColumn);
+  const fallbackDate = getVal(mapping.dateFallbackColumn);
+  const rawDate = primaryDate || fallbackDate;
   if (!rawDate) {
     return {
       rowIndex,
@@ -948,22 +1166,26 @@ export function normalizeImportRow(params: {
   }
 
   const dateResult = parseImportDate(
-    rawDate,
-    mapping.dateFormat,
+    primaryDate,
+    mapping.dateFormat ?? "auto",
     mapping.timezone,
   );
-  if (!dateResult.success || !dateResult.date) {
+  const fallbackDateResult = !dateResult.success && fallbackDate && fallbackDate !== primaryDate
+    ? parseImportDate(fallbackDate, mapping.dateFormat ?? "auto", mapping.timezone)
+    : null;
+  const selectedDateResult = fallbackDateResult?.success ? fallbackDateResult : dateResult;
+  if (!selectedDateResult.success || !selectedDateResult.date) {
     return {
       rowIndex,
       valid: false,
       status: "error",
       errorCode: "INVALID_DATE",
-      errorMessage: dateResult.error ?? "Invalid date format",
+      errorMessage: selectedDateResult.error ?? dateResult.error ?? "Invalid date format",
       rawRowContent,
       rawValues,
     };
   }
-  const occurredOn = dateResult.date;
+  const occurredOn = selectedDateResult.date;
 
   // 2. Currency
   let rowCurrency = targetAccountCurrency;
@@ -1074,23 +1296,12 @@ export function normalizeImportRow(params: {
       const debitParsed = parseImportAmount(rawDebit, rowCurrency);
       const creditParsed = parseImportAmount(rawCredit, rowCurrency);
 
-      if (debitParsed.success && creditParsed.success) {
-        return {
-          rowIndex,
-          valid: false,
-          status: "error",
-          errorCode: "AMBIGUOUS_AMOUNT",
-          errorMessage: "Both debit and credit columns have values in this row",
-          rawRowContent,
-          rawValues,
-        };
-      } else if (debitParsed.success) {
-        kind = "expense";
-        amountMinor = debitParsed.amountMinor!;
-      } else if (creditParsed.success) {
-        kind = "income";
-        amountMinor = creditParsed.amountMinor!;
-      } else {
+      if (
+        !debitParsed.success ||
+        !creditParsed.success ||
+        debitParsed.isNegative ||
+        creditParsed.isNegative
+      ) {
         return {
           rowIndex,
           valid: false,
@@ -1101,9 +1312,23 @@ export function normalizeImportRow(params: {
           rawValues,
         };
       }
+
+      return {
+        rowIndex,
+        valid: false,
+        status: "error",
+        errorCode: "AMBIGUOUS_AMOUNT",
+        errorMessage: "Both debit and credit columns have values in this row",
+        rawRowContent,
+        rawValues,
+      };
     } else if (hasDebit) {
       const debitParsed = parseImportAmount(rawDebit, rowCurrency);
-      if (!debitParsed.success || debitParsed.amountMinor === undefined) {
+      if (
+        !debitParsed.success ||
+        debitParsed.amountMinor === undefined ||
+        debitParsed.isNegative
+      ) {
         return {
           rowIndex,
           valid: false,
@@ -1118,7 +1343,11 @@ export function normalizeImportRow(params: {
       amountMinor = debitParsed.amountMinor;
     } else {
       const creditParsed = parseImportAmount(rawCredit!, rowCurrency);
-      if (!creditParsed.success || creditParsed.amountMinor === undefined) {
+      if (
+        !creditParsed.success ||
+        creditParsed.amountMinor === undefined ||
+        creditParsed.isNegative
+      ) {
         return {
           rowIndex,
           valid: false,
@@ -1181,7 +1410,7 @@ export function normalizeImportRow(params: {
   };
 
   // Occurrence within this file stream
-  const occurrenceKey = fallbackIdentifier;
+  const occurrenceKey = `${sourceNamespace}\u0000${sourceAccountId ?? ""}\u0000${fallbackIdentifier}`;
   const currentOccCount = occurrenceCounter.get(occurrenceKey) ?? 0;
   occurrenceCounter.set(occurrenceKey, currentOccCount + 1);
   const occurrenceIndex = currentOccCount;

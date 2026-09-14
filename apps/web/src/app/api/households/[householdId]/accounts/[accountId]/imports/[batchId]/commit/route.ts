@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHouseholdAccess } from "@/lib/authorization/household";
-import { handleImportRouteError } from "@/lib/statement-imports/error-handler";
+import { handleImportRouteError, readJsonBody } from "@/lib/statement-imports/error-handler";
 import { commitImportBatchSchema } from "@/lib/statement-imports/schema";
 import { commitStatementImport } from "@/lib/statement-imports/service";
 
@@ -17,7 +17,7 @@ export async function POST(request: Request, context: RouteContext) {
     const { householdId, accountId, batchId } = await context.params;
     const authContext = await requireHouseholdAccess(householdId);
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const { selectedRowIndices, safeOnly } = commitImportBatchSchema.parse(body);
 
     const result = await commitStatementImport({

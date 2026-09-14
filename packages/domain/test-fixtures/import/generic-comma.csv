@@ -1,0 +1,4 @@
+Date,Amount,Currency,Description,Extra
+2026-09-10,-1,234.56,USD,"Coffee, Central"
+2026-09-11,+40.00,USD,"Line 1
+Line 2",ignored

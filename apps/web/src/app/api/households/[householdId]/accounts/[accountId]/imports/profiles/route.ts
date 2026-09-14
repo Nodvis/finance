@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHouseholdAccess } from "@/lib/authorization/household";
-import { handleImportRouteError } from "@/lib/statement-imports/error-handler";
+import { handleImportRouteError, readJsonBody } from "@/lib/statement-imports/error-handler";
 import { createStatementImportProfileSchema } from "@/lib/statement-imports/schema";
 import {
   createImportProfile,
@@ -35,7 +35,7 @@ export async function POST(request: Request, context: RouteContext) {
     const { householdId, accountId } = await context.params;
     const authContext = await requireHouseholdAccess(householdId);
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const validated = createStatementImportProfileSchema.parse(body);
 
     const data = await createImportProfile({
@@ -44,8 +44,7 @@ export async function POST(request: Request, context: RouteContext) {
       mappingConfig: validated.mappingConfig,
       autoProcessSafe: validated.autoProcessSafe,
       isDefault: validated.isDefault,
-      accountId:
-        validated.accountId !== undefined ? validated.accountId : accountId,
+      accountId,
     });
 
     return NextResponse.json({ data }, { status: 201 });

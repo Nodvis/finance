@@ -9,22 +9,51 @@ import {
   DuplicateStatementImportProfileNameError,
   EmptyCsvError,
   FileTooLargeError,
+  ImportMappingValidationError,
   ImportBatchAlreadyCommittedError,
+  AmbiguousImportRowCommitError,
   ImportBatchNotFoundError,
   StatementImportProfileNotFoundError,
 } from "./service";
 
+export class InvalidJsonBodyError extends Error {
+  constructor(message = "Invalid JSON request body") {
+    super(message);
+    this.name = "InvalidJsonBodyError";
+  }
+}
+
+export async function readJsonBody(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    throw new InvalidJsonBodyError();
+  }
+}
+
+function stableErrorCode(error: unknown): string {
+  if (error instanceof InvalidJsonBodyError) return "JSON_INVALID";
+  if (error instanceof SyntaxError) return "CSV_PARSE_INVALID";
+  if (error instanceof ZodError) return "VALIDATION_ERROR";
+  if (error instanceof ImportMappingValidationError) return error.code;
+  if (error instanceof Error && error.name === "StatementImportProfileScopeConflictError") {
+    return "STATEMENT_IMPORT_PROFILE_SCOPE_CONFLICT";
+  }
+  if (error instanceof Error && error.name) return error.name.replace(/Error$/, "").toUpperCase();
+  return "INTERNAL_ERROR";
+}
+
 export function handleImportRouteError(error: unknown): NextResponse {
   if (error instanceof AuthenticationRequiredError) {
     return NextResponse.json(
-      { error: "Authentication is required" },
+      { error: "AUTHENTICATION_REQUIRED", code: "AUTHENTICATION_REQUIRED" },
       { status: 401 },
     );
   }
 
   if (error instanceof HouseholdAccessDeniedError) {
     return NextResponse.json(
-      { error: "Household access denied" },
+      { error: "HOUSEHOLD_ACCESS_DENIED", code: "HOUSEHOLD_ACCESS_DENIED" },
       { status: 403 },
     );
   }
@@ -35,18 +64,26 @@ export function handleImportRouteError(error: unknown): NextResponse {
     error instanceof StatementImportProfileNotFoundError
   ) {
     return NextResponse.json(
-      { error: error.message },
+      { error: stableErrorCode(error), code: stableErrorCode(error) },
       { status: 404 },
+    );
+  }
+
+  if (error instanceof AmbiguousImportRowCommitError) {
+    return NextResponse.json(
+      { error: "IMPORT_ROW_AMBIGUOUS", code: "IMPORT_ROW_AMBIGUOUS" },
+      { status: 409 },
     );
   }
 
   if (
     error instanceof ImportBatchAlreadyCommittedError ||
     error instanceof DuplicateImportRowError ||
-    error instanceof DuplicateStatementImportProfileNameError
+    error instanceof DuplicateStatementImportProfileNameError ||
+    (error instanceof Error && error.name === "StatementImportProfileScopeConflictError")
   ) {
     return NextResponse.json(
-      { error: error.message },
+      { error: stableErrorCode(error), code: stableErrorCode(error) },
       { status: 409 },
     );
   }
@@ -54,7 +91,8 @@ export function handleImportRouteError(error: unknown): NextResponse {
   if (error instanceof ZodError) {
     return NextResponse.json(
       {
-        error: "Validation error",
+        error: "VALIDATION_ERROR",
+        code: "VALIDATION_ERROR",
         issues: error.issues,
       },
       { status: 400 },
@@ -64,16 +102,18 @@ export function handleImportRouteError(error: unknown): NextResponse {
   if (
     error instanceof FileTooLargeError ||
     error instanceof EmptyCsvError ||
+    error instanceof ImportMappingValidationError ||
+    error instanceof InvalidJsonBodyError ||
     error instanceof SyntaxError
   ) {
     return NextResponse.json(
-      { error: (error as Error).message },
+      { error: stableErrorCode(error), code: stableErrorCode(error) },
       { status: 400 },
     );
   }
 
   return NextResponse.json(
-    { error: error instanceof Error ? error.message : "Internal server error" },
+    { error: "INTERNAL_ERROR", code: "INTERNAL_ERROR" },
     { status: 500 },
   );
 }

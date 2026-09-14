@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { SerializedHouseholdAccount } from "@/lib/accounts/serialization";
 import type { StatementImportProfileDto } from "@/lib/statement-imports/service";
@@ -18,12 +18,26 @@ type Inspect = {
   detectedDelimiter: string;
   detectedEncoding: string;
   totalRowCount: number;
+  headerRowIndex: number;
+  headerSignature: string;
+  suggestedMapping: {
+    dateColumn?: string;
+    dateFallbackColumn?: string;
+    amountColumn?: string;
+    amountMode?: "signed" | "separate";
+    debitColumn?: string;
+    creditColumn?: string;
+    descriptionColumn?: string;
+    sourceAccountIdColumn?: string;
+  };
+  mappingConfidence: "high" | "medium" | "low";
 };
 
 type PreviewRow = {
   rowIndex: number;
   valid: boolean;
   status: string;
+  errorCode?: string | null;
   errorMessage?: string | null;
   date?: string | null;
   kind?: string | null;
@@ -32,6 +46,7 @@ type PreviewRow = {
   formattedAmount?: string | null;
   description?: string | null;
   possibleMatch?: unknown;
+  ambiguityState?: "unambiguous" | "ambiguous";
   selected: boolean;
 };
 
@@ -58,6 +73,72 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function localizedImportError(
+  json: { code?: unknown; error?: unknown },
+  translate: (key: string) => string,
+): string {
+  if (json.code === "IMPORT_MAPPING_INVALID") return translate("mappingInvalid");
+  if (json.code === "CSV_PARSE_INVALID") return translate("parserInvalid");
+  const errorCode = typeof json.code === "string" ? json.code : "";
+  if (errorCode === "VALIDATION_ERROR" || errorCode === "IMPORT_MAPPING_VALIDATION") return translate("mappingInvalid");
+  if (errorCode === "CSV_PARSE_INVALID") return translate("parserInvalid");
+  return translate("errors.generic");
+}
+
+export function isImportRowSelectable(row: Pick<PreviewRow, "valid" | "status" | "possibleMatch" | "ambiguityState">): boolean {
+  return row.valid
+    && row.status === "pending"
+    && !row.possibleMatch
+    && row.ambiguityState === "unambiguous";
+}
+
+export function markAutoCommittedRows(preview: Preview): Preview {
+  if (!preview.autoCommitted) return preview;
+  return {
+    ...preview,
+    rows: preview.rows.map((row) =>
+      row.selected ? { ...row, status: "imported", selected: false } : row,
+    ),
+  };
+}
+
+export function getImportRowStatusKey(row: Pick<PreviewRow, "status" | "ambiguityState">): string {
+  return row.ambiguityState !== "unambiguous" ? "review" : row.status;
+}
+
+export function buildImportMappingConfig(input: {
+  dateColumn: string;
+  dateFallbackColumn?: string;
+  descriptionColumn: string;
+  amountMode: "signed" | "separate";
+  amountColumn: string;
+  debitColumn: string;
+  creditColumn: string;
+  mappingConfig?: Partial<StatementImportProfileDto["mappingConfig"]> | undefined;
+  sourceAccountIdColumn?: string;
+  inspect: Pick<Inspect, "suggestedMapping" | "detectedDelimiter" | "detectedEncoding" | "headerRowIndex" | "headerSignature">;
+}) {
+  return {
+    ...input.mappingConfig,
+    dateColumn: input.dateColumn,
+    dateFallbackColumn: input.dateFallbackColumn ?? input.mappingConfig?.dateFallbackColumn ?? input.inspect.suggestedMapping.dateFallbackColumn,
+    dateFormat: input.mappingConfig?.dateFormat ?? "auto",
+    timezone: input.mappingConfig?.timezone ?? "UTC",
+    amountMode: input.amountMode,
+    ...(input.amountMode === "signed" ? { amountColumn: input.amountColumn } : { debitColumn: input.debitColumn, creditColumn: input.creditColumn }),
+    invertAmount: input.mappingConfig?.invertAmount ?? false,
+    currencyMode: input.mappingConfig?.currencyMode ?? "account",
+    descriptionColumn: input.descriptionColumn,
+    sourceAccountIdColumn: input.sourceAccountIdColumn ?? input.mappingConfig?.sourceAccountIdColumn ?? input.inspect.suggestedMapping.sourceAccountIdColumn,
+    delimiter: input.mappingConfig?.delimiter ?? input.inspect.detectedDelimiter,
+    hasHeader: input.mappingConfig?.hasHeader ?? true,
+    headerRowIndex: input.mappingConfig?.headerRowIndex ?? input.inspect.headerRowIndex,
+    skipLeadingRows: input.mappingConfig?.skipLeadingRows ?? input.inspect.headerRowIndex,
+    encoding: input.mappingConfig?.encoding ?? input.inspect.detectedEncoding,
+    headerSignature: input.mappingConfig?.headerSignature ?? input.inspect.headerSignature,
+  };
+}
+
 export function ImportView({
   householdId,
   accounts,
@@ -65,6 +146,8 @@ export function ImportView({
   initialProfiles = [],
 }: Props) {
   const t = useTranslations("Imports");
+  const locale = useLocale();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [accountId, setAccountId] = useState(
@@ -79,7 +162,11 @@ export function ImportView({
   // Mapping state
   const [dateColumn, setDateColumn] = useState("");
   const [amountColumn, setAmountColumn] = useState("");
+  const [amountMode, setAmountMode] = useState<"signed" | "separate">("signed");
+  const [debitColumn, setDebitColumn] = useState("");
+  const [creditColumn, setCreditColumn] = useState("");
   const [descriptionColumn, setDescriptionColumn] = useState("");
+  const [sourceAccountIdColumn, setSourceAccountIdColumn] = useState("");
 
   // Profiles state
   const [profiles, setProfiles] =
@@ -129,13 +216,21 @@ export function ImportView({
       .catch(() => {});
   }, [householdId, accountId]);
 
-  const applyProfile = (p: StatementImportProfileDto) => {
+  const applyProfile = (p: StatementImportProfileDto, inspection = inspect) => {
+    if (inspection && p.mappingConfig.headerSignature !== inspection.headerSignature) {
+      setSelectedProfileId("");
+      return;
+    }
     setSelectedProfileId(p.id);
     if (p.mappingConfig.dateColumn) setDateColumn(p.mappingConfig.dateColumn);
     if (p.mappingConfig.amountColumn)
       setAmountColumn(p.mappingConfig.amountColumn);
+    setAmountMode(p.mappingConfig.amountMode);
+    setDebitColumn(p.mappingConfig.debitColumn ?? "");
+    setCreditColumn(p.mappingConfig.creditColumn ?? "");
     if (p.mappingConfig.descriptionColumn)
       setDescriptionColumn(p.mappingConfig.descriptionColumn);
+    setSourceAccountIdColumn(p.mappingConfig.sourceAccountIdColumn ?? "");
     setAutoProcessSafe(p.autoProcessSafe);
   };
 
@@ -164,27 +259,29 @@ export function ImportView({
         { method: "POST", body },
       );
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      if (!response.ok) throw new Error(localizedImportError(json, t));
       const result = json.data as Inspect;
       setInspect(result);
 
-      // If a profile is already selected, apply its columns
+      // Apply a saved profile only for the exact discovered layout; otherwise use high-confidence suggestions.
       const activeProfile = profiles.find((p) => p.id === selectedProfileId);
-      if (activeProfile) {
-        setDateColumn(
-          activeProfile.mappingConfig.dateColumn || (result.headers[0] ?? ""),
-        );
-        setAmountColumn(
-          activeProfile.mappingConfig.amountColumn || (result.headers[1] ?? ""),
-        );
-        setDescriptionColumn(
-          activeProfile.mappingConfig.descriptionColumn ||
-            (result.headers[2] ?? result.headers[1] ?? ""),
-        );
+      if (activeProfile && activeProfile.mappingConfig.headerSignature === result.headerSignature) {
+        applyProfile(activeProfile, result);
+      } else if (result.mappingConfidence === "high") {
+        setSelectedProfileId("");
+        setDateColumn(result.suggestedMapping.dateColumn ?? "");
+        setAmountMode(result.suggestedMapping.amountMode ?? "signed");
+        setAmountColumn(result.suggestedMapping.amountColumn ?? "");
+        setDebitColumn(result.suggestedMapping.debitColumn ?? "");
+        setCreditColumn(result.suggestedMapping.creditColumn ?? "");
+        setDescriptionColumn(result.suggestedMapping.descriptionColumn ?? "");
+        setSourceAccountIdColumn(result.suggestedMapping.sourceAccountIdColumn ?? "");
       } else {
-        setDateColumn(result.headers[0] ?? "");
-        setAmountColumn(result.headers[1] ?? "");
-        setDescriptionColumn(result.headers[2] ?? result.headers[1] ?? "");
+        setSelectedProfileId("");
+        setDateColumn("");
+        setAmountColumn("");
+        setDescriptionColumn("");
+        setSourceAccountIdColumn("");
       }
     } catch (error) {
       setMessage({
@@ -205,33 +302,31 @@ export function ImportView({
       body.append("file", file);
       body.append(
         "mappingConfig",
-        JSON.stringify({
+        JSON.stringify(buildImportMappingConfig({
           dateColumn,
-          dateFormat: "auto",
-          timezone: "UTC",
-          amountMode: "signed",
-          amountColumn,
-          invertAmount: false,
-          currencyMode: "account",
           descriptionColumn,
-          delimiter: inspect.detectedDelimiter,
-          hasHeader: true,
-          headerRowIndex: 0,
-          skipLeadingRows: 0,
-        }),
+          sourceAccountIdColumn,
+          amountMode,
+          amountColumn,
+          debitColumn,
+          creditColumn,
+          mappingConfig: profiles.find((p) => p.id === selectedProfileId)?.mappingConfig,
+          inspect,
+        })),
       );
       if (autoProcessSafe) {
         body.append("autoProcessSafe", "true");
       }
+      body.append("locale", locale);
 
       const response = await fetch(
         `/api/households/${householdId}/accounts/${accountId}/imports/preview`,
         { method: "POST", body },
       );
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      if (!response.ok) throw new Error(localizedImportError(json, t));
       const prevData = json.data as Preview;
-      setPreview(prevData);
+      setPreview(markAutoCommittedRows(prevData));
 
       if (prevData.autoCommitted) {
         if (prevData.attentionRowCount === 0) {
@@ -275,7 +370,7 @@ export function ImportView({
         },
       );
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      if (!response.ok) throw new Error(localizedImportError(json, t));
       setMessage({
         type: "success",
         text: t("success", { count: json.data.importedCount }),
@@ -305,7 +400,7 @@ export function ImportView({
         },
       );
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      if (!response.ok) throw new Error(localizedImportError(json, t));
       setMessage({
         type: "success",
         text: t("success", { count: json.data.importedCount }),
@@ -333,20 +428,17 @@ export function ImportView({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: newProfileName.trim(),
-            mappingConfig: {
+            mappingConfig: buildImportMappingConfig({
               dateColumn,
-              dateFormat: "auto",
-              timezone: "UTC",
-              amountMode: "signed",
-              amountColumn,
-              invertAmount: false,
-              currencyMode: "account",
               descriptionColumn,
-              delimiter: inspect.detectedDelimiter,
-              hasHeader: true,
-              headerRowIndex: 0,
-              skipLeadingRows: 0,
-            },
+              sourceAccountIdColumn,
+              amountMode,
+              amountColumn,
+              debitColumn,
+              creditColumn,
+              mappingConfig: profiles.find((p) => p.id === selectedProfileId)?.mappingConfig,
+              inspect,
+            }),
             autoProcessSafe: newProfileAutoProcessSafe,
             isDefault: newProfileIsDefault,
             accountId,
@@ -354,7 +446,7 @@ export function ImportView({
         },
       );
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? t("errors.generic"));
+      if (!response.ok) throw new Error(localizedImportError(json, t));
       const savedProfile = json.data as StatementImportProfileDto;
       setProfiles((prev) => [
         savedProfile,
@@ -386,7 +478,7 @@ export function ImportView({
       );
       if (!response.ok) {
         const json = await response.json();
-        throw new Error(json.error ?? t("errors.generic"));
+        throw new Error(localizedImportError(json, t));
       }
       setProfiles((prev) => prev.filter((p) => p.id !== selectedProfileId));
       setSelectedProfileId("");
@@ -499,7 +591,7 @@ export function ImportView({
             type="button"
             onClick={() => setMessage(null)}
             className="ml-4 text-xs font-semibold hover:opacity-75 focus:outline-none"
-            aria-label="Dismiss message"
+            aria-label={t("dismissMessage")}
           >
             ✕
           </button>
@@ -696,15 +788,23 @@ export function ImportView({
 
           {/* Columns Config */}
           <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-slate-700 dark:text-stone-300">
+              {t("amountMode")}
+              <select value={amountMode} onChange={(event) => setAmountMode(event.target.value as "signed" | "separate")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+                <option value="signed">{t("signedAmount")}</option>
+                <option value="separate">{t("separateAmount")}</option>
+              </select>
+            </label>
             {(
               [
                 [t("date"), dateColumn, setDateColumn],
-                [t("amount"), amountColumn, setAmountColumn],
-                [
-                  t("descriptionColumn"),
-                  descriptionColumn,
-                  setDescriptionColumn,
-                ],
+                ...(amountMode === "signed" ? [[t("amount"), amountColumn, setAmountColumn] as const] : []),
+                [t("descriptionColumn"), descriptionColumn, setDescriptionColumn],
+                [t("sourceAccountIdColumn"), sourceAccountIdColumn, setSourceAccountIdColumn],
+                ...(amountMode === "separate" ? [
+                  [t("debit"), debitColumn, setDebitColumn] as const,
+                  [t("credit"), creditColumn, setCreditColumn] as const,
+                ] : []),
               ] as const
             ).map(([label, value, setter]) => (
               <label
@@ -829,8 +929,15 @@ export function ImportView({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
                 {preview.rows.map((row) => {
-                  const isPending =
-                    row.valid && row.status === "pending" && !row.possibleMatch;
+                  const isPending = isImportRowSelectable(row);
+                  const rowNeedsReview = row.ambiguityState !== "unambiguous";
+                  const localizedErrorCodes = [
+                    "MISSING_DATE", "INVALID_DATE", "MISSING_AMOUNT", "INVALID_AMOUNT",
+                    "INVALID_CURRENCY", "CURRENCY_MISMATCH", "AMBIGUOUS_AMOUNT", "DUPLICATE_ROW",
+                    "MATCHES_VOIDED_TRANSACTION", "AUTHORITATIVE_DUPLICATE",
+                    "DUPLICATE_AUTHORITATIVE_ID_IN_FILE", "FALLBACK_DUPLICATE",
+                    "AMBIGUOUS_AUTHORITATIVE_MATCH", "AMBIGUOUS_FALLBACK_MATCH",
+                  ];
                   return (
                     <tr
                       key={row.rowIndex}
@@ -851,11 +958,11 @@ export function ImportView({
                       </td>
                       <td className="p-3 text-xs text-slate-700 dark:text-stone-300">
                         {row.date
-                          ? new Date(row.date).toLocaleDateString()
+                          ? new Intl.DateTimeFormat(locale).format(new Date(row.date))
                           : "—"}
                       </td>
                       <td className="p-3 font-mono text-xs font-semibold text-slate-900 dark:text-stone-100">
-                        {row.formattedAmount ?? row.amountMinor ?? "—"}
+                        {row.formattedAmount ?? "—"}
                       </td>
                       <td className="p-3 text-xs text-slate-700 dark:text-stone-300 max-w-xs truncate">
                         {row.description ?? "—"}
@@ -863,15 +970,21 @@ export function ImportView({
                       <td className="p-3 text-xs">
                         {!row.valid ? (
                           <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
-                            {row.errorMessage ?? row.status}
+                            {row.errorCode && ["MISSING_DATE", "INVALID_DATE", "MISSING_AMOUNT", "INVALID_AMOUNT", "INVALID_CURRENCY", "CURRENCY_MISMATCH", "AMBIGUOUS_AMOUNT", "DUPLICATE_ROW", "MATCHES_VOIDED_TRANSACTION", "AUTHORITATIVE_DUPLICATE", "DUPLICATE_AUTHORITATIVE_ID_IN_FILE", "FALLBACK_DUPLICATE"].includes(row.errorCode) ? t(`rowErrors.${row.errorCode}`) : t("rowErrors.GENERIC")}
+                          </span>
+                        ) : rowNeedsReview ? (
+                          <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
+                            {row.errorCode && localizedErrorCodes.includes(row.errorCode)
+                              ? t(`rowErrors.${row.errorCode}`)
+                              : t(`statuses.${getImportRowStatusKey(row)}`)}
                           </span>
                         ) : row.status === "duplicate" || row.possibleMatch ? (
                           <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
-                            {row.status}
+                            {t(`statuses.${row.status}`)}
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">
-                            {row.status}
+                            {t(`statuses.${row.status}`)}
                           </span>
                         )}
                       </td>

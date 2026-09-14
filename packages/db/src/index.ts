@@ -167,6 +167,7 @@ export type {
 
 export {
   DuplicateStatementImportProfileNameError,
+  StatementImportProfileScopeConflictError,
   StatementImportProfileNotFoundError,
   createStatementImportProfileInDb,
   deleteStatementImportProfileInDb,

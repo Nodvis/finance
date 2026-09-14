@@ -1,0 +1,4 @@
+Z rachunku;Data operacji;Data ksiêgowania;Kwota;Kwota;Opis;Numer rachunku
+TEST-ACCOUNT;2026-09-10;;-12,34 PLN;;"Sklep; ¯ó³æ";SANITIZED-ACCOUNT
+TEST-ACCOUNT;;2026-09-11;-5,00 PLN;;Op³ata;SANITIZED-ACCOUNT
+TEST-ACCOUNT;2026-09-12;2026-09-12;100,00 PLN;;Wynagrodzenie;SANITIZED-ACCOUNT

@@ -154,6 +154,19 @@ describe("Statement import profile API routes", () => {
   });
 
   describe("POST /profiles", () => {
+    it("returns a stable JSON validation error for malformed JSON", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+
+      const res = await createProfileHandler(new Request("http://localhost/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{not-json",
+      }), { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) });
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toMatchObject({ code: "JSON_INVALID" });
+    });
+
     it("creates a mapping profile successfully (201)", async () => {
       vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
       vi.mocked(createImportProfile).mockResolvedValue({
@@ -289,6 +302,19 @@ describe("Statement import profile API routes", () => {
   });
 
   describe("PATCH /profiles/[profileId]", () => {
+    it("returns a stable JSON validation error for malformed JSON", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+
+      const res = await updateProfileHandler(new Request(`http://localhost/profiles/${validProfileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: "{not-json",
+      }), { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount, profileId: validProfileId }) });
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toMatchObject({ code: "JSON_INVALID" });
+    });
+
     it("updates profile fields", async () => {
       vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
       vi.mocked(updateImportProfile).mockResolvedValue({
@@ -347,6 +373,38 @@ describe("Statement import profile API routes", () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
+    });
+  });
+
+  it("returns 409 when an account route targets a household-global profile", async () => {
+    vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+    vi.mocked(updateImportProfile).mockRejectedValue(Object.assign(new Error(), { name: "StatementImportProfileScopeConflictError" }));
+
+    const res = await updateProfileHandler(new Request(`http://localhost/profiles/${validProfileId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Renamed" }),
+    }), { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount, profileId: validProfileId }) });
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toEqual({
+      error: "STATEMENT_IMPORT_PROFILE_SCOPE_CONFLICT",
+      code: "STATEMENT_IMPORT_PROFILE_SCOPE_CONFLICT",
+    });
+  });
+
+  it("returns 409 when an account route tries to delete a household-global profile", async () => {
+    vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+    vi.mocked(deleteImportProfile).mockRejectedValue(Object.assign(new Error(), { name: "StatementImportProfileScopeConflictError" }));
+
+    const res = await deleteProfileHandler(new Request(`http://localhost/profiles/${validProfileId}`, {
+      method: "DELETE",
+    }), { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount, profileId: validProfileId }) });
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toEqual({
+      error: "STATEMENT_IMPORT_PROFILE_SCOPE_CONFLICT",
+      code: "STATEMENT_IMPORT_PROFILE_SCOPE_CONFLICT",
     });
   });
 });

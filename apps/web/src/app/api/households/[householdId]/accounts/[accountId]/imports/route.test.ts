@@ -103,9 +103,168 @@ describe("Statement import API routes", () => {
 
       expect(res.status).toBe(403);
     });
+
+    it("returns a stable JSON error when the multipart file is missing", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      const form = new FormData();
+      const res = await inspectHandler(
+        new Request("http://localhost/inspect", { method: "POST", body: form }),
+        { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+      );
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({
+        error: "IMPORT_FILE_INVALID",
+        code: "IMPORT_FILE_INVALID",
+      });
+    });
+
+    it("normalizes malformed multipart parsing without exposing parser details", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      const res = await inspectHandler(
+        new Request("http://localhost/inspect", {
+          method: "POST",
+          headers: { "Content-Type": "multipart/form-data; boundary=broken" },
+          body: "--broken\r\nContent-Disposition: form-data; name=\"file\"\r\n\r\n",
+        }),
+        { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+      );
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({
+        error: "MULTIPART_PARSE_INVALID",
+        code: "MULTIPART_PARSE_INVALID",
+      });
+    });
+
+    it("keeps malformed CSV parser errors distinct from multipart errors", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      vi.mocked(inspectCsvFile).mockRejectedValue(new SyntaxError("raw CSV parser details"));
+      const form = new FormData();
+      form.append("file", new File(["Date,Amount\nunterminated\""], "statement.csv"));
+
+      const res = await inspectHandler(
+        new Request("http://localhost/inspect", { method: "POST", body: form }),
+        { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+      );
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({
+        error: "CSV_PARSE_INVALID",
+        code: "CSV_PARSE_INVALID",
+      });
+    });
+
+    it("returns stable validation codes for unsupported encoding and delimiter", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      for (const [field, value, code] of [
+        ["encoding", "utf-16", "IMPORT_ENCODING_INVALID"],
+        ["delimiter", "^", "IMPORT_DELIMITER_INVALID"],
+      ] as const) {
+        const form = new FormData();
+        form.append("file", new File(["Date,Amount\n2026-01-01,1"], "statement.csv"));
+        form.append(field, value);
+        const res = await inspectHandler(
+          new Request("http://localhost/inspect", { method: "POST", body: form }),
+          { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+        );
+        expect(res.status).toBe(400);
+        await expect(res.json()).resolves.toEqual({ error: code, code });
+      }
+    });
+  });
+
+  describe("commit route", () => {
+    it("returns a stable JSON validation error for malformed JSON", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+
+      const res = await commitHandler(new Request("http://localhost/commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{not-json",
+      }), { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount, batchId: validBatch }) });
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toMatchObject({ code: "JSON_INVALID" });
+    });
   });
 
   describe("preview route", () => {
+    it.each([
+      ["missing multipart file", async () => {
+        const form = new FormData();
+        form.append("mappingConfig", "{}");
+        return new Request("http://localhost/preview", { method: "POST", body: form });
+      }],
+      ["missing multipart mappingConfig", async () => {
+        const form = new FormData();
+        form.append("file", new File(["Date,Amount,Description\\n2026-03-01,-10,Coffee"], "statement.csv"));
+        return new Request("http://localhost/preview", { method: "POST", body: form });
+      }],
+      ["empty JSON body", async () => new Request("http://localhost/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(null),
+      })],
+      ["missing JSON file source", async () => new Request("http://localhost/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mappingConfig: {} }),
+      })],
+    ])("returns a stable validation code for %s", async (_name, makeRequest) => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+
+      const res = await previewHandler(await makeRequest(), {
+        params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      if (_name === "missing multipart file" || _name === "empty JSON body" || _name === "missing JSON file source") {
+        expect(body).toEqual({ error: "IMPORT_FILE_INVALID", code: "IMPORT_FILE_INVALID" });
+      } else {
+        expect(body).toEqual({ error: "IMPORT_MAPPING_INVALID", code: "IMPORT_MAPPING_INVALID" });
+      }
+    });
+
+    it("classifies malformed non-multipart JSON as mapping validation", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+
+      const res = await previewHandler(
+        new Request("http://localhost/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{not-json",
+        }),
+        { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+      );
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toMatchObject({
+        code: "IMPORT_MAPPING_INVALID",
+        error: "IMPORT_MAPPING_INVALID",
+      });
+    });
+
+    it("returns a stable multipart parse error for malformed form data", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+
+      const res = await previewHandler(
+        new Request("http://localhost/preview", {
+          method: "POST",
+          headers: { "Content-Type": "multipart/form-data; boundary=broken" },
+          body: "malformed",
+        }),
+        { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+      );
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toEqual({
+        error: "MULTIPART_PARSE_INVALID",
+        code: "MULTIPART_PARSE_INVALID",
+      });
+    });
+
     it("returns 403 on cross-household access attempt", async () => {
       vi.mocked(requireHouseholdAccess).mockRejectedValue(
         new HouseholdAccessDeniedError(),
@@ -159,6 +318,24 @@ describe("Statement import API routes", () => {
       });
 
       expect(res.status).toBe(404);
+    });
+
+    it("classifies malformed multipart mapping JSON as validation", async () => {
+      vi.mocked(requireHouseholdAccess).mockResolvedValue(testAccess as any);
+      const form = new FormData();
+      form.append("file", new File(["Date,Amount,Description\\n2026-03-01,-10,Coffee"], "statement.csv"));
+      form.append("mappingConfig", "{not-json");
+
+      const res = await previewHandler(
+        new Request("http://localhost/preview", { method: "POST", body: form }),
+        { params: Promise.resolve({ householdId: validHousehold, accountId: validAccount }) },
+      );
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toMatchObject({
+        code: "IMPORT_MAPPING_INVALID",
+        error: "IMPORT_MAPPING_INVALID",
+      });
     });
 
     it("returns 200 with preview data on valid request", async () => {
