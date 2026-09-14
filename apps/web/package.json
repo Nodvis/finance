@@ -15,7 +15,7 @@
   "dependencies": {
     "@nodvis/finance-db": "workspace:*",
     "@nodvis/finance-domain": "workspace:*",
-    "better-auth": "1.7.2",
+    "better-auth": "1.7.4",
     "lucide-react": "1.45.0",
     "next": "16.3.3",
     "next-intl": "4.14.0",
