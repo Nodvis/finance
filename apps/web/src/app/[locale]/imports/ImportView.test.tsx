@@ -69,6 +69,12 @@ describe("ImportView Component", () => {
     expect(getImportRowStatusKey(row)).toBe("pending");
   });
 
+  it("keeps bank-pending rows visible but not selectable", () => {
+    const row = { valid: true, status: "pending", possibleMatch: null, ambiguityState: "unambiguous", bankPending: true } as any;
+    expect(isImportRowSelectable(row)).toBe(false);
+    expect(getImportRowStatusKey(row)).toBe("pending");
+  });
+
   it("builds a separate debit/credit mapping and preserves its columns", () => {
     expect(buildImportMappingConfig({
       dateColumn: "Date",

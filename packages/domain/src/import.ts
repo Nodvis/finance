@@ -169,6 +169,7 @@ export type NormalizedImportRow = Readonly<{
   description: string;
   rawRowContent: string;
   rawValues: Record<string, string>;
+  bankPending?: boolean;
 }>;
 
 export type ParsedImportRow = Readonly<{
@@ -180,6 +181,7 @@ export type ParsedImportRow = Readonly<{
   errorMessage?: string | undefined;
   rawRowContent: string;
   rawValues: Record<string, string>;
+  bankPending?: boolean;
 }>;
 
 export type PossibleManualMatch = Readonly<{
@@ -217,6 +219,7 @@ export type RowPreviewItem = Readonly<{
   matchedImportRowId?: string | null | undefined;
   possibleMatch: PossibleManualMatch | null;
   selected: boolean;
+  bankPending?: boolean;
 }>;
 
 /**
@@ -333,6 +336,103 @@ export function parseCsvText(
   }
 
   return rows;
+}
+
+const PKO_BP_HEADERS = [
+  "Data operacji", "Data waluty", "Typ transakcji", "Kwota", "Waluta",
+  "Saldo po transakcji", "Opis transakcji", "", "", "", "",
+] as const;
+
+function pkoHeaderCells(text: string): string[] {
+  return (text.split(/\r?\n/, 1)[0] ?? "").replace(/^\ufeff/, "").split(",").map((cell) => {
+    const trimmed = cell.trim();
+    return trimmed.startsWith('"') && trimmed.endsWith('"')
+      ? trimmed.slice(1, -1).replaceAll('""', '"')
+      : trimmed;
+  });
+}
+
+export function detectPkoBpCsv(text: string): boolean {
+  const headers = pkoHeaderCells(text);
+  return headers.length === PKO_BP_HEADERS.length
+    && PKO_BP_HEADERS.every((header, index) => headers[index] === header);
+}
+
+export function parsePkoBpCsv(text: string): string[][] {
+  const maxRows = 5000;
+  const maxCharsPerCell = 4000;
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  let i = 0;
+  const finishRow = () => {
+    row.push(cell.trim());
+    if (row.length !== PKO_BP_HEADERS.length) throw new SyntaxError("CSV_PARSE_INVALID: inconsistent PKO BP column count");
+    rows.push(row);
+    if (rows.length > maxRows) throw new SyntaxError("CSV_PARSE_INVALID: file exceeds maximum row count");
+    row = [];
+    cell = "";
+  };
+  while (i < text.length) {
+    const char = text[i]!;
+    if (quoted) {
+      if (char === '"') {
+        const next = text[i + 1];
+        if (row.length >= 7 && row.length < PKO_BP_HEADERS.length && next === '"') {
+          const afterPair = text[i + 2];
+          cell += '"';
+          if (afterPair === "," || afterPair === "\r" || afterPair === "\n" || afterPair === undefined) {
+            quoted = false;
+          }
+          i += 2;
+          continue;
+        }
+        if (next === '"') { cell += '"'; i += 2; continue; }
+        if (next === "," || next === "\r" || next === "\n" || next === undefined) { quoted = false; i++; continue; }
+        if (row.length >= 6 && row.length < PKO_BP_HEADERS.length) { cell += char; i++; continue; }
+        throw new SyntaxError("CSV_PARSE_INVALID: unexpected characters after quoted cell");
+      }
+      cell += char;
+      if (cell.length > maxCharsPerCell) throw new SyntaxError("CSV_PARSE_INVALID: cell exceeds maximum length");
+      i++; continue;
+    }
+    if (char === '"') {
+      if (cell.length > 0) throw new SyntaxError("CSV_PARSE_INVALID: unexpected quote in unquoted cell");
+      quoted = true; i++; continue;
+    }
+    if (char === ",") { row.push(cell.trim()); cell = ""; i++; continue; }
+    if (char === "\r" || char === "\n") {
+      if (char === "\r" && text[i + 1] === "\n") i++;
+      if (row.length > 0 || cell !== "") finishRow();
+      i++; continue;
+    }
+    cell += char;
+    if (cell.length > maxCharsPerCell) throw new SyntaxError("CSV_PARSE_INVALID: cell exceeds maximum length");
+    i++;
+  }
+  if (quoted) throw new SyntaxError("CSV_PARSE_INVALID: unterminated quoted cell");
+  if (row.length > 0 || cell !== "") finishRow();
+  if (rows.length === 0 || !detectPkoBpCsv(text)) throw new SyntaxError("CSV_PARSE_INVALID: not a PKO BP CSV");
+  return rows;
+}
+
+export function discoverPkoBpCsvHeader(text: string): CsvHeaderDiscoveryResult {
+  const rows = parsePkoBpCsv(text);
+  const headers = ensureUniqueCsvHeaders(rows[0] ?? [...PKO_BP_HEADERS]);
+  const sampleDate = rows[1]?.[0] || rows[1]?.[1] || "";
+  const dateFormat = /^\d{4}-\d{2}-\d{2}$/.test(sampleDate) ? "YYYY-MM-DD" : "DD.MM.YYYY";
+  return {
+    headerRowIndex: 0,
+    headers,
+    suggestedMapping: {
+      dateColumn: headers[0]!, dateFallbackColumn: headers[1]!, dateFormat,
+      amountMode: "signed", amountColumn: headers[3]!, currencyMode: "column",
+      currencyColumn: headers[4]!, descriptionColumn: headers[6]!,
+    },
+    confidence: "high",
+    headerSignature: computeCsvHeaderSignature(headers, ","),
+  };
 }
 
 const CSV_HEADER_ALIASES: Record<string, readonly string[]> = {
@@ -1464,4 +1564,38 @@ export function normalizeImportRow(params: {
     rawRowContent,
     rawValues,
   };
+}
+
+export function normalizePkoBpImportRow(params: {
+  rowIndex: number;
+  rawCells: string[];
+  headers: string[];
+  targetAccountCurrency: string;
+  accountId: string;
+  fileHash: string;
+  occurrenceCounter: Map<string, number>;
+}): ParsedImportRow {
+  const continuation = params.rawCells.slice(7, 11).map((value) => value.trim()).filter(Boolean);
+  const cells = [...params.rawCells];
+  cells[6] = [cells[6]?.trim() ?? "", ...continuation].filter(Boolean).join(" ");
+  cells.length = 11;
+  const sampleDate = cells[0] || cells[1] || "";
+  const dateFormat = /^\d{4}-\d{2}-\d{2}$/.test(sampleDate) ? "YYYY-MM-DD" : "DD.MM.YYYY";
+  const mapping: StatementImportMappingConfig = {
+    dateColumn: params.headers[0]!, dateFallbackColumn: params.headers[1]!, dateFormat, timezone: "UTC",
+    amountMode: "signed", amountColumn: params.headers[3]!, invertAmount: false,
+    currencyMode: "column", currencyColumn: params.headers[4]!, descriptionColumn: params.headers[6]!,
+    sourceNamespace: "pko_bp_csv", delimiter: ",", hasHeader: true, headerRowIndex: 0, skipLeadingRows: 0,
+    encoding: "windows-1250",
+  };
+  const result = normalizeImportRow({
+    rowIndex: params.rowIndex, rawCells: cells, headers: params.headers, mapping,
+    targetAccountCurrency: params.targetAccountCurrency, accountId: params.accountId, fileHash: params.fileHash,
+    occurrenceCounter: params.occurrenceCounter,
+  });
+  if (!result.valid || !result.normalized) return result;
+  const pending = cells[2]?.trim() === "Blokada" || cells[5]?.trim() === "W rozliczeniu";
+  return pending
+    ? { ...result, bankPending: true, errorCode: "BANK_PENDING", normalized: { ...result.normalized, bankPending: true } }
+    : result;
 }

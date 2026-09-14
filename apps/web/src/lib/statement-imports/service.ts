@@ -35,12 +35,16 @@ import {
   decodeCsvBuffer,
   detectCsvDelimiter,
   detectCsvEncoding,
+  detectPkoBpCsv,
   discoverCsvHeader,
+  discoverPkoBpCsvHeader,
   computeCsvHeaderSignature,
   encodeImportIdentityParts,
   ensureUniqueCsvHeaders,
   getCurrencyFractionDigits,
   normalizeImportRow,
+  normalizePkoBpImportRow,
+  parsePkoBpCsv,
   parseCsvText,
   parseImportAmount,
   parseImportDate,
@@ -205,7 +209,8 @@ export async function inspectCsvFile(params: {
   const text = decodeCsvBuffer(fileBytes, detectedEncoding);
   const detectedDelimiter = delimiter ?? detectCsvDelimiter(text);
 
-  const parsed = parseCsvText(text, {
+  const isPko = detectPkoBpCsv(text);
+  const parsed = isPko ? parsePkoBpCsv(text) : parseCsvText(text, {
     delimiter: detectedDelimiter,
     maxRows: MAX_ROWS,
     allowVariableColumnCount: true,
@@ -215,7 +220,7 @@ export async function inspectCsvFile(params: {
   }
 
   const fileHash = computeFileSha256(fileBytes);
-  const discovery = discoverCsvHeader(text, detectedDelimiter);
+  const discovery = isPko ? discoverPkoBpCsvHeader(text) : discoverCsvHeader(text, detectedDelimiter);
   const headers = discovery.headers;
   const sampleRows = parsed.slice(discovery.headerRowIndex + 1, discovery.headerRowIndex + 4);
 
@@ -261,7 +266,8 @@ export async function parseAndPreviewStatementImport(params: {
 
   const fileHash = computeFileSha256(fileBytes);
   const decodedText = decodeCsvBuffer(fileBytes, mapping.encoding);
-  const rawRows = parseCsvText(decodedText, {
+  const isPko = detectPkoBpCsv(decodedText);
+  const rawRows = isPko ? parsePkoBpCsv(decodedText) : parseCsvText(decodedText, {
     delimiter: mapping.delimiter,
     maxRows: MAX_ROWS,
     allowVariableColumnCount: true,
@@ -275,7 +281,7 @@ export async function parseAndPreviewStatementImport(params: {
   const headerlessStart = Math.min(Math.max(mapping.skipLeadingRows, 0), Math.max(rawRows.length - 1, 0));
   const headerlessWidth = rawRows.slice(headerlessStart).reduce((max, row) => Math.max(max, trimTrailingEmptyCsvCells(row).length), 0);
   const rawHeaders = headerIdx >= 0 && headerIdx < rawRows.length
-    ? trimTrailingEmptyCsvCells(rawRows[headerIdx]!)
+    ? (isPko ? rawRows[headerIdx]! : trimTrailingEmptyCsvCells(rawRows[headerIdx]!))
     : Array.from({ length: headerlessWidth }, (_, i) => `Col ${i + 1}`);
   const rawDataRows = rawRows.slice(Math.max(headerIdx + 1, 0));
   const headers: string[] = ensureUniqueCsvHeaders(rawHeaders);
@@ -323,20 +329,11 @@ export async function parseAndPreviewStatementImport(params: {
 
 
   const occurrenceCounter = new Map<string, number>();
-  const parsedRows = dataRows.map(({ rawCells, rowOffset }) =>
-    normalizeImportRow({
-      rowIndex: rowOffset,
-      rawCells,
-      headers,
-      mapping,
-      targetAccountCurrency: account.currency,
-      accountId,
-      fileHash,
-      occurrenceCounter,
-    }),
-  );
+  const parsedRows = dataRows.map(({ rawCells, rowOffset }) => isPko
+    ? normalizePkoBpImportRow({ rowIndex: rowOffset, rawCells, headers, targetAccountCurrency: account.currency, accountId, fileHash, occurrenceCounter })
+    : normalizeImportRow({ rowIndex: rowOffset, rawCells, headers, mapping, targetAccountCurrency: account.currency, accountId, fileHash, occurrenceCounter }));
 
-  const sourceNamespace = mapping.sourceNamespace?.trim() || "generic_csv";
+  const sourceNamespace = isPko ? "pko_bp_csv" : (mapping.sourceNamespace?.trim() || "generic_csv");
   const sourceAccountId = mapping.sourceAccountId?.trim() || null;
   const sourceAccountIds = [...new Set([sourceAccountId, ...parsedRows.map((row) => row.normalized?.sourceAccountId)].filter((value): value is string => Boolean(value)))];
 
@@ -552,7 +549,7 @@ export async function parseAndPreviewStatementImport(params: {
       normalizedDescription: norm?.description ?? null,
     });
 
-    const isSelected = pr.valid && !isDuplicate && ambiguityState !== "ambiguous" && !possibleMatch;
+    const isSelected = pr.valid && !isDuplicate && ambiguityState !== "ambiguous" && !possibleMatch && !norm?.bankPending;
     if (isSelected) safeToCommitCount++;
     if (pr.valid && !isSelected && !isDuplicate) attentionRowCount++;
 
@@ -584,6 +581,7 @@ export async function parseAndPreviewStatementImport(params: {
       matchedImportRowId,
       possibleMatch,
       selected: isSelected,
+      ...(norm?.bankPending ? { bankPending: true } : {}),
     });
   }
 

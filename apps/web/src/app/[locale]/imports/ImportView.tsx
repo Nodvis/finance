@@ -47,6 +47,7 @@ type PreviewRow = {
   description?: string | null;
   possibleMatch?: unknown;
   ambiguityState?: "unambiguous" | "ambiguous";
+  bankPending?: boolean;
   selected: boolean;
 };
 
@@ -85,11 +86,12 @@ function localizedImportError(
   return translate("errors.generic");
 }
 
-export function isImportRowSelectable(row: Pick<PreviewRow, "valid" | "status" | "possibleMatch" | "ambiguityState">): boolean {
+export function isImportRowSelectable(row: Pick<PreviewRow, "valid" | "status" | "possibleMatch" | "ambiguityState" | "bankPending">): boolean {
   return row.valid
     && row.status === "pending"
     && !row.possibleMatch
-    && row.ambiguityState === "unambiguous";
+    && row.ambiguityState === "unambiguous"
+    && !row.bankPending;
 }
 
 export function markAutoCommittedRows(preview: Preview): Preview {
@@ -930,13 +932,13 @@ export function ImportView({
               <tbody className="divide-y divide-slate-100 dark:divide-stone-800">
                 {preview.rows.map((row) => {
                   const isPending = isImportRowSelectable(row);
-                  const rowNeedsReview = row.ambiguityState !== "unambiguous";
+                  const rowNeedsReview = row.ambiguityState !== "unambiguous" || row.bankPending;
                   const localizedErrorCodes = [
                     "MISSING_DATE", "INVALID_DATE", "MISSING_AMOUNT", "INVALID_AMOUNT",
                     "INVALID_CURRENCY", "CURRENCY_MISMATCH", "AMBIGUOUS_AMOUNT", "DUPLICATE_ROW",
                     "MATCHES_VOIDED_TRANSACTION", "AUTHORITATIVE_DUPLICATE",
                     "DUPLICATE_AUTHORITATIVE_ID_IN_FILE", "FALLBACK_DUPLICATE",
-                    "AMBIGUOUS_AUTHORITATIVE_MATCH", "AMBIGUOUS_FALLBACK_MATCH",
+                    "AMBIGUOUS_AUTHORITATIVE_MATCH", "AMBIGUOUS_FALLBACK_MATCH", "BANK_PENDING",
                   ];
                   return (
                     <tr
@@ -970,7 +972,7 @@ export function ImportView({
                       <td className="p-3 text-xs">
                         {!row.valid ? (
                           <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">
-                            {row.errorCode && ["MISSING_DATE", "INVALID_DATE", "MISSING_AMOUNT", "INVALID_AMOUNT", "INVALID_CURRENCY", "CURRENCY_MISMATCH", "AMBIGUOUS_AMOUNT", "DUPLICATE_ROW", "MATCHES_VOIDED_TRANSACTION", "AUTHORITATIVE_DUPLICATE", "DUPLICATE_AUTHORITATIVE_ID_IN_FILE", "FALLBACK_DUPLICATE"].includes(row.errorCode) ? t(`rowErrors.${row.errorCode}`) : t("rowErrors.GENERIC")}
+                            {row.errorCode && ["MISSING_DATE", "INVALID_DATE", "MISSING_AMOUNT", "INVALID_AMOUNT", "INVALID_CURRENCY", "CURRENCY_MISMATCH", "AMBIGUOUS_AMOUNT", "DUPLICATE_ROW", "MATCHES_VOIDED_TRANSACTION", "AUTHORITATIVE_DUPLICATE", "DUPLICATE_AUTHORITATIVE_ID_IN_FILE", "FALLBACK_DUPLICATE", "BANK_PENDING"].includes(row.errorCode) ? t(`rowErrors.${row.errorCode}`) : t("rowErrors.GENERIC")}
                           </span>
                         ) : rowNeedsReview ? (
                           <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-300">

@@ -9,12 +9,78 @@ import {
   detectCsvEncoding,
   discoverCsvHeader,
   computeCsvHeaderSignature,
+  detectPkoBpCsv,
+  discoverPkoBpCsvHeader,
+  parsePkoBpCsv,
+  normalizePkoBpImportRow,
   normalizeImportRow,
   parseCsvText,
   parseImportAmount,
   parseImportDate,
   type StatementImportMappingConfig,
 } from "./import";
+
+const pkoHeaders = "Data operacji,Data waluty,Typ transakcji,Kwota,Waluta,Saldo po transakcji,Opis transakcji,,,,";
+
+describe("PKO BP CSV compatibility", () => {
+  it("detects only the exact high-confidence PKO BP header shape", () => {
+    expect(detectPkoBpCsv(`${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,Sklep,,,,`)).toBe(true);
+    expect(detectPkoBpCsv(`"Data operacji","Data waluty","Typ transakcji","Kwota","Waluta","Saldo po transakcji","Opis transakcji","","","",""\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,Sklep,,,,`)).toBe(true);
+    expect(detectPkoBpCsv("Data operacji,Data waluty,Typ transakcji,Kwota,Waluta,Opis transakcji\n01.03.2026,01.03.2026,Transakcja,-12,34,PLN,Sklep")).toBe(false);
+  });
+
+  it("parses known PKO malformed merchant quotes but keeps generic strictness isolated", () => {
+    const known = `${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,"Sklep "Central",,,,`;
+    expect(parsePkoBpCsv(known)[1]).toHaveLength(11);
+    expect(() => parseCsvText(known, { delimiter: "," })).toThrow(/CSV_PARSE_INVALID/);
+
+    const escaped = `${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,"Sklep ""Central""",,,,`;
+    expect(parsePkoBpCsv(escaped)[1]?.[6]).toBe('Sklep "Central"');
+    const continuationQuote = `${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,Shop,"Branch "Central""",,,`;
+    expect(parsePkoBpCsv(continuationQuote)[1]?.[7]).toBe('Branch "Central"');
+    expect(() => parsePkoBpCsv(`${pkoHeaders}\n01.03.2026,01.03.2026,"unterminated,-12.34,PLN,987.66,Shop,,,,`)).toThrow(/CSV_PARSE_INVALID/);
+    expect(() => parsePkoBpCsv(`${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,"Shop,extra,,,,`)).toThrow(/CSV_PARSE_INVALID/);
+  });
+
+  it("discovers all eleven PKO columns and maps explicit dates, amount, currency, and description", () => {
+    const result = discoverPkoBpCsvHeader(`${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-12.34,PLN,987.66,Shop,,,,`);
+    expect(result.headers).toHaveLength(11);
+    expect(result.suggestedMapping).toMatchObject({
+      dateColumn: "Data operacji",
+      dateFallbackColumn: "Data waluty",
+      amountColumn: "Kwota",
+      currencyColumn: "Waluta",
+      descriptionColumn: "Opis transakcji",
+    });
+    expect(result.confidence).toBe("high");
+  });
+
+  it("reconstructs continuation description and marks bank-pending rows non-committable", () => {
+    const row = normalizePkoBpImportRow({
+      rowIndex: 0,
+      rawCells: ["01.03.2026", "01.03.2026", "Blokada", "-987654321012.34", "PLN", "W rozliczeniu", "Merchant", "branch", "", "", ""],
+      headers: discoverPkoBpCsvHeader(`${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-1.00,PLN,1.00,Merchant,,,,`).headers,
+      targetAccountCurrency: "PLN",
+      accountId: "acc-1",
+      fileHash: "hash",
+      occurrenceCounter: new Map(),
+    });
+    expect(row.valid).toBe(true);
+    expect(row.normalized).toMatchObject({ amountMinor: 98765432101234n, currency: "PLN", description: "Merchant branch", bankPending: true });
+    expect(row.status).toBe("pending");
+
+    const mismatched = normalizePkoBpImportRow({
+      rowIndex: 1,
+      rawCells: ["01.03.2026", "01.03.2026", "Transakcja", "-1.00", "EUR", "99.00", "Merchant", "", "", "", ""],
+      headers: discoverPkoBpCsvHeader(`${pkoHeaders}\n01.03.2026,01.03.2026,Transakcja,-1.00,EUR,99.00,Merchant,,,,`).headers,
+      targetAccountCurrency: "PLN",
+      accountId: "acc-1",
+      fileHash: "hash",
+      occurrenceCounter: new Map(),
+    });
+    expect(mismatched).toMatchObject({ valid: false, errorCode: "CURRENCY_MISMATCH" });
+  });
+});
 
 describe("CSV parsing and delimiter detection", () => {
   it("parses standard RFC 4180 CSV with quotes, escaped quotes, and newlines inside quotes", () => {
@@ -169,6 +235,14 @@ describe("bounded semantic CSV header discovery", () => {
 });
 
 describe("sanitized bank-shaped fixture corpus", () => {
+  it("decodes and parses the sanitized PKO BP Windows-1250 fixture", () => {
+    const bytes = new Uint8Array(readFileSync("test-fixtures/import/pko-bp-cp1250.csv"));
+    const text = decodeCsvBuffer(bytes, "windows-1250");
+    expect(detectPkoBpCsv(text)).toBe(true);
+    expect(parsePkoBpCsv(text)).toHaveLength(3);
+    expect(discoverPkoBpCsvHeader(text).headers).toHaveLength(11);
+  });
+
   it("discovers CA and mBank headers and maps semantic columns", () => {
     const fixtures = [
       { path: "test-fixtures/import/credit-agricole-cp1250.csv", encoding: "windows-1250" as const, delimiter: ";" as const, headerRowIndex: 0 },
